@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.22  1999/10/27 16:53:23  AJW
+	Shade menu items when deleting of unlinking so you cannot delete a deleted person
+
 	Revision 1.21  1999/10/27 16:48:08  AJW
 	Calls Database_Info to set info win when needed
 
@@ -1196,8 +1199,10 @@ void Graphics_PersonMenuClick(int entry,void *ref)
 			break;
 		case personmenu_DELETE:
 			Database_Delete(menuoverperson);
+			AJWLib_Menu_Shade(personmenu,entry);
 			break;
 		case personmenu_UNLINK:
+			AJWLib_Menu_Shade(personmenu,entry);
 			mother=Database_GetMother(menuoverperson);
 			marriage=Database_GetMarriage(menuoverperson);
 			mothermarriage=Database_GetMarriage(mother);
