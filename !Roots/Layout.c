@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.48 2000/10/20 19:14:41 AJW Exp $
+	$Id: Layout.c,v 1.49 2000/10/21 15:07:16 AJW Exp $
 
 */
 
@@ -269,7 +269,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.48 2000/10/20 19:14:41 AJW Exp $
+	$Id: Layout.c,v 1.49 2000/10/21 15:07:16 AJW Exp $
 
 */
 
@@ -442,7 +442,7 @@ void Layout_ResizeWindow(windowdata *windowdata)
 		maxyextent=Desk_TRUE;
 	}
 	/*Set window extent to fit layout size*/
-	Desk_Window_SetExtent(windowdata->handle,(windowdata->scale*(box.min.x-Graphics_WindowBorder()))/100,(windowdata->scale*(box.min.y-Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.x+Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.y+Graphics_WindowBorder()+((Config_Title() && windowdata->type==wintype_NORMAL) ? Graphics_TitleHeight() : 0)))/100);
+	Desk_Window_SetExtent(windowdata->handle,(windowdata->scale*(box.min.x-Graphics_WindowBorder()))/100,(windowdata->scale*(box.min.y-Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.x+Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.y+Graphics_WindowBorder()))/100);
 	/*Reread window position as it might have changed*/
 	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
 	Desk_Wimp_GetWindowOutline(&outlineblk);
@@ -476,7 +476,7 @@ void Layout_ResizeWindow(windowdata *windowdata)
 		int amountmax=0,amountmin=0,amount=0;
 		openblk.window=windowdata->handle;
 		openblk.screenrect=infoblk.block.screenrect;
-		/*Find amount we nedd to increase by*/
+		/*Find amount we need to increase by*/
 		amount=(infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y)-(openblk.screenrect.max.y-openblk.screenrect.min.y);
 		amountmax=amount;
 		/*Find maximum -ve y we can increase by*/

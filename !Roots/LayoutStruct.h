@@ -22,13 +22,7 @@ typedef struct elementlayout {
 	flags flags;
 } elementlayout;
 
-typedef struct titlelayout {
-	int x;
-	int y;
-} titlelayout;
-
 typedef struct layout {
-	titlelayout title;
 	elementlayout *person;
 	int numpeople;
 	elementlayout *transients;

@@ -39,7 +39,6 @@ void Database_Init(void);
 char *Database_GetTitle(void);
 elementptr Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
-void Database_EditTitle(void);
 void Database_Edit(elementptr person);
 elementptr Database_Add(void);
 void Database_Delete(elementptr person);

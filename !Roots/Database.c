@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.47 2000/10/20 19:14:38 AJW Exp $
+	$Id: Database.c,v 1.48 2000/10/21 15:07:10 AJW Exp $
 
 */
 
@@ -914,7 +914,7 @@ char *Database_GetTitle(void)
 	return database[0].element.file.filetitle;
 }
 
-void Database_EditTitle(void)
+static void Database_EditTitle(void)
 {
 	Desk_Icon_SetText(edittitlewin,edittitleicon_TEXT,database[0].element.file.filetitle);
 	Desk_Window_Show(edittitlewin,Desk_open_CENTEREDUNDERPOINTER);
@@ -927,7 +927,7 @@ static Desk_bool Database_OkEditTitleWindow(Desk_event_pollblock *block,void *re
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	Desk_Icon_GetText(edittitlewin,edittitleicon_TEXT,database[0].element.file.filetitle);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(edittitlewin);
-	Modules_ChangedData(none);
+	Modules_ChangedLayout();
 	return Desk_TRUE;
 }
 
@@ -1015,16 +1015,19 @@ static void Database_EditMarriage(elementptr marriage)
 	editingmarriage=marriage;
 }
 
-void Database_Edit(elementptr person)
+void Database_Edit(elementptr element)
 {
 	AJWLib_Assert(database!=NULL);
-	AJWLib_Assert(person!=none);
-	switch (database[person].type) {
+
+	switch (Database_GetElementType(element)) {
 		case element_PERSON:
-			Database_EditPerson(person);
+			Database_EditPerson(element);
 			break;
 		case element_MARRIAGE:
-			Database_EditMarriage(person);
+			Database_EditMarriage(element);
+			break;
+		case element_TITLE:
+			Database_EditTitle();
 			break;
 		default:
 			break;
