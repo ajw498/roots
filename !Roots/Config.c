@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.20 2000/11/14 22:56:48 AJW Exp $
+	$Id: Config.c,v 1.21 2000/11/21 20:04:19 AJW Exp $
 
 */
 
@@ -198,7 +198,7 @@ static void Config_Default(void)
 
 void Config_SetSeparateMarriages(layout *layout,Desk_bool separate)
 {
-	if (config.separatemarriages!=separate) Layout_ChangeMarriageTypes(layout,separate);
+	if (layout!=NULL && config.separatemarriages!=separate) Layout_ChangeMarriageTypes(layout,separate);
 	config.separatemarriages=separate;
 }
 

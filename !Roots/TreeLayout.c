@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.52 2000/11/14 20:09:43 AJW Exp $
+	$Id: TreeLayout.c,v 1.53 2000/11/21 20:04:26 AJW Exp $
 
 */
 
@@ -198,11 +198,16 @@ static void Layout_PlotMarriage(layout *layout,elementptr marriage)
 	}
 	leftx+=Layout_FindWidth(layout,leftperson);
 	flags.editable=1;
-	flags.moveable=0;
 	flags.linkable=1;
 	flags.snaptogrid=1;
 	flags.selectable=1;
-	Layout_AddTransient(layout,marriage,leftx,Layout_FindYCoord(layout,leftperson),rightx-leftx,Layout_FindHeight(layout,leftperson),0,0,flags);
+	if (Config_SeparateMarriages()) {
+		flags.moveable=1;
+		Layout_AddElement(layout,marriage,rightx-Graphics_MarriageWidth(),Layout_FindYCoord(layout,leftperson),Graphics_MarriageWidth(),Layout_FindHeight(layout,leftperson),0,0,flags);
+	} else {
+		flags.moveable=0;
+		Layout_AddTransient(layout,marriage,leftx,Layout_FindYCoord(layout,leftperson),rightx-leftx,Layout_FindHeight(layout,leftperson),0,0,flags);
+	}
 }
 
 void TreeLayout_AddMarriage(layout *layout,elementptr marriage)
@@ -357,12 +362,12 @@ static void Layout_TraverseDescendentTree(layout *layout,elementptr person,int d
 	if (generation>0) Layout_TraverseDescendentTree(layout,Database_GetSiblingRtoL(person),2,generation,fn);
 }*/
 
-void Layout_LayoutLines(layout *layout)
+void Layout_LayoutLines(layout *layout,Desk_bool layoutseparatemarriages)
 {
 	int i=0;
 	AJWLib_Assert(layout!=NULL);
 	Layout_RemoveTransients(layout);
-	if (!Config_SeparateMarriages()) {
+	if (!Config_SeparateMarriages() || layoutseparatemarriages) {
 		do {
 			int FIXME; /*FIXME: assumes everyone is on the layout*/
 			elementptr marriage=Database_GetLinkedMarriages(&i);
@@ -437,7 +442,7 @@ layout *Layout_LayoutNormal(void)
 			Layout_TraverseNormalTree(layout,person,0,Layout_Plot);
 		} while (index);
 		/* Sort out marriages and lines*/
-		Layout_LayoutLines(layout);
+		Layout_LayoutLines(layout,Desk_TRUE);
 		Layout_LayoutTitle(layout);
 		/* Deselect everyone*/
 		Database_UnsetAllFlags();

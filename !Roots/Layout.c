@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.59 2000/11/14 22:56:53 AJW Exp $
+	$Id: Layout.c,v 1.60 2000/11/21 20:04:21 AJW Exp $
 
 */
 
@@ -358,7 +358,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.59 2000/11/14 22:56:53 AJW Exp $
+	$Id: Layout.c,v 1.60 2000/11/21 20:04:21 AJW Exp $
 
 */
 
@@ -639,7 +639,7 @@ static void Layout_MoveDragEnd(void *ref)
 			if (Layout_GetSelect(dragdata->windowdata->layout->person[i].element)) TreeLayout_CheckForUnlink(dragdata->windowdata->layout,dragdata->windowdata->layout->person[i].element);
 		}
 	}
-	Layout_LayoutLines(dragdata->windowdata->layout);
+	Layout_LayoutLines(dragdata->windowdata->layout,Desk_FALSE);
 	Layout_LayoutTitle(dragdata->windowdata->layout);
 	Layout_ResizeWindow(dragdata->windowdata);
 	Desk_Window_ForceWholeRedraw(dragdata->windowdata->handle);
