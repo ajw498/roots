@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.55 2000/11/12 20:25:15 AJW Exp $
+	$Id: Layout.c,v 1.56 2000/11/13 00:07:13 AJW Exp $
 
 */
 
@@ -316,7 +316,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.55 2000/11/12 20:25:15 AJW Exp $
+	$Id: Layout.c,v 1.56 2000/11/13 00:07:13 AJW Exp $
 
 */
 
@@ -570,13 +570,6 @@ static void Layout_PlotDragBox(dragdata *dragdata)
 	}
 }
 
-static void Layout_RemoveAllInvalidElements(layout *layout)
-{
-	int i;
-
-	for (i=0;i<layout->numpeople;i++) if (!Database_ElementValid(layout->person[i].element)) Layout_RemoveElement(layout,layout->person[i].element);
-}
-
 static void Layout_MoveDragEnd(void *ref)
 /*User has finished a move drag*/
 {
@@ -594,11 +587,16 @@ static void Layout_MoveDragEnd(void *ref)
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
 	mousey=Layout_NearestGeneration(((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale);
-	/*Check to see if we are unlinking people*/
-	if (mousey!=dragdata->origmousey) Database_UnlinkSelected(dragdata->windowdata->layout);
-	Layout_RemoveAllInvalidElements(dragdata->windowdata->layout);
 	/*Move all people/marriages that were selected*/
 	Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex,mousey-dragdata->origmousey);
+	/*Check to see if any people might need unlinking*/
+	if (mousey!=dragdata->origmousey) {
+		int i;
+
+		for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
+			if (Layout_GetSelect(dragdata->windowdata->layout->person[i].element)) TreeLayout_CheckForUnlink(dragdata->windowdata->layout,dragdata->windowdata->layout->person[i].element);
+		}
+	}
 	Layout_LayoutLines(dragdata->windowdata->layout);
 	Layout_LayoutTitle(dragdata->windowdata->layout);
 	Layout_ResizeWindow(dragdata->windowdata);
