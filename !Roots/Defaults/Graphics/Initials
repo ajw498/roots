@@ -25,7 +25,7 @@ titleheight=100;   -- Height of the title
 
 
 -- Constants (Roots does not place any meaning on these)
-linewidth=2;
+linewidth=0;
 
 
 -- This function gets called by Roots whenever it needs to redraw a marriage

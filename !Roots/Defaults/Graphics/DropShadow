@@ -25,7 +25,7 @@ titleheight=100;   -- Height of the title
 
 
 -- Constants (Roots does not place any meaning on these)
-linewidth=2;
+linewidth=0;
 
 
 -- This function gets called by Roots whenever it needs to redraw a marriage
@@ -40,7 +40,7 @@ end
 -- This function gets called by Roots whenever it needs to redraw a person
 function RedrawPerson(person,x,y,width,height)
 -- Draw drop shadow
-PlotRectangleFilled(x+10,y-10,width,height,black);
+for i=15,0,-1 do PlotRectangleFilled(x+i,y-i,width,height,Colour(140+i*10,140+i*10,140+i*10)); end
 -- Draw white box
 PlotRectangleFilled(x,y,width,height,white);
 -- Draw the border

@@ -1,4 +1,3 @@
--- Default graphics style
 
 -- Let Roots know what fonts will want to use
 font=ClaimFont("Trinity.Medium",12);
@@ -32,28 +31,46 @@ linewidth=0;
 -- This function gets called by Roots whenever it needs to redraw a marriage
 function RedrawMarriage(marriage,x,y,width,height)
 -- Draw the two horizontal lines
-PlotLine(x,y+30,x+width,y+30,0,black);
-PlotLine(x,y+70,x+width,y+70,0,black);
+PlotLine(x,y+30,x+width,y+30,linewidth,black);
+PlotLine(x,y+70,x+width,y+70,linewidth,black);
 -- Draw the vertical line if there are any children of the marriage
 if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
 end
 
 -- This function gets called by Roots whenever it needs to redraw a person
 function RedrawPerson(person,x,y,width,height)
--- Draw the background (this must be done first otherwise it will overwrite what has already been drawn)
-PlotRectangleFilled(x,y,width,height,grey);
 -- Draw the border
 PlotRectangle(x,y,width,height,linewidth,black);
 -- Work out what the full name of the person is
+forename=GetField(person,"forename");
+middlenames=GetField(person,"middlenames");
+surname=GetField(person,"surname");
 name="";
-text=GetField(person,"forename");
-if strlen(text)>0 then name=name..text.." " end
-text=GetField(person,"middlenames");
-if strlen(text)>0 then name=name..text.." " end
-name=name..GetField(person,"surname");
+if strlen(forename)>0 then name=forename.." " end
+if strlen(middlenames)>0 then name=name..middlenames.." " end
+name=name..surname;
 tx=GetTextDimensions(font,name);
+if tx>width then
+	name="";
+	if strlen(forename)>0 then name=forename.." " end
+	if strlen(middlenames)>0 then name=name..strsub(middlenames,1,1).." " end
+	name=name..surname;
+	tx=GetTextDimensions(font,name);
+	if tx>width then
+		name="";
+		if strlen(forename)>0 then name=strsub(forename,1,1).." " end
+		if strlen(middlenames)>0 then name=name..strsub(middlenames,1,1).." " end
+		name=name..surname;
+		tx=GetTextDimensions(font,name);
+	end
+end
+-- Work out what colour to use, depending on the sex of the person
+colour=green;
+sex=GetField(person,"sex");
+if sex=="M" then colour=blue end
+if sex=="F" then colour=red end
 -- Draw the name, centred horizontally
-PlotText(x+(width-tx)/2,y+50,font,grey,red,name);
+PlotText(x+(width-tx)/2,y+50,font,white,colour,name);
 -- Draw the vertical line to connect to the sibling line if the person has parents
 if GetParentsMarriage(person) then PlotLine(x+width/2,y+height,x+width/2,y+height+50,linewidth,black) end
 end
