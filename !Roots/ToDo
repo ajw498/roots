@@ -7,24 +7,10 @@ name completion
 Keyboard shortcuts
 Searching for a person on the tree
 Cut and paste of people
-Allow a child to be more than one generation below their parents (to allow cousins of different generations to marry)
 Editing a person details on the tree itself rather than opening a separate window
 Support CONT GEDCOM tag
 Allow fields to be larger (Only 40 characters per field allowed at present)
-Things mentioned earlier in this email
 
-3. The moving people and joining marriages and children is superb, BUT
-4. The de-linking (graphically) of marriages is not so good - could the
-lines linking marriages be extended automatically so that they're always
-linking the partners?
-5. Adding someone's middle name can easily extend outside a box. Could
-there be an option to exclude middle names/turn them into initials
-only/mark them in some way so that only part is shown on the tree.
-NB Someone may be John Thomas Bloggs (and that be shown in full in the Edit
-Person window but be known as John Bloggs or John T Bloggs or even J Thomas
-Bloggs and the appropriate one of these should be shown on the tree.
-6. Error - I came across OS error 486, 'SWI &80140 not known when trying to
-print without loading the printer drivers
 7. Possible extensions
 Would it be possible to allow children from an individual without a
 marriage or any other link? If so then there would be little modification
@@ -39,9 +25,6 @@ display of page boundaries
 non zero line widths to keep fontfix happy
 
 third marriages go under the second spouse and the third marriage child can be coming from the middle of the marriage which is in the wrong place
-marriages should have lower prioity than people when being selected
-
-dragging a selectbox when the pointer is over the title does not work
 
 (option) dont create extra spouses when marriage doesn't have both spouses
 

@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.54 2000/11/21 20:33:39 AJW Exp $
+	$Id: TreeLayout.c,v 1.55 2000/11/21 21:16:47 AJW Exp $
 
 */
 
@@ -198,14 +198,15 @@ static void Layout_PlotMarriage(layout *layout,elementptr marriage)
 	}
 	leftx+=Layout_FindWidth(layout,leftperson);
 	flags.editable=1;
-	flags.linkable=1;
+	flags.linkable=0;
 	flags.snaptogrid=1;
-	flags.selectable=1;
 	if (Config_SeparateMarriages()) {
 		flags.moveable=1;
+		flags.selectable=1;
 		Layout_AddElement(layout,marriage,rightx-Graphics_MarriageWidth(),Layout_FindYCoord(layout,leftperson),Graphics_MarriageWidth(),Layout_FindHeight(layout,leftperson),0,0,flags);
 	} else {
 		flags.moveable=0;
+		flags.selectable=0;
 		if (Config_JoinMarriages()) {
 			Layout_AddTransient(layout,marriage,rightx-Graphics_MarriageWidth(),Layout_FindYCoord(layout,leftperson),Graphics_MarriageWidth(),Layout_FindHeight(layout,leftperson),0,0,flags);
 		} else {
