@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.12  1999/10/24 18:15:39  AJW
+	Added extra field types
+
 	Revision 1.11  1999/10/24 13:16:32  AJW
 	Disabled dragging on all but normal windows
 
@@ -141,7 +144,6 @@ typedef struct windowdata {
 	elementptr person;
 	int generations;
 	layout *layout;
-	/*Anything else?*/
 } windowdata;
 
 typedef struct dragdata {
@@ -211,29 +213,56 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 			switch (i) {
 			/*A centered field?*/
 				case personfieldtype_SURNAME:
-					strcpy(fieldtext,Database_GetPersonData(person)->surname);
+					strcat(fieldtext,Database_GetPersonData(person)->surname);
 					break;
 				case personfieldtype_FORENAME:
-					strcpy(fieldtext,Database_GetPersonData(person)->forename);
+					strcat(fieldtext,Database_GetPersonData(person)->forename);
 					break;
 				case personfieldtype_MIDDLENAMES:
-					strcpy(fieldtext,Database_GetPersonData(person)->middlenames);
+					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
 					break;
+				case personfieldtype_TITLEDNAME:
+					strcat(fieldtext,Database_GetPersonData(person)->title);
 				case personfieldtype_NAME:
-					strcpy(fieldtext,Database_GetPersonData(person)->forename);
+					strcat(fieldtext,Database_GetPersonData(person)->forename);
 					strcat(fieldtext," ");
 					strcat(fieldtext,Database_GetPersonData(person)->surname);
 					break;
+				case personfieldtype_TITLEDFULLNAME:
+					strcat(fieldtext,Database_GetPersonData(person)->title);
 				case personfieldtype_FULLNAME:
-					strcpy(fieldtext,Database_GetPersonData(person)->forename);
+					strcat(fieldtext,Database_GetPersonData(person)->forename);
 					strcat(fieldtext," ");
 					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
 					strcat(fieldtext," ");
 					strcat(fieldtext,Database_GetPersonData(person)->surname);
 					break;
 				case personfieldtype_TITLE:
-					strcpy(fieldtext,Database_GetPersonData(person)->title);
+					strcat(fieldtext,Database_GetPersonData(person)->title);
 					break;
+/*				case personfieldtype_SEX:
+					strcat(fieldtext,Database_GetPersonData(person)->sex);
+					break;
+				case personfieldtype_DOB:
+					strcat(fieldtext,Database_GetPersonData(person)->dob);
+					break;
+				case personfieldtype_DOD:
+					strcat(fieldtext,Database_GetPersonData(person)->dod);
+					break;
+*/				case personfieldtype_BIRTHPLACE:
+					strcat(fieldtext,Database_GetPersonData(person)->birthplace);
+					break;
+				case personfieldtype_USER1:
+					strcat(fieldtext,Database_GetPersonData(person)->user[0]);
+					break;
+				case personfieldtype_USER2:
+					strcat(fieldtext,Database_GetPersonData(person)->user[1]);
+					break;
+				case personfieldtype_USER3:
+					strcat(fieldtext,Database_GetPersonData(person)->user[2]);
+					break;
+				default:
+					strcat(fieldtext,"Unimplemented");
 			}
 			Desk_Font_SetFont(graphicsdata.personfields[i].textproperties.font->handle);
 			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,14));
@@ -278,8 +307,13 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 			char fieldtext[256]=""; /*what is max field length?*/
 			switch (i) {
 				case marriagefieldtype_PLACE:
-					strcpy(fieldtext,Database_GetMarriageData(marriage)->place);
+					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
 					break;
+/*				case marriagefieldtype_DATE:
+					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
+					break;
+*/				default:
+					strcat(fieldtext,"Unimplemented");
 			}
 			Desk_Font_SetFont(graphicsdata.marriagefields[i].textproperties.font->handle);
 			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,14));
