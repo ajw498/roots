@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.34 2000/06/29 20:39:32 AJW Exp $
+	$Id: TreeLayout.c,v 1.35 2000/07/22 21:33:19 AJW Exp $
 
 */
 
@@ -74,8 +74,12 @@ int Layout_NearestGeneration(int y)
 	int h=(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
 	neg=y<0 ? -1 : 1;
 	y*=neg;
+	if (neg>0) {
+		if (y%h>Graphics_GapHeightAbove()+Graphics_PersonHeight()) y+=h;
+	} else {
+		if (y%h>Graphics_GapHeightBelow()) y+=h;
+	}
 	y-=y%h;
-	y+=Graphics_GapHeightBelow()+Graphics_PersonHeight()/2;
 	return y*neg;
 }
 
