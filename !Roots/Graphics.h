@@ -1,5 +1,5 @@
-#ifndef GRAPHICSCONFIG_H
-#define GRAPHICSCONFIG_H
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
 
 #include "Desk.Font2.h"
 
