@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.58 2000/11/19 20:53:03 AJW Exp $
+	$Id: Graphics.c,v 1.59 2000/11/21 23:52:28 AJW Exp $
 
 */
 
@@ -251,7 +251,7 @@ static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
 			Desk_Msgs_Report(1,"Error.SynT:Syntax error %d",linenum);
 		} else {
 			graphicsdata.titleheight=Graphics_ConvertToOS(values[1]);
-			graphicsdata.title.size=(int)strtol(values[2],NULL,10);
+			graphicsdata.title.size=16*(int)strtol(values[2],NULL,10);
 			graphicsdata.title.colour=Graphics_RGBToPalette(values[3]);
 			graphicsdata.title.bgcolour=Graphics_RGBToPalette(values[4]);
 			strcpy(graphicsdata.title.fontname,values[5]);
@@ -338,7 +338,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.bgcolour=Graphics_RGBToPalette(values[5]);
 				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.text,values[7]);
-				size=(int)strtol(values[3],NULL,10);
+				size=16*(int)strtol(values[3],NULL,10);
 				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.fontname,values[6]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.size=size;
 				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
@@ -382,7 +382,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 					graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.y=Graphics_ConvertToOS(values[2]);
 					graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.colour=Graphics_RGBToPalette(values[4]);
 					graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
-					size=(int)strtol(values[3],NULL,10);
+					size=16*(int)strtol(values[3],NULL,10);
 					strcpy(graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.fontname,values[6]);
 					graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.size=size;
 					graphicsdata.personfields[graphicsdata.numpersonfields-1].sex=sex;
@@ -471,7 +471,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.bgcolour=Graphics_RGBToPalette(values[5]);
 				strcpy(graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.text,values[7]);
-				size=(int)strtol(values[3],NULL,10);
+				size=16*(int)strtol(values[3],NULL,10);
 			}
 			break;
 		case graphictype_CENTREDFIELD:
@@ -500,7 +500,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 					graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.y=Graphics_ConvertToOS(values[2]);
 					graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.colour=Graphics_RGBToPalette(values[4]);
 					graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
-					size=(int)strtol(values[3],NULL,10);
+					size=16*(int)strtol(values[3],NULL,10);
 					strcpy(graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.fontname,values[6]);
 					graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.size=size;
 				}
@@ -594,26 +594,26 @@ static void Graphics_ClaimFonts(void)
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	graphicsdata.title.font=NULL;
-	Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.title.font),graphicsdata.title.fontname,16*graphicsdata.title.size,16*graphicsdata.title.size));
+	Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.title.font),graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.size));
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
 			graphicsdata.person[i].details.textlabel.properties.font=NULL;
-			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,16*graphicsdata.person[i].details.textlabel.properties.size,16*graphicsdata.person[i].details.textlabel.properties.size));
+			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.size));
 		}
 	}
 	for (i=0;i<graphicsdata.numpersonfields;i++) {
 		graphicsdata.personfields[i].textproperties.font=NULL;
-		Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,16*graphicsdata.personfields[i].textproperties.size,16*graphicsdata.personfields[i].textproperties.size));
+		Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.size));
 	}
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
 			graphicsdata.marriage[i].details.textlabel.properties.font=NULL;
-			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriage[i].details.textlabel.properties.font),graphicsdata.marriage[i].details.textlabel.properties.fontname,16*graphicsdata.marriage[i].details.textlabel.properties.size,16*graphicsdata.marriage[i].details.textlabel.properties.size));
+			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriage[i].details.textlabel.properties.font),graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.size));
 		}
 	}
 	for (i=0;i<graphicsdata.nummarriagefields;i++) {
 		graphicsdata.marriagefields[i].textproperties.font=NULL;
-		Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,16*graphicsdata.marriagefields[i].textproperties.size,16*graphicsdata.marriagefields[i].textproperties.size));
+		Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.size));
 	}
 }
 
@@ -652,7 +652,7 @@ static void Graphics_DefaultStyle(void)
 	graphicsdata.siblinglinethickness=0;
 	graphicsdata.siblinglinecolour=0;
 	graphicsdata.titleheight=40;
-	graphicsdata.title.size=24;
+	graphicsdata.title.size=24*16;
 	graphicsdata.title.colour=0;
 	graphicsdata.title.bgcolour=0xFFFFFF00;
 	strcpy(graphicsdata.title.fontname,"Homerton.Bold");
@@ -1442,7 +1442,7 @@ static void Graphics_PlotTitle(int scale,int originx,int originy,int x,int y,int
 	} else {
 		Desk_wimp_point *fontbbox;
 
-		fontbbox=AJWLib_Font_GetWidthAndHeightGiven(graphicsdata.title.fontname,16*graphicsdata.title.size,Database_GetTitle());
+		fontbbox=AJWLib_Font_GetWidthAndHeightGiven(graphicsdata.title.fontname,graphicsdata.title.size,Database_GetTitle());
 		Graphics_PlotText(scale,originx,originy,x+(width-fontbbox->x)/2,y+(height-fontbbox->y)/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
 	}
 }

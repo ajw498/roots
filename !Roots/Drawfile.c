@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.22 2000/10/16 11:44:58 AJW Exp $
+	$Id: Drawfile.c,v 1.23 2000/11/21 23:52:27 AJW Exp $
 
 */
 
@@ -118,7 +118,20 @@ void Drawfile_PlotLine(int scale,int originx,int originy,int minx,int miny,int m
 	int *object;
 	const int sizeofpath=68;
 	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	int temp;
+
 	Desk_UNUSED(scale);
+
+	if (minx>maxx) {
+		temp=minx;
+		minx=maxx;
+		maxx=temp;
+	}
+	if (miny>maxy) {
+		temp=miny;
+		miny=maxy;
+		maxy=temp;
+	}
 	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=2; /*Path object*/
@@ -223,17 +236,24 @@ static void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 
 static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
 {
-	int fontnumber=Drawfile_AddFont((char *)font);
+	int fontnumber;
 	int *object;
 	int sizeofpath=52;
 	Desk_wimp_point *bbox;
-	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	int currentsize;
+	int len;
+
 	Desk_UNUSED(scale);
 	Desk_UNUSED(handle);
-	sizeofpath+=strlen(text)+4;
+
+	len=strlen(text);
+	if (len==0) return;
+	fontnumber=Drawfile_AddFont((char *)font);
+	currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	sizeofpath+=len+4;
 	sizeofpath&=~3; /*word align the size*/
 	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
-	bbox=AJWLib_Font_GetWidthAndHeightGiven(font,size*16,text);
+	bbox=AJWLib_Font_GetWidthAndHeightGiven(font,size,text);
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=1; /*Text object*/
 	object[1]=sizeofpath;
@@ -244,8 +264,8 @@ static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int 
 	object[6]=fgcolour; /*unsigned???*/
 	object[7]=bgcolour;
 	object[8]=fontnumber;
-	object[9]=size*640; /*X size*/
-	object[10]=size*640; /*Y size*/
+	object[9]=size*40; /*X size*/
+	object[10]=size*40; /*Y size*/
 	object[11]=(originx+x)<<8;
 	object[12]=(originy+y)<<8;
 	strcpy(((char *)object)+52,text);
