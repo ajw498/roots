@@ -8,7 +8,7 @@ Sex.F:Female
 Sex.U:Unknown
 
 Title.IconBar:<Task.Name>
-Menu.IconBar:Info,Choices...,Graphics styles...,Quit
+Menu.IconBar:Info,Choices...,Edit graphics styles...,Quit
 
 Title.Sex:Sex
 Menu.Sex:<Sex.M>,<Sex.F>,<Sex.U>
