@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.33 2001/02/03 15:55:51 AJW Exp $
+	$Id: Main.c,v 1.34 2004/01/05 22:42:56 AJW Exp $
 	
 */
 
@@ -121,6 +121,8 @@ static void IconBarMenuClick(int entry, void *ref)
 			Config_Open();
 			break;
 		case iconbarmenu_GRAPHICSSTYLES:
+			EditGraphics_Open();
+			break;
 			sprintf(cmd,"Filer_OpenDir %s.%s",DEFAULTS,GRAPHICSDIR);
 			Desk_Wimp_StartTask(cmd);
 			sprintf(cmd,"Filer_OpenDir %s.%s",choiceswrite,GRAPHICSDIR);
@@ -157,7 +159,7 @@ int main(int argc,char *argv[])
 		Desk_Event_Claim(Desk_event_CLOSE,Desk_event_ANY,Desk_event_ANY,Desk_Handler_CloseWindow,NULL);
 		Desk_Event_Claim(Desk_event_OPEN,Desk_event_ANY,Desk_event_ANY,Desk_Handler_OpenWindow,NULL);
 		Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
-		Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
+		/*Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);*/
 		Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
 		Desk_Template_LoadFile("Templates");
 		quitwin=Desk_Window_Create("Quit",Desk_template_TITLEMIN);
