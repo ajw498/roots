@@ -34,6 +34,7 @@ typedef enum sextype {
 } sextype;
 
 elementptr Database_GetLinked(int *index);
+elementptr Database_GetLinkedMarriages(int *index);
 void Database_Select(elementptr person);
 void Database_DeSelect(elementptr person);
 void Database_DeSelectAll(void);

@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.29 2000/09/18 15:58:07 AJW Exp $
+	$Id: File.c,v 1.30 2000/09/20 21:26:50 AJW Exp $
 
 */
 
@@ -523,7 +523,6 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 			}
 		}
 		File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
-		AJWLib_File_fclose(file);
 		if (!prescan) {
 			Database_LinkAllChildren();
 			Database_LinkAllMarriages();
@@ -544,6 +543,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Territory_ConvertStandardDateAndTime,-1,fivebytedate,filedate,sizeof(filedate)));
 		}
 		Desk_Hourglass_Off();
+		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
 		Desk_Hourglass_Off();
 		AJWLib_Error2_ReportMsgs("Error.Load:%s");
@@ -552,7 +552,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 		Windows_CloseAllWindows();
 		Database_Remove();
 	} Desk_Error2_EndCatch
-	free(idarray);
+	if (idarray) free(idarray);
 	idarray=NULL;
 	idarraysize=0;
 }

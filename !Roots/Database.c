@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.39 2000/09/18 15:58:05 AJW Exp $
+	$Id: Database.c,v 1.40 2000/09/20 21:26:47 AJW Exp $
 
 */
 
@@ -127,6 +127,18 @@ elementptr Database_GetLinked(int *index)
 {
 	while ((++(*index))<database[0].element.file.numberofelements) {
 		if (database[*index].type==element_PERSON) {
+			return *index;
+		}
+	}
+	*index=0;
+	return none;
+}
+
+elementptr Database_GetLinkedMarriages(int *index)
+/* Get the next marriage in the database*/
+{
+	while ((++(*index))<database[0].element.file.numberofelements) {
+		if (database[*index].type==element_MARRIAGE) {
 			return *index;
 		}
 	}
@@ -306,20 +318,18 @@ void Database_LinkAllMarriages(void)
 				/* Make sure one (and only one) of the pricipal or spouse point to this person*/
 				if (database[marriage].element.marriage.principal==i) {
 					if (database[marriage].element.marriage.spouse==i) database[marriage].element.marriage.spouse=none; /*Sort it out on next pass*/
-					break;
-				}
-				if (database[marriage].element.marriage.spouse==i) {
+				} else if (database[marriage].element.marriage.spouse==i) {
 					if (database[marriage].element.marriage.principal==i) database[marriage].element.marriage.principal=none; /*Sort it out on next pass*/
-					break;
-				}
-				/* Neither points to this person, so if either are null then set them to this person*/
-				if (database[marriage].element.marriage.principal==none) {
-					database[marriage].element.marriage.principal=i;
-				} else if (database[marriage].element.marriage.spouse==none) {
-					database[marriage].element.marriage.spouse=i;
 				} else {
-					/* Remove link to the marriage, as it must be wrong*/
-					database[i].element.person.marriage=none;
+					/* Neither points to this person, so if either are null then set them to this person*/
+					if (database[marriage].element.marriage.principal==none) {
+						database[marriage].element.marriage.principal=i;
+					} else if (database[marriage].element.marriage.spouse==none) {
+						database[marriage].element.marriage.spouse=i;
+					} else {
+						/* Remove link to the marriage, as it must be wrong*/
+						database[i].element.person.marriage=none;
+					}
 				}
 			}
 		}
@@ -327,8 +337,32 @@ void Database_LinkAllMarriages(void)
 	/* Now go though each marriage and sort out all pointers to null people*/
 	for (i=1;i<database[0].element.file.numberofelements;i++) {
 		if (database[i].type==element_MARRIAGE) {
-			if (database[i].element.marriage.principal==none) database[i].element.marriage.principal=Database_Add();
-			if (database[i].element.marriage.spouse==none) database[i].element.marriage.spouse=Database_Add();
+			if (database[i].element.marriage.principal==none) {
+				elementptr newperson;
+
+				newperson=Database_Add();
+				database[i].element.marriage.principal=newperson;
+				database[newperson].element.person.marriage=i;
+			} else {
+				/* Check that the principal does point to a marriage (needn't be this one)*/
+				elementptr person;
+
+				person=database[i].element.marriage.principal;
+				if (database[person].element.person.marriage==none) database[person].element.person.marriage=i;
+			}
+			if (database[i].element.marriage.spouse==none) {
+				elementptr newperson;
+
+				newperson=Database_Add();
+				database[i].element.marriage.spouse=newperson;
+				database[newperson].element.person.marriage=i;
+			} else {
+				/* Check that the spouse does point to a marriage (needn't be this one)*/
+				elementptr person;
+
+				person=database[i].element.marriage.spouse;
+				if (database[person].element.person.marriage==none) database[person].element.person.marriage=i;
+			}
 		}
 	}
 }
