@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.16 2000/02/25 23:33:01 uid1 Exp $
+	$Id: Graphics.c,v 1.17 2000/02/26 18:38:35 uid1 Exp $
 
 */
 
@@ -54,6 +54,8 @@
 
 #define GRAPHICSDIR "<Roots$Dir>.Graphic"
 
+#define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7.087))
+
 static graphics graphicsdata;
 static char currentstyle[256]="";
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
@@ -68,15 +70,15 @@ static unsigned int Graphics_RGBToPalette(char *str)
 void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 {
 	if (numvalues!=2) Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
-	if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=(int)strtol(values[1],NULL,10); /*Use a messages file?*/
-	else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=(int)strtol(values[1],NULL,10);
-	else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=(int)strtol(values[1],NULL,10);
+	if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
 }
 
 void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
@@ -84,7 +86,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 	graphictype graphictype=graphictype_INVALID;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE; /*Use a messages file?*/
+	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE;
 	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
 	else if (!strcmp(values[0],"box")) graphictype=graphictype_RECTANGLE;
 	else if (!strcmp(values[0],"filledbox")) graphictype=graphictype_FILLEDRECTANGLE;
@@ -102,11 +104,11 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype;
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=(int)strtol(values[1],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=(int)strtol(values[2],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=(int)strtol(values[3],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=(int)strtol(values[4],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 			}
 			break;
@@ -117,11 +119,11 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype_RECTANGLE;
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=(int)strtol(values[1],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=(int)strtol(values[2],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=(int)strtol(values[3],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=(int)strtol(values[4],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 			}
 			break;
@@ -132,10 +134,10 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype_FILLEDRECTANGLE;
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=(int)strtol(values[1],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=(int)strtol(values[2],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=(int)strtol(values[3],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=(int)strtol(values[4],NULL,10);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[5]);
 			}
 			break;
@@ -148,8 +150,8 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype;
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.x=(int)strtol(values[1],NULL,10);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.y=(int)strtol(values[2],NULL,10);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.x=Graphics_ConvertToOS(values[1]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.y=Graphics_ConvertToOS(values[2]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.bgcolour=Graphics_RGBToPalette(values[5]);
 				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.text,values[7]);
@@ -187,8 +189,8 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				/*Error2 error?*/
 				graphicsdata.personfields[field].plot=Desk_TRUE;
 				graphicsdata.personfields[field].type=graphictype;
-				graphicsdata.personfields[field].textproperties.x=(int)strtol(values[1],NULL,10);
-				graphicsdata.personfields[field].textproperties.y=(int)strtol(values[2],NULL,10);
+				graphicsdata.personfields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
+				graphicsdata.personfields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
 				graphicsdata.personfields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.personfields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
@@ -202,7 +204,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype;
-	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE; /*Use a messages file?*/
+	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE;
 	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
 	else if (!strcmp(values[0],"siblingline")) graphictype=graphictype_SIBLINGLINE;
 	else if (!strcmp(values[0],"box")) graphictype=graphictype_RECTANGLE;
@@ -215,7 +217,7 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 			if (numvalues!=3) {
 				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
 			} else {
-				graphicsdata.siblinglinethickness=(int)strtol(values[1],NULL,10);
+				graphicsdata.siblinglinethickness=Graphics_ConvertToOS(values[1]);
 				graphicsdata.siblinglinecolour=Graphics_RGBToPalette(values[2]);
 			}
 			break;
@@ -227,11 +229,11 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype;
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=(int)strtol(values[1],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=(int)strtol(values[2],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=(int)strtol(values[3],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=(int)strtol(values[4],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 			}
 			break;
@@ -242,11 +244,11 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_RECTANGLE;
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=(int)strtol(values[1],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=(int)strtol(values[2],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=(int)strtol(values[3],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=(int)strtol(values[4],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 			}
 			break;
@@ -257,10 +259,10 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_FILLEDRECTANGLE;
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=(int)strtol(values[1],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=(int)strtol(values[2],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=(int)strtol(values[3],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=(int)strtol(values[4],NULL,10);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[5]);
 			}
 			break;
@@ -272,8 +274,8 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_TEXTLABEL;
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.x=(int)strtol(values[1],NULL,10);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.y=(int)strtol(values[2],NULL,10);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.x=Graphics_ConvertToOS(values[1]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.y=Graphics_ConvertToOS(values[2]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.bgcolour=Graphics_RGBToPalette(values[5]);
 				strcpy(graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.text,values[7]);
@@ -293,8 +295,8 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				else if (!strcmp(values[7],"date")) field=marriagefieldtype_DATE;
 				else Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum); /*what is field?*/
 				graphicsdata.marriagefields[field].plot=Desk_TRUE;
-				graphicsdata.marriagefields[field].textproperties.x=(int)strtol(values[1],NULL,10);
-				graphicsdata.marriagefields[field].textproperties.y=(int)strtol(values[2],NULL,10);
+				graphicsdata.marriagefields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
+				graphicsdata.marriagefields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
 				graphicsdata.marriagefields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.marriagefields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
@@ -311,6 +313,7 @@ void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *values[
 	char fullfilename[256];
 	int ch=0,line=0;
 	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,style,filename);
+	/*Check that dir actually exists*/
 	file=AJWLib_File_fopen(fullfilename,"r");
 	while (ch!=EOF) {
 		char str[256];
@@ -561,7 +564,7 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_CENTREDTEXTLABEL:
-/*Won't work for drawfile*/				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
+				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
 			case graphictype_TEXTLABEL:
 				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
 				break;
@@ -599,13 +602,13 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 /*				case personfieldtype_SEX:
 					strcat(fieldtext,Database_GetPersonData(person)->sex);
 					break;
-				case personfieldtype_DOB:
+*/				case personfieldtype_DOB:
 					strcat(fieldtext,Database_GetPersonData(person)->dob);
 					break;
 				case personfieldtype_DOD:
 					strcat(fieldtext,Database_GetPersonData(person)->dod);
 					break;
-*/				case personfieldtype_BIRTHPLACE:
+				case personfieldtype_BIRTHPLACE:
 					strcat(fieldtext,Database_GetPersonData(person)->placeofbirth);
 					break;
 				case personfieldtype_USER1:
@@ -620,7 +623,7 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 				default:
 					strcat(fieldtext,"Unimplemented");
 			}
-/*Doesn't work for drawfile*/			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
+			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
 			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
 		}
 	}
@@ -658,10 +661,13 @@ void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,element
 				case marriagefieldtype_PLACE:
 					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
 					break;
-/*				case marriagefieldtype_DATE:
-					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
+				case marriagefieldtype_DATE:
+					strcat(fieldtext,Database_GetMarriageData(marriage)->date);
 					break;
-*/				default:
+				case marriagefieldtype_DIVORCE:
+					strcat(fieldtext,Database_GetMarriageData(marriage)->divorce);
+					break;
+				default:
 					strcat(fieldtext,"Unimplemented");
 			}
 			Graphics_PlotText(scale,originx,originy,x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
