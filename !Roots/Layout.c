@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.42 2000/10/13 19:25:49 AJW Exp $
+	$Id: Layout.c,v 1.43 2000/10/14 15:55:27 AJW Exp $
 
 */
 
@@ -205,6 +205,21 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 	return box;
 }
 
+layout *Layout_New(void)
+/* Create a new empty layout*/
+{
+	layout *layout;
+
+	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
+	layout->numpeople=0;
+	layout->nummarriages=0;
+	layout->numchildren=0;
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
+	return layout;
+}
+
 void Layout_Free(layout *layout)
 {
 	AJWLib_AssertWarning(layout!=NULL);
@@ -218,7 +233,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.42 2000/10/13 19:25:49 AJW Exp $
+	$Id: Layout.c,v 1.43 2000/10/14 15:55:27 AJW Exp $
 
 */
 
@@ -318,21 +333,11 @@ typedef enum ptrtype {
 #define selectmenu_SIBLINGS 2
 #define selectmenu_SPOUSES 3
 
-#define MAXWINDOWS 10
 #define REDRAWOVERLAP 4
 
 #define SWI_OS_SpriteOp 0x2E
 #define SWI_Wimp_SpriteOp 0x400E9
 #define SWI_Wimp_DragBox 0x400D0
-
-typedef struct windowdata {
-	Desk_window_handle handle;
-	wintype type;
-	elementptr person;
-	int generations;
-	layout *layout;
-	int scale;
-} windowdata; /*duplicate - remove*/
 
 typedef struct dragdata {
 	elementptr person;
@@ -358,14 +363,12 @@ typedef struct mouseclickdata {
 Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref);
 
 extern Desk_sprite_area ptrsprites;
-extern windowdata windows[MAXWINDOWS];
 extern Desk_bool menusdeletedvalid;
-extern int numwindows;
-extern Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin;
-extern Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu/*,selectmenu*/,fileconfigmenu;
-extern elementptr newviewperson;
+/*extern Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin;*/
+extern Desk_menu_ptr mainmenu,/*filemenu,exportmenu,*/personmenu/*,selectmenu,fileconfigmenu*/;
+/*extern elementptr newviewperson;*/
 
-static void Windows_SetPointerShape(char *name,int num)
+static void Layout_SetPointerShape(char *name,int num)
 /* Set the pointer shape*/
 {
 	if (num==1) {
@@ -375,33 +378,23 @@ static void Windows_SetPointerShape(char *name,int num)
 	}
 }
 
-static void Windows_RedrawPerson(windowdata *windowdata,elementlayout *person)
+static void Layout_RedrawPerson(windowdata *windowdata,elementlayout *person)
 {
 	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*person->x)/100-REDRAWOVERLAP,(windowdata->scale*person->y)/100-REDRAWOVERLAP,(windowdata->scale*(person->x+Graphics_PersonWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(person->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
-static void Windows_RedrawMarriage(windowdata *windowdata,elementlayout *marriage)
+static void Layout_RedrawMarriage(windowdata *windowdata,elementlayout *marriage)
 {
 	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*marriage->x)/100-REDRAWOVERLAP,(windowdata->scale*marriage->y)/100-REDRAWOVERLAP,(windowdata->scale*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
-Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
+Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-#ifdef DEBUG
-		Desk_ColourTrans_SetGCOL(0x00000000,0,0);
-		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
-		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
-		Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
-		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
-		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
-		Desk_ColourTrans_SetGCOL(0x00FF0000,0,0);
-		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000);
-#endif
 		Graphics_Redraw(windowdata->layout,windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,&(blk.cliprect),Desk_TRUE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
@@ -415,13 +408,13 @@ void Windows_UnselectAll(windowdata *windowdata)
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (Layout_GetSelect(windowdata->layout->person[i].element)) {
 			Layout_DeSelect(windowdata->layout->person[i].element);
-			Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
+			Layout_RedrawPerson(windowdata,windowdata->layout->person+i);
 		}
 	}
 	for (i=0;i<windowdata->layout->nummarriages;i++) {
 		if (Layout_GetSelect(windowdata->layout->marriage[i].element)) {
 			Layout_DeSelect(windowdata->layout->marriage[i].element);
-			Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+i);
+			Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+i);
 		}
 	}
 }
@@ -537,13 +530,9 @@ static void Windows_DragEnd(void *ref)
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
 	dragdata *dragdata=ref;
-	int window=-1,i;
 
-	Windows_SetPointerShape("ptr_DEFAULT",1);
+	Layout_SetPointerShape("ptr_DEFAULT",1);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	/*Find destination window*/
-	for (i=0;i<MAXWINDOWS;i++) if (mouseblk.window==windows[i].handle) window=i;
-	if (window==-1) return;
 	Desk_Icon_SetCaret(mouseblk.window,-1);
 	if (dragdata->windowdata->type==wintype_NORMAL) {
 		/*We are moving people/marriages*/
@@ -584,7 +573,7 @@ static void Windows_SelectDragEnd(void *ref)
 				} else {
 					Layout_Select(dragdata->windowdata->layout->person[i].element);
 				}
-				Windows_RedrawPerson(dragdata->windowdata,dragdata->windowdata->layout->person+i);
+				Layout_RedrawPerson(dragdata->windowdata,dragdata->windowdata->layout->person+i);
 			}
 		}
 	}
@@ -596,7 +585,7 @@ static void Windows_SelectDragEnd(void *ref)
 				} else {
 					Layout_Select(dragdata->windowdata->layout->marriage[i].element);
 				}
-				Windows_RedrawMarriage(dragdata->windowdata,dragdata->windowdata->layout->marriage+i);
+				Layout_RedrawMarriage(dragdata->windowdata,dragdata->windowdata->layout->marriage+i);
 			}
 		}
 	}
@@ -649,7 +638,7 @@ static void Windows_LinkDragEnd(void *ref)
 	dragdata *dragdata=ref;
 	elementptr person,marriage;
 
-	Windows_SetPointerShape("ptr_default",1);
+	Layout_SetPointerShape("ptr_default",1);
 	Windows_LinkValid(ref,&person,&marriage);
 	if (person) {
 		Desk_Error2_Try {
@@ -775,10 +764,10 @@ static void Windows_LinkDragFn(void *ref)
 	Windows_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
 	Windows_LinkValid(ref,&person,&marriage);
 	if (person || marriage) {
-		if (dragdata->ptr!=ptr_LINK) Windows_SetPointerShape("ptr_link",2);
+		if (dragdata->ptr!=ptr_LINK) Layout_SetPointerShape("ptr_link",2);
 		dragdata->ptr=ptr_LINK;
 	} else {
-		if (dragdata->ptr!=ptr_NOLINK) Windows_SetPointerShape("ptr_nolink",2);
+		if (dragdata->ptr!=ptr_NOLINK) Layout_SetPointerShape("ptr_nolink",2);
 		dragdata->ptr=ptr_NOLINK;
 	}
 }
@@ -857,10 +846,10 @@ static void Windows_DragFn(void *ref)
 	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/dragdata->windowdata->scale;
 	mousey=((mouseblk.pos.y-(blk.openblock.screenrect.max.y-blk.openblock.scroll.y))*100)/dragdata->windowdata->scale;
 	if (Layout_NearestGeneration(mousey)!=dragdata->origmousey) {
-		if (dragdata->ptr!=ptr_UNLINK) Windows_SetPointerShape("ptr_unlink",2);
+		if (dragdata->ptr!=ptr_UNLINK) Layout_SetPointerShape("ptr_unlink",2);
 		dragdata->ptr=ptr_UNLINK;
 	} else {
-		if (dragdata->ptr!=ptr_DEFAULT) Windows_SetPointerShape("ptr_default",1);
+		if (dragdata->ptr!=ptr_DEFAULT) Layout_SetPointerShape("ptr_default",1);
 		dragdata->ptr=ptr_DEFAULT;
 	}
 	if (mousex!=dragdata->oldmousex || Layout_NearestGeneration(mousey)!=dragdata->oldmousey) {
@@ -1014,7 +1003,7 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	Windows_UnselectAll(windowdata);
 	Layout_Select(person);
 	for (i=0;i<windowdata->layout->numpeople;i++) {
-		if (windowdata->layout->person[i].element==person) Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
+		if (windowdata->layout->person[i].element==person) Layout_RedrawPerson(windowdata,windowdata->layout->person+i);
 	}
 	Desk_Wimp_DragBox(&dragblk);
 	Desk_Drag_SetHandlers(Windows_LinkDragFn,Windows_LinkDragEnd,&dragdata);
@@ -1036,12 +1025,6 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	mousedata.window=windowdata;
 	mousedata.pos.x=mousex;
 	mousedata.pos.y=mousey;
-	AJWLib_Menu_Shade(mainmenu,mainmenu_ADDPERSON);
-	AJWLib_Menu_Shade(personmenu,personmenu_EDIT);
-	AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
-	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
-	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
-	Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Person:Person"));
 	/*See if we clicked on a person*/
 	for (i=windowdata->layout->numpeople-1;i>=0;i--) {
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
@@ -1086,44 +1069,22 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		return Desk_TRUE;
 	}
     switch (windowdata->type) {
-		case wintype_ANCESTORS:
-		case wintype_DESCENDENTS:
-			/*Only menu and double clicks are relevent for these windows*/
-			if (block->data.mouse.button.data.menu) {
-				Windows_SetUpMenu();
-				switch (mousedata.type) {
-					case element_MARRIAGE:
-						Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Marriage:Marriage"));
-						/*No break*/
-					case element_PERSON:
-						AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
-						AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
-						break;
-					default:
-						break;
-				}
-				Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
-			}
-			break;
 		case wintype_NORMAL:
 			switch (block->data.mouse.button.value) {
 				case Desk_button_MENU:
-					Windows_SetUpMenu();
-					AJWLib_Menu_UnShade(mainmenu,mainmenu_ADDPERSON);
-					/*AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);*/ /*Temporary, until selected descendents etc. works again*/
 					selected=Layout_AnyoneSelected();
 					if (selected==element_NONE) {
 						switch (mousedata.type) {
 							case element_PERSON:
 								Layout_Select(mousedata.element);
-								Windows_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+								Layout_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
 								selected=element_PERSON;
 								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
 								menusdeletedvalid=Desk_TRUE;
 								break;
 							case element_MARRIAGE:
 								Layout_Select(mousedata.element);
-								Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
 								selected=element_MARRIAGE;
 								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
 								menusdeletedvalid=Desk_TRUE;
@@ -1132,30 +1093,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 								break;
 						}
 					}
-					switch (selected) {
-						case element_PERSON:
-							AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-							AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
-							AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
-							break;
-						case element_MARRIAGE:
-							AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-							AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
-							AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
-							Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Marriage:Marriage"));
-							break;
-						case element_SELECTION:
-							AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-							AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
-							Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Select:Selection"));
-							break;
-						case element_NONE:
-							AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
-							break;
-						default:
-							break;
-					}
-					Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
+					Windows_SetUpMenu(windowdata,selected,block->data.mouse.pos.x,block->data.mouse.pos.y);
 					break;
 				case Desk_button_CLICKSELECT:
 					switch (mousedata.type) {
@@ -1163,14 +1101,14 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 							if (!Layout_GetSelect(windowdata->layout->person[mousedata.layoutptr].element)) {
 								Windows_UnselectAll(windowdata);
 								Layout_Select(windowdata->layout->person[mousedata.layoutptr].element);
-								Windows_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+								Layout_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
 							}
 							break;
 						case element_MARRIAGE:
 							if (!Layout_GetSelect(windowdata->layout->marriage[mousedata.layoutptr].element)) {
 								Windows_UnselectAll(windowdata);
 								Layout_Select(windowdata->layout->marriage[mousedata.layoutptr].element);
-								Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
 							}
 							break;
 						default:
@@ -1185,7 +1123,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 							} else {
 								Layout_Select(windowdata->layout->person[mousedata.layoutptr].element);
 							}
-							Windows_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+							Layout_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
 							break;
 						case element_MARRIAGE:
 							if (Layout_GetSelect(windowdata->layout->marriage[mousedata.layoutptr].element)) {
@@ -1193,7 +1131,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 							} else {
 								Layout_Select(windowdata->layout->marriage[mousedata.layoutptr].element);
 							}
-							Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+							Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
 							break;
 						default:
 							break;
