@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.32  2000/01/13 23:31:53  AJW
+	Moved handling of Info window here from Database.c
+
 	Revision 1.31  2000/01/13 22:59:49  AJW
 	Added Graphics_Save and GetSize
 
@@ -201,6 +204,14 @@
 #define newview_CANCEL 6
 
 #define addparents_SECONDMARRIAGE 1
+
+#define info_MODIFIED 1
+#define info_TYPE 2
+#define info_FILENAME 0
+#define info_SIZE 3
+#define info_PEOPLE 4
+#define info_DATE 10
+#define info_ICON 5
 
 #define save_ICON 3
 #define save_OK 0
@@ -913,8 +924,6 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 	AJWLib_Menu_Shade(personmenu,personmenu_UNLINK);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
-	Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
-	Desk_Icon_SetText(savedrawwin,save_FILENAME,"Drawfile"); /*msgs*/
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
 			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+Graphics_PersonHeight()) {
@@ -986,10 +995,21 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 		}
 	}
 	if (block->data.mouse.button.data.menu) {
+		char buffer[10];
 		if (windowdata->type==wintype_UNLINKED) {
 			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
 			AJWLib_Menu_UnShade(personmenu,personmenu_ADD);
 		}
+		Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
+		Desk_Icon_SetText(savedrawwin,save_FILENAME,"Drawfile"); /*msgs*/
+		sprintf(buffer,"%d",Database_GetNumPeople());
+		Desk_Icon_SetText(fileinfowin,info_PEOPLE,buffer);
+		Desk_Icon_SetText(fileinfowin,info_FILENAME,File_GetFilename());
+		/*update filetype and icon*/
+		Desk_Icon_SetText(fileinfowin,info_MODIFIED,File_GetModified() ? "YES" : "NO"); /*Use messages*/
+		sprintf(buffer,"%d",File_GetSize()); /*kbytes*/
+		Desk_Icon_SetText(fileinfowin,info_SIZE,buffer);
+		Desk_Icon_SetText(fileinfowin,info_DATE,File_GetDate());
 		Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 		return Desk_TRUE;
 	}
@@ -1355,13 +1375,6 @@ Desk_bool Graphics_NewViewClick(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-Desk_bool Graphics_OpenInfo(Desk_event_pollblock *block,void *ref)
-{
-	Database_Info(block->data.message.data.menuwarn.id);
-	Desk_Wimp_CreateSubMenu((Desk_menu_ptr)block->data.message.data.menuwarn.id,block->data.message.data.menuwarn.openpos.x,block->data.message.data.menuwarn.openpos.y);
-	return Desk_TRUE;
-}
-
 void Graphics_Init(void)
 {
 	int i;
@@ -1398,7 +1411,6 @@ void Graphics_Init(void)
 	Desk_Icon_Shade(newviewwin,newview_DESCENDENTPERSON);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
-	Desk_Menu_Warn(filemenu,filemenu_INFO,Desk_TRUE,Graphics_OpenInfo,NULL);
 	savewin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);
