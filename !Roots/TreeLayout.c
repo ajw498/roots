@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.8  1999/09/29 17:51:38  AJW
+	Added Layout_AlterMarriageChildLine
+
 	Revision 1.7  1999/09/29 17:42:49  AJW
 	Added Layout_AlterChildline
 
@@ -107,6 +110,12 @@ void Layout_AlterChildline(layout *layout,elementptr person,BOOL on)
 {
 	int i;
 	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) layout->person[i].child=on;
+}
+
+void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,BOOL on)
+{
+	int i;
+	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) layout->marriage[i].childline=on;
 }
 
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
