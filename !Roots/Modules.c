@@ -3,7 +3,7 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.7 2000/02/20 19:45:21 uid1 Exp $
+	$Id: Modules.c,v 1.8 2000/02/21 23:58:42 uid1 Exp $
 
 */
 
@@ -21,7 +21,6 @@ void Modules_Init(void)
 {
 	Database_Init();
 	Windows_Init();
-	Graphics_Init();
 }
 
 void Modules_ChangedStructure(void)

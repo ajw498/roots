@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.39 2000/02/20 23:07:08 uid1 Exp $
+	$Id: Windows.c,v 1.40 2000/02/21 23:58:43 uid1 Exp $
 
 */
 
@@ -936,7 +936,7 @@ Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata
 					Desk_Window_Delete(windows[i].handle);
 					windows[i].handle=0;
 				}
-				Database_Remove();
+				File_Remove();
 			} else {
 				Desk_Window_Delete(windowdata->handle);
 				windowdata->handle=0;

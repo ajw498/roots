@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.11 2000/02/20 23:03:12 uid1 Exp $
+	$Id: Main.c,v 1.12 2000/02/21 23:58:36 uid1 Exp $
 	
 */
 
@@ -70,12 +70,7 @@ Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 {
 	if (block->data.mouse.button.data.select==1) {
-		if (!Windows_BringToFront()) {
-			File_New();
-			Windows_OpenWindow(wintype_UNLINKED,none,0);
-			Windows_OpenWindow(wintype_NORMAL,none,0);
-			Windows_LayoutNormal(NULL);
-		}
+		if (!Windows_BringToFront()) File_New();
 		return Desk_TRUE;
 	}
 #if DEBUG
