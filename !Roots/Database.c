@@ -3,6 +3,10 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.12  2000/01/13 23:33:02  AJW
+	Added GetNumPeople and GetSize
+	Moved InfoWin handling to Graphics.c
+
 	Revision 1.11  2000/01/13 17:52:00  AJW
 	Moved modified flag into File.c
 
@@ -105,14 +109,6 @@
 #define titlemenu_Miss 2
 #define titlemenu_Ms 3
 #define titlemenu_Dr 4
-
-#define infoicon_MODIFIED 1
-#define infoicon_TYPE 2
-#define infoicon_FILENAME 0
-#define infoicon_SIZE 3
-#define infoicon_PEOPLE 4
-#define infoicon_DATE 10
-#define infoicon_ICON 5
 
 static element *database;
 static elementptr editingperson=none,editingmarriage=none;
@@ -638,15 +634,9 @@ void Database_TitleMenuClick(int entry,void *ref)
 	Desk_Icon_SetText(editpersonwin,editpersonicon_TITLE,Desk_Menu_GetText(titlemenu,entry));
 }
 
-void Database_Info(Desk_window_handle infowin)
+int Database_GetNumPeople(void)
 {
-	char people[10];
-	sprintf(people,"%d",numpeople);
-	Desk_Icon_SetText(infowin,infoicon_PEOPLE,people);
-	Desk_Icon_SetText(infowin,infoicon_FILENAME,database[0].file.filetitle);
-	Desk_Icon_SetText(infowin,infoicon_MODIFIED,1 ? "YES" : "NO"); /*Use messages*/ /*Put in File.c*/
-/*	Desk_Icon_SetText(infowin,infoicon_SIZE,calc size);
-	Desk_Icon_SetText(infowin,infoicon_DATE,calc date);*/
+	return numpeople;
 }
 
 char *Database_GetTitle(void)
@@ -657,6 +647,11 @@ char *Database_GetTitle(void)
 char *Database_GetDescription(void)
 {
 	return database[0].file.filedescription;
+}
+
+int Database_GetSize(void)
+{
+	return database[0].file.numberofelements*sizeof(element);
 }
 
 void Database_Save(FILE *file)
