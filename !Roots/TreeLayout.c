@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.21 2000/02/20 23:03:17 uid1 Exp $
+	$Id: TreeLayout.c,v 1.22 2000/02/26 00:05:45 uid1 Exp $
 
 */
 
@@ -666,6 +666,7 @@ int Layout_GetSize(layout *layout)
 {
 	int size=0;
 	if (layout!=NULL) {
+		size+=sizeof(tag)+4*sizeof(int);
 		size+=layout->numpeople*sizeof(personlayout);
 		size+=layout->nummarriages*sizeof(marriagelayout);
 		size+=layout->numchildren*sizeof(childlinelayout);
@@ -679,7 +680,7 @@ void Layout_Save(layout *layout,FILE *file)
 	int size;
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(file!=NULL);
-	size=Layout_GetSize(layout)+sizeof(tag)+4*sizeof(int);
+	size=Layout_GetSize(layout);
 	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
 	AJWLib_File_fwrite(&size,sizeof(int),1,file);
 	AJWLib_File_fwrite(&(layout->numpeople),sizeof(layout->numpeople),1,file);

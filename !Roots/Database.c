@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.15 2000/02/20 23:03:13 uid1 Exp $
+	$Id: Database.c,v 1.16 2000/02/26 00:05:43 uid1 Exp $
 
 */
 
@@ -659,7 +659,7 @@ char *Database_GetDescription(void)
 
 int Database_GetSize(void)
 {
-	if (database) return database[0].file.numberofelements*sizeof(element);
+	if (database) return sizeof(tag)+sizeof(int)+database[0].file.numberofelements*sizeof(element);
 	return 0;
 }
 
@@ -671,7 +671,7 @@ void Database_Save(FILE *file)
 	AJWLib_Assert(file!=NULL);
 /*Remove free elements?*/
 /*Consistency check?*/
-	size=Database_GetSize()+sizeof(tag)+sizeof(int);
+	size=Database_GetSize();
 	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
 	AJWLib_File_fwrite(&size,sizeof(int),1,file);
 	AJWLib_File_fwrite(database,sizeof(element),database[0].file.numberofelements,file);

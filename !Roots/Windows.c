@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.47 2000/02/25 23:33:03 uid1 Exp $
+	$Id: Windows.c,v 1.48 2000/02/26 00:05:47 uid1 Exp $
 
 */
 
@@ -132,14 +132,16 @@ typedef struct windowdata {
 	elementptr person;
 	int generations;
 	layout *layout;
-	int scale; /*Add scale to save data*/
+	int scale;
 } windowdata;
 
 typedef struct savedata {
-	/*window coords etc?*/
 	wintype type;
 	elementptr person;
 	int generations;
+	int scale;
+	Desk_convert_block coords;
+	int reserved[4]; /*Should be set to zero*/
 } savedata;
 
 typedef struct dragdata {
@@ -967,17 +969,23 @@ void Windows_Relayout(void)
 
 int Windows_GetSize(void)
 {
-	int i,size=0;
-	for (i=0;i<MAXWINDOWS;i++)
-		if (windows[i].handle!=0) size+=sizeof(savedata)+Layout_GetSize(windows[i].layout);
-	return size; /*This is now WRONG*/
+	int i,size=sizeof(savedata)+sizeof(tag)+sizeof(int);
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle!=0) {
+			if (windows[i].type==wintype_NORMAL) {
+				size+=Layout_GetSize(windows[i].layout);
+				return size;
+			}
+		}
+	}
+	return size;
 }
 
 void Windows_Load(FILE *file)
 {
 	savedata data;
 	AJWLib_File_fread(&data,sizeof(savedata),1,file);
-	Windows_OpenWindow(data.type,data.person,data.generations);
+	Windows_OpenWindow(data.type,data.person,data.generations,data.scale,&(data.coords));
 }
 
 
@@ -993,9 +1001,15 @@ layout *Windows_Save(FILE *file,int *index)
 	}
 	AJWLib_Assert(i>=0);
 	if (windows[i].handle) {
+		Desk_Window_GetCoords(windows[i].handle,&(data.coords));
 		data.type=windows[i].type;
 		data.person=windows[i].person;
 		data.generations=windows[i].generations;
+		data.scale=windows[i].scale;
+		data.reserved[0]=0;
+		data.reserved[1]=0;
+		data.reserved[2]=0;
+		data.reserved[3]=0;
 		AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
 		AJWLib_File_fwrite(&size,sizeof(int),1,file);
 		AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
@@ -1074,7 +1088,7 @@ void Windows_LayoutNormal(layout *layout)
 	}
 }
 
-void Windows_OpenWindow(wintype type,elementptr person,int generations)
+void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale,Desk_convert_block *coords)
 {
 	int newwindow;
 	char str[256]="";
@@ -1090,11 +1104,21 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations)
 		return;
 	}
 	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle!=0 && windows[i].type==wintype_NORMAL) layoutnormal=windows[i].layout;
-	windows[newwindow].handle=Desk_Window_CreateAndShow("Main",Desk_template_TITLEMIN,Desk_open_CENTERED);
+	windows[newwindow].handle=Desk_Window_Create("Main",Desk_template_TITLEMIN);
 	windows[newwindow].type=type;
 	windows[newwindow].person=person;
 	windows[newwindow].generations=generations;
-	windows[newwindow].scale=100;
+	windows[newwindow].scale=scale;
+	if (coords==NULL) {
+		Desk_Window_Show(windows[newwindow].handle,Desk_open_CENTERED);
+	} else {
+		Desk_window_openblock blk;
+		blk.window=windows[newwindow].handle;
+		blk.screenrect=coords->screenrect;
+		blk.scroll=coords->scroll;
+		blk.behind=-1;
+		Desk_Wimp_OpenWindow(&blk);
+	}
 	switch (type) {
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
@@ -1209,7 +1233,7 @@ Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 			wintype=wintype_CLOSERELATIVES;
 			break;
 	}
-	Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)));
+	Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),100,NULL);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(newviewwin);
 	return Desk_TRUE;
 }
