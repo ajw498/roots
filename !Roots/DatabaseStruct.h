@@ -130,6 +130,8 @@ void Database_Delete(elementptr person);
 int Database_GetNumPeople(void);
 int Database_GetSize(void);
 void Database_StopEditing(void);
+char *Database_GetUserDesc(int num);
+void Database_SetUserDesc(int num,char *desc);
 
 #endif
 

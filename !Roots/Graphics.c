@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.27 2000/05/13 22:48:02 AJW Exp $
+	$Id: Graphics.c,v 1.28 2000/05/14 19:42:44 AJW Exp $
 
 */
 
@@ -799,6 +799,11 @@ void Graphics_LoadStyle(char *style)
 		Graphics_DefaultStyle();
 		Desk_Error2_ReThrow();
 	} Desk_Error2_EndCatch
+}
+
+char *Graphics_GetCurrentStyle(void)
+{
+	return currentstyle;
 }
 
 void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool child,Desk_bool selected)

@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.26 2000/03/04 23:52:30 uid1 Exp $
+	$Id: Database.c,v 1.27 2000/05/14 19:42:41 AJW Exp $
 
 */
 
@@ -722,6 +722,20 @@ void Database_Load(FILE *file)
 	Modules_ChangedStructure();
 }
 
+char *Database_GetUserDesc(int num)
+{
+	AJWLib_Assert(num>=0);
+	AJWLib_Assert(num<3);
+	return database[0].element.file.userdesc[num];
+}
+
+void Database_SetUserDesc(int num,char *desc)
+{
+	AJWLib_Assert(num>=0);
+	AJWLib_Assert(num<3);
+	strcpy(database[0].element.file.userdesc[num],desc);
+}
+
 void Database_New(void)
 {
 	AJWLib_Assert(database==NULL);
@@ -733,9 +747,9 @@ void Database_New(void)
 	database[0].element.file.linkedpeople=0;
 	database[0].element.file.freeelement=0;
 	strcpy(database[0].element.file.filetitle,AJWLib_Msgs_TempLookup("Tree.Title:Title"));
-	strcpy(database[0].element.file.userdesc[0],Config_UserDesc(1));
-	strcpy(database[0].element.file.userdesc[1],Config_UserDesc(2));
-	strcpy(database[0].element.file.userdesc[2],Config_UserDesc(3));
+	strcpy(database[0].element.file.userdesc[0],AJWLib_Msgs_TempLookup("User.Desc1:"));
+	strcpy(database[0].element.file.userdesc[1],AJWLib_Msgs_TempLookup("User.Desc2:"));
+	strcpy(database[0].element.file.userdesc[2],AJWLib_Msgs_TempLookup("User.Desc3:"));
 }
 
 void Database_StopEditing(void)

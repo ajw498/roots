@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.22 2000/05/13 22:48:01 AJW Exp $
+	$Id: File.c,v 1.23 2000/05/14 19:42:43 AJW Exp $
 
 */
 
@@ -139,7 +139,7 @@ void File_LoadFile(char *filename)
 		}
 		AJWLib_File_fclose(file);
 		Windows_LayoutNormal(layout,Desk_FALSE);
-		if (!graphicsloaded) Graphics_LoadStyle(Config_GraphicsStyle());
+		if (!graphicsloaded) Graphics_LoadStyle(AJWLib_Msgs_TempLookup("Style.Default:Default"));
 		strcpy(currentfilename,filename);
 		modified=Desk_FALSE;
 		Windows_FileModified();
@@ -159,7 +159,7 @@ void File_New(void)
 	Desk_Error2_Try {
 		Database_New();
 		Desk_Error2_Try {
-			Graphics_LoadStyle(Config_GraphicsStyle());
+			Graphics_LoadStyle(AJWLib_Msgs_TempLookup("Style.Default:Default"));
 			Desk_Error2_Try {
 				Windows_OpenWindow(wintype_UNLINKED,none,0,100,NULL);
 				Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
