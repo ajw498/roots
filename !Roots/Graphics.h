@@ -55,7 +55,9 @@ typedef enum graphictype {
 	graphictype_RECTANGLE,
 	graphictype_FILLEDRECTANGLE,
 	graphictype_TEXTLABEL,
+	graphictype_CENTEREDTEXTLABEL,
 	graphictype_FIELD,
+	graphictype_CENTEREDFIELD,
 	graphictype_INVALID
 } graphictype;
 
