@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.53 2000/02/27 00:47:58 uid1 Exp $
+	$Id: Windows.c,v 1.54 2000/02/27 13:29:40 uid1 Exp $
 
 */
 
@@ -810,6 +810,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	AJWLib_Menu_Shade(personmenu,personmenu_UNLINK);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
+	/*See if we clicked on a person*/
 	for (i=windowdata->layout->numpeople-1;i>=0;i--) {
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
 			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+Graphics_PersonHeight()) {
@@ -881,6 +882,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 			}
 		}
 	}
+	/*Has the menu button been clicked?*/
 	if (block->data.mouse.button.data.menu) {
 		char buffer[10];
 		if (windowdata->type==wintype_UNLINKED) {
@@ -901,6 +903,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 		return Desk_TRUE;
 	}
+	/*We are not on a person and Menu has not been clicked*/
 	for (i=windowdata->layout->nummarriages-1;i>=0;i--) {
 		if (mousex>=windowdata->layout->marriage[i].x && mousex<=windowdata->layout->marriage[i].x+Graphics_MarriageWidth()) {
 			if (mousey>=windowdata->layout->marriage[i].y && mousey<=windowdata->layout->marriage[i].y+Graphics_PersonHeight()) {
@@ -932,6 +935,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 			}
 		}
 	}
+	/*Menu hasn't been clicked, and we are not on a person or marriage*/
 	if (windowdata->type==wintype_NORMAL) {
 		if (block->data.mouse.button.data.clickselect) {
 			Windows_UnselectAll(windowdata);
@@ -943,6 +947,11 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		} else if (block->data.mouse.button.data.dragadjust) {
 			Windows_StartDragSelect(windowdata);
 			return Desk_TRUE;
+		} else if (block->data.mouse.button.data.select) {
+			if (mousey>windowdata->layout->title.y-Graphics_TitleHeight()/2) {
+				Windows_UnselectAll(windowdata);
+				Database_EditTitle();
+			}
 		}
 	}
 	return Desk_FALSE;

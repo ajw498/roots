@@ -122,6 +122,7 @@ void Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
 void Database_AddParents(elementptr child,elementptr mother,elementptr father);
 void Database_LinkPerson(elementptr person);
+void Database_EditTitle(void);
 void Database_EditPerson(elementptr person);
 void Database_EditMarriage(elementptr marriage);
 void Database_RemoveChild(elementptr child);
