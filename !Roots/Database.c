@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.32 2000/06/29 21:53:07 AJW Exp $
+	$Id: Database.c,v 1.33 2000/07/06 20:50:51 AJW Exp $
 
 */
 
@@ -714,6 +714,66 @@ void Database_Load(FILE *file)
 	AJWLib_Flex_Extend((flex_ptr)&database,sizeof(databaseelement)*database[0].element.file.numberofelements);
 	AJWLib_File_fread(database+1,sizeof(databaseelement),database[0].element.file.numberofelements-1,file);
 	Modules_ChangedStructure();
+}
+
+void Database_SaveGEDCOM(FILE *file)
+{
+	elementptr marriage,child;
+	int i;
+	AJWLib_Assert(database==NULL);
+	AJWLib_Assert(file!=NULL);
+	for (i=0;i<database[0].element.file.numberofelements;i++) {
+		switch (database[i].type) {
+			case element_PERSON:
+				fprintf(file,"0 @%d@ INDI\n",i);
+				fprintf(file,"1 NAME %s %s/%s/\n",database[i].element.person.data.forename,database[i].element.person.data.middlenames,database[i].element.person.data.surname);
+				if (database[i].element.person.data.sex!=sex_UNKNOWN) fprintf(file,"1 SEX %c\n",database[i].element.person.data.sex);
+				fprintf(file,"1 BIRT\n");
+				fprintf(file,"2 DATE %s\n",database[i].element.person.data.dob);
+				fprintf(file,"2 PLAC %s\n",database[i].element.person.data.placeofbirth);
+				fprintf(file,"1 DEAT\n");
+				fprintf(file,"2 DATE %s\n",database[i].element.person.data.dod);
+				fprintf(file,"1 _USER1 %s\n",database[i].element.person.data.userdata[0]);
+				fprintf(file,"1 _USER2 %s\n",database[i].element.person.data.userdata[1]);
+				fprintf(file,"1 _USER3 %s\n",database[i].element.person.data.userdata[2]);
+				if (database[i].element.person.marriage) {
+					marriage=database[i].element.person.marriage;
+					while (marriage) {
+						if (database[marriage].element.marriage.principal==i || database[marriage].element.marriage.spouse==i) {
+							fprintf(file,"1 FAMS @%d@\n",marriage);
+						}
+						marriage=database[marriage].element.marriage.next;
+					}
+					if (database[i].element.person.marriage) {
+						marriage=database[database[i].element.person.marriage].element.marriage.previous;
+						while (marriage) {
+							if (database[marriage].element.marriage.principal==i || database[marriage].element.marriage.spouse==i) {
+								fprintf(file,"1 FAMS @%d@\n",marriage);
+							}
+							marriage=database[marriage].element.marriage.previous;
+						}
+					}
+				}
+				if (database[i].element.person.parentsmarriage) {
+					fprintf(file,"1 FAMC @%d@\n",database[i].element.person.parentsmarriage);
+				}
+				break;
+			case element_MARRIAGE:
+				fprintf(file,"0 @%d@ FAM\n",i);
+				fprintf(file,"1 HUSB @%d@\n",database[i].element.marriage.principal);
+				fprintf(file,"1 WIFE @%d@\n",database[i].element.marriage.spouse);
+				child=database[i].element.marriage.leftchild;
+				while (child) {
+					fprintf(file,"1 CHIL @%d@\n",child);
+					child=database[child].element.person.siblingsltor;
+				}
+				fprintf(file,"1 MARR\n");
+				fprintf(file,"2 DATE %s\n",database[i].element.marriage.data.date);
+				fprintf(file,"2 PLAC %s\n",database[i].element.marriage.data.place);
+				fprintf(file,"1 DIV %s\n",database[i].element.marriage.data.divorce);
+				break;
+		}
+	}
 }
 
 char *Database_GetUserDesc(int num)
