@@ -30,9 +30,9 @@ OBJECTS	=	\
 		Database.o\
 		!RunImage.o
 
-INCLUDE	=	C:
-
 TARGET		=	!RunImage
+
+INCLUDE	=	C:
 
 CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2 -fah
 LINKFLAGS	=	$(LINKEXTRA) -d
@@ -40,6 +40,13 @@ LINKFLAGS	=	$(LINKEXTRA) -d
 CC		=	MemCheck.cc cc -c $(CCFLAGS)
 LINK		=	DrLink $(LINKFLAGS)
 
+#INCLUDE	=	L:
+
+#CCFLAGS		=	$(CCEXTRA) -mstubs -mthrowback -O3 -pedantic -Wall -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2
+#LINKFLAGS	=	$(LINKEXTRA)
+
+#CC		=	gcc -c $(CCFLAGS)
+#LINK		=	gcc $(LINKFLAGS)
 
 
 .c.o:
