@@ -1,4 +1,5 @@
-IconSprites <Obey$Dir>.!Sprites
+IconSprites <Obey$Dir>.!Sprites4
+RMEnsure UtilityModule 4.00 IconSprites <Obey$Dir>.!Sprites
 Set Roots$Dir <Obey$Dir>
 
 RMEnsure DrawFile RMLoad System:Modules.DrawFile

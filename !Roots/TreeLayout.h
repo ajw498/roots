@@ -1,12 +1,19 @@
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
+#ifndef ELEMENTPTR
+#define ELEMENTPTR
+
+typedef int elementptr;
+
+#endif
+
 typedef struct personlayout {
 	int x;
 	int y;
 	elementptr person;
 	Desk_bool child;
-	Desk_bool selected;
+	Desk_bool reserved;
 } personlayout;
 
 typedef struct marriagelayout {
@@ -14,7 +21,7 @@ typedef struct marriagelayout {
 	int y;
 	elementptr marriage;
 	Desk_bool childline;
-	Desk_bool selected;
+	Desk_bool reserved;
 } marriagelayout;
 
 typedef struct childlinelayout {
@@ -39,13 +46,12 @@ typedef struct layout {
 } layout;
 
 
-layout *Layout_LayoutUnlinked(void);
 layout *Layout_LayoutNormal(void);
 layout *Layout_LayoutDescendents(elementptr person, int generations);
 layout *Layout_LayoutAncestors(elementptr person, int generations);
+int Layout_NearestGeneration(int y);
 void Layout_Free(layout *layout);
 Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
-Desk_bool Layout_Selected(layout *layout,elementptr person);
 void Layout_AlterChildline(layout *layout,elementptr person,Desk_bool on);
 void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,Desk_bool on);
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y);

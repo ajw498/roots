@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.23 2000/05/14 19:42:43 AJW Exp $
+	$Id: File.c,v 1.24 2000/06/22 19:07:26 AJW Exp $
 
 */
 
@@ -161,7 +161,6 @@ void File_New(void)
 		Desk_Error2_Try {
 			Graphics_LoadStyle(AJWLib_Msgs_TempLookup("Style.Default:Default"));
 			Desk_Error2_Try {
-				Windows_OpenWindow(wintype_UNLINKED,none,0,100,NULL);
 				Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
 				Windows_LayoutNormal(NULL,Desk_TRUE);
 				File_GetCurrentTime();
