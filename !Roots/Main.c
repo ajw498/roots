@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.22 2000/07/06 20:50:50 AJW Exp $
+	$Id: Main.c,v 1.23 2000/09/01 14:17:59 AJW Exp $
 	
 */
 
@@ -45,7 +45,7 @@
 #include "config.h"
 
 
-#define VERSION "0.90 (6-Jul-00)"
+#define VERSION "0.91 (1-Sep-00)"
 #define DIRPREFIX "Roots"
 #define TREEFILE 0x090
 

@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.4 2000/06/17 21:25:49 AJW Exp $
+	$Id: Print.c,v 1.5 2000/09/01 14:18:01 AJW Exp $
 
 */
 
@@ -47,6 +47,8 @@
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
 
+#include "MemCheck:MemCheck.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -77,6 +79,11 @@
 #define print_OVERLAPUP 10
 #define print_NUMPAGES 19
 #define print_CENTRE 20
+#define print_ALLPAGES 21
+#define print_FROMPAGES 22
+#define print_FROM 23
+#define print_TO 25
+
 
 #define SWI_PDriver_PageSize 0x80143
 
@@ -135,6 +142,10 @@ static Desk_bool Print_CalcValues(Desk_event_pollblock *block,void *ref)
 	if (Desk_Icon_GetSelect(printwin,print_CENTRE)) data.offset.y=(-total)/2; else data.offset.y=-total;
 	sprintf(Desk_Icon_GetTextPtr(printwin,print_NUMPAGES),"%d x %d",data.pages.x,data.pages.y);
 	Desk_Icon_ForceRedraw(printwin,print_NUMPAGES);
+	if (Desk_Icon_GetInteger(printwin,print_FROM)<1) Desk_Icon_SetInteger(printwin,print_FROM,1);
+	if (Desk_Icon_GetInteger(printwin,print_TO)<1) Desk_Icon_SetInteger(printwin,print_TO,1);
+	if (Desk_Icon_GetInteger(printwin,print_TO)>data.pages.x*data.pages.y) Desk_Icon_SetInteger(printwin,print_TO,data.pages.x*data.pages.y);
+	if (Desk_Icon_GetInteger(printwin,print_FROM)>Desk_Icon_GetInteger(printwin,print_TO)) Desk_Icon_SetInteger(printwin,print_FROM,Desk_Icon_GetInteger(printwin,print_TO));
 	return Desk_FALSE;
 }
 
@@ -143,7 +154,7 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 	Desk_wimp_point position;
 	Desk_wimp_rect rect,cliprect;
 	Desk_print_transformation matrix;
-	int more,rectid,pagex,pagey;
+	int more,rectid,pagex,pagey,minpage,maxpage;
 	printdata *ref=printblk->reference;
 
 	Desk_Error2_Try {
@@ -163,18 +174,27 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 			position.x=ref->printablearea.min.x;
 			position.y=ref->printablearea.max.y-ref->printablearea.min.y;
 		}
+		if (Desk_Icon_GetSelect(printwin,print_ALLPAGES)) {
+			minpage=0;
+			maxpage=data.pages.x*data.pages.y-1;
+		} else {
+			minpage=Desk_Icon_GetInteger(printwin,print_FROM)-1;
+			maxpage=Desk_Icon_GetInteger(printwin,print_TO)-1;
+		}
 		Drawfile_Print(ref->layout);
 		for (pagey=data.pages.y-1;pagey>=0;pagey--) {
 			for (pagex=0;pagex<data.pages.x;pagex++) {
-				rect.min.x=-10; /*So edges of output don't get clipped*/
-				rect.min.y=-10;
-				rect.max.x=rect.min.x+ref->pagesizeos.x+10;
-				rect.max.y=rect.min.y+ref->pagesizeos.y+10;
-				Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
-				Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
-				while (more) {
-					Drawfile_Redraw(ref->scale,ref->offset.x-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect);
-					Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
+				if (pagey*pagex>=minpage && pagey*pagex<=maxpage) {
+					rect.min.x=-10; /*So edges of output don't get clipped*/
+					rect.min.y=-10;
+					rect.max.x=rect.min.x+ref->pagesizeos.x+10;
+					rect.max.y=rect.min.y+ref->pagesizeos.y+10;
+					Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
+					Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
+					while (more) {
+						Drawfile_Redraw(ref->scale,ref->offset.x-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect);
+						Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
+					}
 				}
 			}
 		}
@@ -193,7 +213,8 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 
 static void Print_Result(Desk_print_block *printblk,Desk_print_result result)
 {
-	/**/
+	Desk_UNUSED(printblk);
+	Desk_UNUSED(result);
 }
 
 static Desk_bool Print_Ok(Desk_event_pollblock *block,void *ref)
@@ -208,16 +229,23 @@ static Desk_bool Print_Ok(Desk_event_pollblock *block,void *ref)
 
 void Print_OpenWindow(layout *layout)
 {
-	char *name;
+	char *driver,name[]="Unknown";
 	data.layout=layout;
 /*	Desk_PDriver_PageSize(&pagesize,&printablearea);*/ /*Desk_PDriver_PageSize() seems to be broken*/
 	Desk_SWI(0,7,SWI_PDriver_PageSize,NULL,&data.pagesize.x,&data.pagesize.y,&data.printablearea.min.x,&data.printablearea.min.y,&data.printablearea.max.x,&data.printablearea.max.y);
 	data.treeextent=Layout_FindExtent(data.layout,Desk_FALSE);
 	if (Config_Title()) data.treeextent.max.y+=Graphics_TitleHeight();
 	Desk_Window_Show(printwin,Desk_open_CENTERED);
+	Desk_Icon_SetText(printwin,print_FROM,"1");
+	Desk_Icon_SetText(printwin,print_TO,"999");
 	Print_CalcValues(NULL,NULL);
-	name=Desk_PDriver_PrinterName();
-	if (name) Desk_Window_SetTitle(printwin,name); else Desk_Window_SetTitle(printwin,"Unknown");
+	driver=Desk_PDriver_PrinterName();
+	if (driver) {
+		MemCheck_RegisterMiscBlock_String(driver);
+	} else {
+		driver=name;
+	}
+	Desk_Window_SetTitle(printwin,driver);
 	Desk_Icon_SetCaret(printwin,print_COPIES);
 }
 
@@ -229,10 +257,11 @@ void Print_CloseWindow(void)
 static Desk_bool Print_KeyPressed(Desk_event_pollblock *block,void *ref)
 {
 	Desk_caret_block caret;
+	Desk_Wimp_GetCaretPosition(&caret);
+	if (caret.icon!=print_FROM && caret.icon!=print_TO) Print_CalcValues(block,ref);
 	switch (block->data.key.code) {
 		case Desk_keycode_RETURN:
 			block->data.mouse.button.value=Desk_button_SELECT;
-			Desk_Wimp_GetCaretPosition(&caret);
 			switch (caret.icon) {
 				case print_COPIES:
 					Desk_Icon_SetCaret(printwin,print_SCALE);
@@ -241,6 +270,12 @@ static Desk_bool Print_KeyPressed(Desk_event_pollblock *block,void *ref)
 					Desk_Icon_SetCaret(printwin,print_OVERLAP);
 					break;
 				case print_OVERLAP:
+					Desk_Icon_SetCaret(printwin,print_FROM);
+					break;
+				case print_FROM:
+					Desk_Icon_SetCaret(printwin,print_TO);
+					break;
+				case print_TO:
 					Print_Ok(block,ref);
 					return Desk_TRUE;
 					break;
@@ -250,8 +285,6 @@ static Desk_bool Print_KeyPressed(Desk_event_pollblock *block,void *ref)
 			Print_CloseWindow();
 			return Desk_TRUE;
 			break;
-		default:
-			Print_CalcValues(block,ref);
 	}
 	return Desk_FALSE;
 }
@@ -265,8 +298,11 @@ void Print_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,printwin,print_CANCEL,Windows_Cancel,NULL);
 	Desk_Icon_Select(printwin,print_CENTRE);
 	Desk_Icon_SetRadios(printwin,print_UPRIGHT,print_SIDEWAYS,print_UPRIGHT);
+	Desk_Icon_SetRadios(printwin,print_ALLPAGES,print_FROMPAGES,print_ALLPAGES);
 	AJWLib_Icon_RegisterCheckAdjust(printwin,print_UPRIGHT);
 	AJWLib_Icon_RegisterCheckAdjust(printwin,print_SIDEWAYS);
+	AJWLib_Icon_RegisterCheckAdjust(printwin,print_ALLPAGES);
+	AJWLib_Icon_RegisterCheckAdjust(printwin,print_FROMPAGES);
 	Desk_Icon_InitIncDecHandler(printwin,print_COPIES,print_COPIESUP,print_COPIESDOWN,Desk_FALSE,1,1,99,1);
 	Desk_Icon_InitIncDecHandler(printwin,print_SCALE,print_SCALEUP,print_SCALEDOWN,Desk_FALSE,1,1,999,100);
 	Desk_Icon_InitIncDecHandler(printwin,print_OVERLAP,print_OVERLAPUP,print_OVERLAPDOWN,Desk_FALSE,1,0,99,0);
