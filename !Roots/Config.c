@@ -2,11 +2,18 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.5 2000/02/24 19:01:00 uid1 Exp $
+	$Id: Config.c,v 1.6 2000/02/26 17:02:54 uid1 Exp $
 
 */
 
 #include "Desk.Core.h"
+#include "Desk.Error.h"
+
+#include "AJWLib.Assert.h"
+
+#include <stdlib.h>
+
+#include "Config.h"
 
 static char graphicsstyle[256]="Default";
 static Desk_bool loadgraphicsstyle=Desk_FALSE,importgraphicsstyle=Desk_FALSE;
@@ -15,6 +22,7 @@ static int snapdistance=30;
 static int scrollspeed=1;
 static int scrolldistance=40;
 static Desk_bool autoincreasesize=Desk_TRUE,autoincreasealways=Desk_FALSE;
+static char userdesc[3][20]={"Profession","Status","Other"};
 
 char *Config_GraphicsStyle(void)
 {
@@ -59,5 +67,12 @@ Desk_bool Config_AutoIncreaseSize(void)
 Desk_bool Config_AutoIncreaseAlways(void)
 {
 	return autoincreasealways;
+}
+
+char *Config_UserDesc(int num)
+{
+	AJWLib_Assert(num>0);
+	AJWLib_Assert(num<4);
+	return userdesc[num-1];
 }
 

@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.18 2000/02/26 16:48:03 uid1 Exp $
+	$Id: Database.c,v 1.19 2000/02/26 17:02:56 uid1 Exp $
 
 */
 
@@ -31,6 +31,7 @@
 #include "Database.h"
 #include "Modules.h"
 #include "File.h"
+#include "Config.h"
 
 
 #define editpersonicon_SURNAME 1
@@ -523,6 +524,7 @@ void Database_EditPerson(elementptr person)
 	Desk_Icon_SetText(editpersonwin,editpersonicon_USERDESC2,database[0].element.file.userdesc[1]);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_USERDESC3,database[0].element.file.userdesc[2]);
 	Desk_Window_Show(editpersonwin,editingperson ? Desk_open_WHEREVER : Desk_open_CENTERED);
+	Desk_Icon_SetCaret(editpersonwin,editpersonicon_SURNAME);
 	editingperson=person;
 }
 
@@ -594,6 +596,7 @@ void Database_EditMarriage(elementptr marriage)
 	Desk_Icon_SetText(editmarriagewin,editmarriageicon_DATE,database[marriage].element.marriage.data.date);
 	Desk_Icon_SetText(editmarriagewin,editmarriageicon_DIVORCE,database[marriage].element.marriage.data.divorce);
 	Desk_Window_Show(editmarriagewin,editingmarriage ? Desk_open_WHEREVER : Desk_open_CENTERED);
+	Desk_Icon_SetCaret(editmarriagewin,editmarriageicon_PLACE);
 	editingmarriage=marriage;
 }
 
@@ -703,10 +706,10 @@ void Database_New(void)
 	database[0].element.file.unlinkedpeople=0;
 	database[0].element.file.linkedpeople=0;
 	database[0].element.file.freeelement=0;
-	strcpy(database[0].element.file.filetitle,"Fred"); /**/
-	strcpy(database[0].element.file.userdesc[0],"Other1"); /*??*/
-	strcpy(database[0].element.file.userdesc[1],"Other2");
-	strcpy(database[0].element.file.userdesc[2],"Other3");
+	strcpy(database[0].element.file.filetitle,AJWLib_Msgs_TempLookup("Tree.Title:"));
+	strcpy(database[0].element.file.userdesc[0],Config_UserDesc(1));
+	strcpy(database[0].element.file.userdesc[1],Config_UserDesc(2));
+	strcpy(database[0].element.file.userdesc[2],Config_UserDesc(3));
 }
 
 void Database_Remove(void)
