@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.19 2000/02/26 17:02:56 uid1 Exp $
+	$Id: Database.c,v 1.20 2000/02/26 18:04:42 uid1 Exp $
 
 */
 
@@ -429,10 +429,15 @@ void Database_Marry(elementptr linked,elementptr unlinked)
 	AJWLib_Assert(database!=NULL);
 	if (Database_IsUnlinked(linked)) return;
 	if (!Database_IsUnlinked(unlinked)) return;
-	if (Database_GetMarriage(linked) && Database_GetPrincipalFromMarriage(Database_GetMarriage(linked))!=linked) {
-		Desk_Error2_HandleText("You are not marrying the principal person.");
-		/*swap principal and spouse if only one marriage*/
-		return;
+	if ((marriage=Database_GetMarriage(linked))!=none && Database_GetPrincipalFromMarriage(Database_GetMarriage(linked))!=linked) {
+		if (database[marriage].element.marriage.next==none && database[marriage].element.marriage.previous==none) {
+			/*This is the only marriage, so swap principal and spouse*/
+			elementptr temp=database[marriage].element.marriage.principal;
+			database[marriage].element.marriage.principal=database[marriage].element.marriage.spouse;
+			database[marriage].element.marriage.spouse=temp;
+		} else {
+			Desk_Error2_HandleText("You are not marrying the principal person."); /*Msgs*/
+		}
 	}
 	marriage=Database_GetFreeElement();
 	database[marriage].type=element_MARRIAGE;
