@@ -30,6 +30,7 @@ Ctrl-X in writeable icon seems to mess things up - does it replace 0 terminator 
 
 Load up a tree in default style, Remove all free memory, change to dropshadow style. Roots quits silently (is lua doing this?)
 
+toolbox pane and edge of screen in style editor
 
 
 On 27 October 1999, Tim [Powys-Lybbe] emailed the Ancestry+ mail list you were running
