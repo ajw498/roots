@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.31  2000/01/13 22:59:49  AJW
+	Added Graphics_Save and GetSize
+
 	Revision 1.30  2000/01/13 18:08:40  AJW
 	Added proper save boxes
 
@@ -129,6 +132,7 @@
 #include "AJWLib.Icon.h"
 #include "AJWLib.Flex.h"
 #include "AJWLib.Font.h"
+#include "AJWLib.File.h"
 #include "AJWLib.Str.h"
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
@@ -211,6 +215,14 @@ typedef struct windowdata {
 	int generations;
 	layout *layout;
 } windowdata;
+
+typedef struct savedata {
+	int size; /*size of this block inc layout data*/
+	/*window coords etc?*/
+	wintype type;
+	elementptr person;
+	int generations;
+} savedata;
 
 typedef struct dragdata {
 	elementptr person;
@@ -1053,6 +1065,30 @@ void Graphics_Relayout(void)
 			}
 			Graphics_ResizeWindow(&windows[i]);
 			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+		}
+	}
+}
+
+int Graphics_GetSize(void)
+{
+	int i,size=0;
+	for (i=0;i<MAXWINDOWS;i++)
+		if (windows[i].handle!=0) size+=sizeof(savedata)+Layout_GetSize(windows[i].layout);
+	return size;
+}
+
+void Graphics_Save(FILE *file)
+{
+	int i;
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle!=0) {
+			savedata data;
+			data.type=windows[i].type;
+			data.person=windows[i].person;
+			data.generations=windows[i].generations;
+			data.size=sizeof(savedata)+Layout_GetSize(windows[i].layout);
+			AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
+			Layout_Save(windows[i].layout,file);
 		}
 	}
 }
