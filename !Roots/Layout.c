@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.32 2000/06/22 21:34:01 AJW Exp $
+	$Id: Layout.c,v 1.33 2000/06/26 19:44:01 AJW Exp $
 
 */
 
@@ -153,33 +153,28 @@ static void Layout_ExtendGeneration(int generation)
 
 static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 {
-	int i;
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
 	if (Database_GetSiblingRtoL(person)==none) {
-		if (Database_GetMother(person)!=none) {
-			elementptr marriage;
-			int leftpos=-99,rightpos=-99,marriagepos=-99;
-			marriage=Database_GetMarriage(Database_GetMother(person));
+		/*Only plot the line if we are the leftmost sibling*/
+		elementptr marriage;
+		if ((marriage=Database_GetParentsMarriage(person))!=none) {
+			/*Only plot line if the person has parents*/
+			int leftpos=INFINITY,rightpos=-INFINITY,marriagepos=INFINITY;
 			do {
-				for (i=0;i<layout->numpeople;i++) {
-					if (layout->person[i].person==person) {
-						if (layout->person[i].x<leftpos || leftpos==-99) leftpos=layout->person[i].x;
-						if (layout->person[i].x>rightpos || rightpos==-99) rightpos=layout->person[i].x;
-						i=layout->numpeople;
-					}
-					/*Optimise loop?*/
-				}
+				/*Find leftmost and rightmost positions of siblings*/
+				int pos;
+				pos=Layout_FindXCoord(layout,person);
+				if (pos<leftpos) leftpos=pos;
+				if (pos>rightpos) rightpos=pos;
 			} while ((person=Database_GetSiblingLtoR(person))!=none);
 			leftpos+=Graphics_PersonWidth()/2;
 			rightpos+=Graphics_PersonWidth()/2;
-			for (i=0;i<layout->nummarriages;i++) {
-				if (layout->marriage[i].marriage==marriage) marriagepos=layout->marriage[i].x+Graphics_MarriageWidth()/2;
-				/*Optimise loop?*/
-			}
-			if (marriagepos==-99) return;
+			/*See if parents marriage is further left or right than the siblings*/
+			marriagepos=Layout_FindMarriageXCoord(layout,marriage)+Graphics_MarriageWidth()/2;
 			if (marriagepos<leftpos) leftpos=marriagepos;
 			if (marriagepos>rightpos) rightpos=marriagepos;
+			/*Create the line*/
 			AJWLib_Flex_Extend((flex_ptr)&(layout->children),sizeof(childlinelayout)*(layout->numchildren+1));
 			layout->children[layout->numchildren].rightx=rightpos;
 			layout->children[layout->numchildren].leftx=leftpos;

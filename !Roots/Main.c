@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.18 2000/03/01 00:03:26 uid1 Exp $
+	$Id: Main.c,v 1.19 2000/06/26 19:43:55 AJW Exp $
 	
 */
 
@@ -43,7 +43,7 @@
 #include "config.h"
 
 
-#define VERSION "0.70 (29-Feb-00)"
+#define VERSION "0.80 (20-Jun-00)"
 #define DIRPREFIX "Roots"
 #define TREEFILE 0x090
 
@@ -110,7 +110,7 @@ static void IconBarMenuClick(int entry, void *ref)
 			Config_Open();
 			break;
 		case iconbarmenu_QUIT:
-			if (File_GetModified()) AJWLib_Window_OpenDCS(quitwin,quiticon_DISCARD,quiticon_CANCEL,-1,NULL,NULL); else Desk_Event_CloseDown();
+			if (File_GetModified()) AJWLib_Window_OpenTransient(quitwin); else Desk_Event_CloseDown();
 			break;
 	}
 }
@@ -135,6 +135,7 @@ int main(int argc,char *argv[])
 		infowin=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
 		Desk_Template_LoadFile("Templates");
 		quitwin=Desk_Window_Create("Quit",Desk_template_TITLEMIN);
+		AJWLib_Window_RegisterDCS(quitwin,quiticon_DISCARD,quiticon_CANCEL,-1,NULL,NULL);
 		iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
 		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)infowin);
 		AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
