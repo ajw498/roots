@@ -2,7 +2,7 @@
 	Roots - Shareware stuff
 	© Alex Waugh 1999
 
-	$Id: Shareware.c,v 1.1 2000/09/22 13:11:00 AJW Exp $
+	$Id: Shareware.c,v 1.2 2000/11/21 22:12:34 AJW Exp $
 	
 */
 
