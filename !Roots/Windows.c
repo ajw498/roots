@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.16  1999/10/25 16:50:36  AJW
+	Altered to use Database_GetName and related functions
+
 	Revision 1.15  1999/10/25 16:08:48  AJW
 	Added centering of fields
 
@@ -245,20 +248,16 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
 					break;
 				case personfieldtype_TITLEDNAME:
-					strcat(fieldtext,Database_GetPersonData(person)->title);
+					strcat(fieldtext,Database_GetTitledName(person));
+					break;
 				case personfieldtype_NAME:
-					strcat(fieldtext,Database_GetPersonData(person)->forename);
-					strcat(fieldtext," ");
-					strcat(fieldtext,Database_GetPersonData(person)->surname);
+					strcat(fieldtext,Database_GetName(person));
 					break;
 				case personfieldtype_TITLEDFULLNAME:
-					strcat(fieldtext,Database_GetPersonData(person)->title);
+					strcat(fieldtext,Database_GetTitledFullName(person));
+					break;
 				case personfieldtype_FULLNAME:
-					strcat(fieldtext,Database_GetPersonData(person)->forename);
-					strcat(fieldtext," ");
-					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
-					strcat(fieldtext," ");
-					strcat(fieldtext,Database_GetPersonData(person)->surname);
+					strcat(fieldtext,Database_GetFullName(person));
 					break;
 				case personfieldtype_TITLE:
 					strcat(fieldtext,Database_GetPersonData(person)->title);
@@ -1030,8 +1029,8 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 	windows[newwindow].generations=generations;
 	switch (type) {
 		case wintype_NORMAL:
-/*			Desk_Window_SetTitle(windows[newwindow].handle,Database_GetFilename());
-*/#if DEBUG
+			Desk_Window_SetTitle(windows[newwindow].handle,Database_GetFilename());
+#if DEBUG
 Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
 Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
 windows[newwindow].layout=layouts;
@@ -1043,18 +1042,14 @@ Layout_LayoutNormal();
 		case wintype_DESCENDENTS:
 			Desk_Msgs_Lookup("Win.Desc:",str,255);
 			strcat(str," ");
-			strcat(str,Database_GetPersonData(person)->forename);
-			strcat(str," ");
-			strcat(str,Database_GetPersonData(person)->surname);
+			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 			windows[newwindow].layout=Layout_LayoutDescendents(person,generations);
 		break;
 		case wintype_ANCESTORS:
 			Desk_Msgs_Lookup("Win.Anc:",str,255);
 			strcat(str," ");
-			strcat(str,Database_GetPersonData(person)->forename);
-			strcat(str," ");
-			strcat(str,Database_GetPersonData(person)->surname);
+			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 #if DEBUG
 Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
@@ -1096,9 +1091,7 @@ void Graphics_MainMenuClick(int entry,void *ref)
 				Desk_Icon_Unshade(newviewwin,newview_DESCENDENTPERSON);
 /*				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVES);
 				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVESPERSON);
-*/				strcpy(buffer,Database_GetPersonData(menuoverperson)->forename);
-				strcat(buffer," ");
-				strcat(buffer,Database_GetPersonData(menuoverperson)->surname);
+*/				strcpy(buffer,Database_GetName(menuoverperson));
 			}
 			Desk_Icon_Shade(newviewwin,newview_UPTO);
 			Desk_Icon_Shade(newviewwin,newview_GENERATIONS);
