@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.19 2000/02/28 21:36:44 uid1 Exp $
+	$Id: File.c,v 1.20 2000/03/07 21:13:57 uid1 Exp $
 
 */
 
@@ -191,7 +191,7 @@ void File_Remove(void)
 
 void File_Modified(void)
 {
-	modified=Desk_TRUE;
+	if (Database_GetSize()) modified=Desk_TRUE;
 	Windows_FileModified();
 }
 

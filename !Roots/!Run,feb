@@ -1,5 +1,12 @@
 IconSprites <Obey$Dir>.!Sprites
 Set Roots$Dir <Obey$Dir>
+
+Set Roots$Path <Roots$Dir>.Choices.
+Set Roots$Write <Roots$Dir>.Choices
+If "<Choices$Path>"<>"" Then Set Roots$Path Choices:Roots.,<Roots$Dir>.Choices.
+If "<Choices$Write>"<>"" Then Set Roots$Write <Choices$Write>.Roots
+
+
 Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0
 WimpSlot -Min 500k -Max 500k
 Run <Obey$Dir>.!RunImage %*0

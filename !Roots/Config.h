@@ -1,6 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define GRAPHICSREAD "Roots:Graphics"
+#define GRAPHICSWRITE "<Roots$Write>.Graphics"
+#define CONFIGDIR "<Roots$Write>"
+#define CONFIGREAD "Roots:Config"
+#define CONFIGWRITE "<Roots$Write>.Config"
+
+
 char *Config_GraphicsStyle(void);
 
 Desk_bool Config_ImportGraphicsStyle(void);
