@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.8 2000/10/05 12:59:45 AJW Exp $
+	$Id: Print.c,v 1.9 2001/03/06 00:05:55 AJW Exp $
 
 */
 
@@ -172,7 +172,7 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 			matrix.yx=(1<<16);
 			matrix.yy=0;
 			position.x=ref->printablearea.min.x;
-			position.y=ref->printablearea.max.y-ref->printablearea.min.y;
+			position.y=ref->printablearea.max.y;
 		}
 		if (Desk_Icon_GetSelect(printwin,print_ALLPAGES)) {
 			minpage=0;

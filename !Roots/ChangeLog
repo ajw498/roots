@@ -1,3 +1,6 @@
+v1.12 5-Mar-01
+Fixed a bug that sometimes caused a tree to be printed slightly off centre
+
 v1.11 4-Feb-01
 Added ability to stretch people to fit their name length
 Increased maximum length of text that a field can contain to 255 chars
