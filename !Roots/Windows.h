@@ -10,18 +10,6 @@
 #define EORCOLOUR 0xFFFFFF00
 #define EORCOLOURRED 0xFFFF0000
 
-
-#define fieldconfig_USERPERSONBASE 4
-#define fieldconfig_USERMARRIAGEBASE 24
-#define fieldconfig_OK 2
-#define fieldconfig_CANCEL 3
-#define fieldconfig_SAVEASDEFAULT 36
-#define fieldconfig_SEPARATEMARRIAGES 35
-#define fieldconfig_JOINMARRIAGES 37
-
-
-extern Desk_window_handle fieldconfigwin;
-
 void Windows_Init(void);
 void Windows_ChangedLayout(void);
 void Windows_ForceRedraw(void);

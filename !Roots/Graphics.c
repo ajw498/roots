@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.64 2001/02/04 14:13:40 AJW Exp $
+	$Id: Graphics.c,v 1.65 2002/07/27 19:21:52 ajw Exp $
 
 */
 
@@ -909,7 +909,8 @@ void Graphics_RemoveStyle(void)
 	int i;
 	
 	if (uselua) {
-		lua_close(luadetails.state);
+		if (luadetails.state) lua_close(luadetails.state);
+		luadetails.state = NULL;
 		for (i=0;i<luadetails.numberoffonts;i++) Desk_Font2_ReleaseFont(&(luadetails.fonts[i].handle));
 		luadetails.numberoffonts=0;
 		if (luafile!=NULL) AJWLib_Flex_Free((flex_ptr)&luafile);

@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.58 2001/02/03 20:26:20 AJW Exp $
+	$Id: TreeLayout.c,v 1.59 2002/07/27 19:21:52 ajw Exp $
 
 */
 
@@ -125,7 +125,7 @@ static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 {
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
-
+	Desk_UNUSED(y);
 	if (Database_GetSiblingRtoL(person)==none) {
 		/*Only plot the line if we are the leftmost sibling*/
 		elementptr marriage;

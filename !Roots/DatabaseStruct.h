@@ -26,5 +26,13 @@ typedef enum sextype {
 	sex_ANY='A'
 } sextype;
 
+struct fieldconfigicons {
+	Desk_icon_handle gedcom;
+	Desk_icon_handle text;
+	Desk_icon_handle type;
+	Desk_icon_handle typemenu;
+	Desk_icon_handle list;
+};
+
 #endif
 
