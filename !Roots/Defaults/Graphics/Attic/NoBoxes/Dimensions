@@ -18,5 +18,3 @@ MarriageWidth,12
 SecondMarriageGap,3
 # Width of blank space to leave around outside of each window
 WindowBorder,4
-# Height of gap between people in the unlinked window
-GapHeightUnlinked,4

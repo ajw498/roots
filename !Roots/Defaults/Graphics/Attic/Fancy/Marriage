@@ -28,14 +28,12 @@
 # Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
 # or
 # CentredField,x,y,size,RRGGBB,RRGGBB (background),font,field name
-# Field name is any one of the following
-# Place
-# Date
-# Divorce
+# Field name is any of the field descriptions from file choices, with all spaces removed
+# eg the description  Date Of Marriage  would be a field name of  dateofmarriage
 
 
-Line,0,4,12,4,0,000000
-Line,0,8,12,8,0,000000
-ChildLine,6,-10,6,4,0,000000
+Line,0,5,12,5,0,000000
+Line,0,10,12,10,0,000000
+ChildLine,6,-10,6,5,0,000000
 SiblingLine,0,000000
-CentredField,6,10,12,000000,FFFFFF,Trinity.Medium,Date
+
