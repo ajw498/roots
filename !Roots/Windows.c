@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.43 2000/02/23 22:45:02 uid1 Exp $
+	$Id: Windows.c,v 1.44 2000/02/24 19:01:02 uid1 Exp $
 
 */
 
@@ -267,8 +267,70 @@ void Windows_AddSelected(layout *layout,int amount)
 void Windows_ResizeWindow(windowdata *windowdata)
 {
 	Desk_wimp_rect box;
+	Desk_window_info infoblk;
+	Desk_window_outline outlineblk;
+	Desk_bool maxxextent=Desk_FALSE,maxyextent=Desk_FALSE;
 	box=Layout_FindExtent(windowdata->layout,Desk_FALSE);
+	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
+	outlineblk.window=windowdata->handle;
+	if (infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x==infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x) {
+		/*We are currently open at maximum x extend*/
+		maxxextent=Desk_TRUE;
+	}
+	if (infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y==infoblk.block.screenrect.max.y-infoblk.block.screenrect.min.y) {
+		/*We are currently open at maximum y extend*/
+		maxyextent=Desk_TRUE;
+	}
+	/*Set window extent to fit layout size*/
 	Desk_Window_SetExtent(windowdata->handle,box.min.x-Graphics_WindowBorder(),box.min.y-Graphics_WindowBorder(),box.max.x+Graphics_WindowBorder(),box.max.y+Graphics_WindowBorder());
+	/*Reread window position as it might have changed*/
+	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
+	Desk_Wimp_GetWindowOutline(&outlineblk);
+	if ((maxxextent || Config_AutoIncreaseAlways()) && outlineblk.screenrect.max.x<=Desk_screen_size.x && Config_AutoIncreaseSize()) {
+		/*Enlarge window to show new extent in x direction*/
+		Desk_window_openblock openblk;
+		int amountmax=0,amountmin=0,amount=0;
+		openblk.window=windowdata->handle;
+		openblk.screenrect=infoblk.block.screenrect;
+		/*Find amount we nedd to increase by*/
+		amount=(infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x)-(openblk.screenrect.max.x-openblk.screenrect.min.x);
+		amountmax=amount;
+		/*Find maximum +ve x we can increase by*/
+		if (outlineblk.screenrect.max.x+amount>Desk_screen_size.x) amountmax=Desk_screen_size.x-outlineblk.screenrect.max.x;
+		amountmin=amount-amountmax;
+		/*Find maximum -ve x we can increase by*/
+		if (outlineblk.screenrect.min.x-amountmin<0) amountmin=outlineblk.screenrect.min.x;
+		if (outlineblk.screenrect.min.x<0) amountmin=0;
+		openblk.screenrect.max.x+=amountmax;
+		openblk.screenrect.min.x-=amountmin;
+		openblk.scroll=infoblk.block.scroll;
+		openblk.behind=infoblk.block.behind;
+		Desk_Wimp_OpenWindow(&openblk);
+	}
+	/*Reread window position as it might have changed*/
+	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
+	Desk_Wimp_GetWindowOutline(&outlineblk);
+	if ((maxyextent || Config_AutoIncreaseAlways()) && outlineblk.screenrect.max.y<=Desk_screen_size.y && Config_AutoIncreaseSize()) {
+		/*Enlarge window to show new extent in y direction*/
+		Desk_window_openblock openblk;
+		int amountmax=0,amountmin=0,amount=0;
+		openblk.window=windowdata->handle;
+		openblk.screenrect=infoblk.block.screenrect;
+		/*Find amount we nedd to increase by*/
+		amount=(infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y)-(openblk.screenrect.max.y-openblk.screenrect.min.y);
+		amountmax=amount;
+		/*Find maximum -ve y we can increase by*/
+		if (outlineblk.screenrect.min.y-amount<0) amountmax=outlineblk.screenrect.min.y;
+		amountmin=amount-amountmax;
+		/*Find maximum +ve y we can increase by*/
+		if (outlineblk.screenrect.max.y+amountmin>Desk_screen_size.y) amountmin=Desk_screen_size.y-outlineblk.screenrect.max.y;
+		if (outlineblk.screenrect.max.y>Desk_screen_size.y) amountmin=0;
+		openblk.screenrect.min.y-=amountmax;
+		openblk.screenrect.max.y+=amountmin;
+		openblk.scroll=infoblk.block.scroll;
+		openblk.behind=infoblk.block.behind;
+		Desk_Wimp_OpenWindow(&openblk);
+	}
 }
 
 Desk_bool Windows_BringToFront(void)
