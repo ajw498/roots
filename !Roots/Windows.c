@@ -3,6 +3,10 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.14  1999/10/24 23:16:38  AJW
+	Added person to layout when adding a second marriage
+	Added person to layout in a better position when adding a child
+
 	Revision 1.13  1999/10/24 18:38:22  AJW
 	Set title of windows
 
@@ -71,6 +75,7 @@
 
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
+#include "AJWLib.Assert.h"
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Icon.h"
 #include "AJWLib.Flex.h"
@@ -387,10 +392,36 @@ static Desk_bool Graphics_RedrawAddParents(Desk_event_pollblock *block,void *ref
 
 Desk_bool Graphics_AddParentsClick(Desk_event_pollblock *block,void *ref)
 {
+	int x=-INFINITY,window=-1,i,y;
+	elementptr person;
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	Desk_Window_Hide(addparentswin);
 	Database_Marry(addparentschild,addparentsperson);
-	/*What happens if a addparentschild has since been unlinked?*/
+	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle && windows[i].type==wintype_NORMAL) window=i;
+	if (window==-1) return Desk_FALSE;
+	person=addparentschild;
+	do {
+		for (i=0;i<windows[window].layout->numpeople;i++) {
+			if (windows[window].layout->person[i].person==person) {
+				if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+				y=windows[window].layout->person[i].y;
+			}
+		}
+	} while ((person=Database_GetMarriageLtoR(person))!=none);
+	person=addparentschild;
+	while ((person=Database_GetMarriageRtoL(person))!=none) {
+		for (i=0;i<windows[window].layout->numpeople;i++) {
+			if (windows[window].layout->person[i].person==person) {
+				if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+				y=windows[window].layout->person[i].y;
+			}
+		}
+	}
+	AJWLib_Assert(x!=-INFINITY);
+	x+=Graphics_PersonWidth()+Graphics_MarriageWidth()+Graphics_SecondMarriageGap();
+	Layout_AddPerson(windows[window].layout,addparentsperson,x,y);
+	Layout_AddMarriage(windows[window].layout,Database_GetMarriage(addparentsperson),x-Graphics_MarriageWidth(),y);
+	/*What happens if a addparentschild has since been unlinked?  hide addparents win whenever structure changes?*/
 	return Desk_TRUE;
 }
 
@@ -488,7 +519,7 @@ void Graphics_DragEnd(void *ref)
 		Desk_Window_ForceRedraw(dragdata->windowdata->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
 	} else if (dragdata->windowdata->type==wintype_UNLINKED) {
 		if (windows[window].type==wintype_NORMAL) {
-			if (!Database_IsUnlinked(initialperson)) return; /*This should never happen*/
+			AJWLib_Assert(Database_IsUnlinked(initialperson));
 			if (Database_GetLinked()==none) {
 				Database_LinkPerson(initialperson);
 				Layout_AddPerson(windows[window].layout,initialperson,0,0);
@@ -501,7 +532,7 @@ void Graphics_DragEnd(void *ref)
 				if (mousex>=windows[window].layout->person[i].x && mousex<=windows[window].layout->person[i].x+Graphics_PersonWidth()) {
 					if (mousey>=windows[window].layout->person[i].y && mousey<=windows[window].layout->person[i].y+Graphics_PersonHeight()) {
 						elementptr finalperson=windows[window].layout->person[i].person;
-						if (initialperson==finalperson) return; /*This should never happen*/
+						AJWLib_Assert(initialperson!=finalperson);
 						if (Database_GetMarriage(finalperson) && Database_GetFather(finalperson)==none) {
 							addparentsperson=initialperson;
 							addparentschild=finalperson;
@@ -520,9 +551,30 @@ void Graphics_DragEnd(void *ref)
 			for (i=0;i<windows[window].layout->nummarriages;i++) {
 				if (mousex>=windows[window].layout->marriage[i].x && mousex<=windows[window].layout->marriage[i].x+Graphics_MarriageWidth()) {
 					if (mousey>=windows[window].layout->marriage[i].y && mousey<=windows[window].layout->marriage[i].y+Graphics_PersonHeight()) {
+						elementptr person;
+						int x=-INFINITY;
 						Database_AddChild(windows[window].layout->marriage[i].marriage,initialperson);
 						windows[window].layout->marriage[i].childline=Desk_TRUE;
-						Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->marriage[i].x+(Graphics_MarriageWidth()-Graphics_PersonWidth())/2,windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
+						person=initialperson;
+						do {
+							int i;
+							for (i=0;i<windows[window].layout->numpeople;i++) {
+								if (windows[window].layout->person[i].person==person) {
+									if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+								}
+							}
+						} while ((person=Database_GetSiblingLtoR(person))!=none);
+						person=initialperson;
+						while ((person=Database_GetSiblingRtoL(person))!=none) {
+							int i;
+							for (i=0;i<windows[window].layout->numpeople;i++) {
+								if (windows[window].layout->person[i].person==person) {
+									if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+								}
+							}
+						}
+						if (x==-INFINITY) x=windows[window].layout->marriage[i].x-Graphics_PersonWidth()-Graphics_GapWidth()+Graphics_MarriageWidth()/2-Graphics_PersonWidth()/2;
+						Layout_AddPerson(windows[window].layout,initialperson,x+Graphics_PersonWidth()+Graphics_GapWidth(),windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
 						return;
 					}
 				}
