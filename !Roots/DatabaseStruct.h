@@ -1,6 +1,8 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+#include "Desk.Window.h"
+
 #define none 0
 
 
@@ -107,6 +109,7 @@ elementptr Database_GetSpouseFromMarriage(elementptr marriage);
 elementptr Database_GetPrincipalFromMarriage(elementptr marriage);
 Desk_bool Database_IsFirstMarriage(elementptr marriage);
 Desk_bool Database_IsUnlinked(elementptr person);
+void Database_Info(Desk_window_handle infowin);
 void Database_New(void);
 void Database_Init(void);
 void Database_Save(char *filename);
