@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.5 2001/06/26 22:16:21 AJW Exp $
+	$Id: EditGraphics.c,v 1.6 2001/07/01 23:06:48 AJW Exp $
 
 */
 
@@ -1374,7 +1374,17 @@ static Desk_bool EditGraphics_SaveStyle(Desk_event_pollblock *block,void *ref)
 	while (object) {
 		if (object->type==object_TEXT && object->object.text.type==text_FIELD && object->object.text.expand) {
 			fprintf(file,"tx=GetTextDimensions(fontp%d,GetField(person,\"%s\"));\n",objectnum,object->object.text.label);
-			fprintf(file,"if tx+12>w then w=tx+12 end\n");
+			switch (object->object.text.just) {
+				case just_LEFT:
+					fprintf(file,"if tx+%d+12>w then w=tx+%d+12 end\n",object->object.text.x,object->object.text.x);
+					break;
+				case just_CENTRED:
+					fprintf(file,"if tx+12>w then w=tx+12 end\n");
+					break;
+				case just_RIGHT:
+					fprintf(file,"if %d-tx-12<0 then w=w-(%d-tx-12) end\n",object->object.text.x,object->object.text.x);
+					break;
+			}
 		}
 		objectnum++;
 		object=object->next;
@@ -1698,8 +1708,8 @@ void EditGraphics_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,toolboxpane,toolbox_EDITSIZE,EditGraphics_OpenEditSizeWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,shapewin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
 	Desk_Event_Claim(Desk_event_KEY,shapewin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
-	Desk_Icon_InitIncDecHandler(shapewin,editshape_WIDTH,editshape_WIDTHUP,editshape_WIDTHDOWN,Desk_FALSE,5,0,9995,100);
-	Desk_Icon_InitIncDecHandler(shapewin,editshape_HEIGHT,editshape_HEIGHTUP,editshape_HEIGHTDOWN,Desk_FALSE,5,0,9995,100);
+	Desk_Icon_InitIncDecHandler(shapewin,editshape_WIDTH,editshape_WIDTHUP,editshape_WIDTHDOWN,Desk_FALSE,5,-995,9995,100);
+	Desk_Icon_InitIncDecHandler(shapewin,editshape_HEIGHT,editshape_HEIGHTUP,editshape_HEIGHTDOWN,Desk_FALSE,5,-995,9995,100);
 	Desk_Icon_InitIncDecHandler(shapewin,editshape_THICKNESS,editshape_THICKNESSUP,editshape_THICKNESSDOWN,Desk_FALSE,1,0,9995,0);
 	Desk_Icon_InitIncDecHandler(shapewin,editshape_X,editshape_XUP,editshape_XDOWN,Desk_FALSE,5,-995,9995,0);
 	Desk_Icon_InitIncDecHandler(shapewin,editshape_Y,editshape_YUP,editshape_YDOWN,Desk_FALSE,5,-995,9995,0);
