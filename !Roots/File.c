@@ -3,11 +3,14 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.5  2000/01/13 23:30:36  AJW
+	Added Graphics_GetDate
+
 	Revision 1.4  2000/01/13 22:58:36  AJW
 	Added call to Graphics_Save
 
 	Revision 1.3  2000/01/13 18:07:36  AJW
-	Added handling of modified flag, and stroing current filename
+	Added handling of modified flag, and storing current filename
 
 	Revision 1.2  2000/01/13 17:02:09  AJW
 	Altered to be a SaveHandler for Desk_Save_* fns
@@ -64,7 +67,7 @@
 #define FILEID "Root"
 #define FILEVERSION 100
 
-static char currentfilename[256],newfilename[256];
+static char currentfilename[256],newfilename[256],filedate[256];
 static Desk_bool modified=Desk_FALSE;
 
 Desk_bool File_SaveFile(char *filename,void *ref)
@@ -88,6 +91,7 @@ void File_NewFile(void)
 {
 	modified=Desk_FALSE;
 	strcpy(currentfilename,"Untitled");
+	strcpy(filedate,"Tomorrow"); /**/
 }
 
 void File_Modified(void)
@@ -95,9 +99,28 @@ void File_Modified(void)
 	modified=Desk_TRUE;
 }
 
+Desk_bool File_GetModified(void)
+{
+	return modified;
+}
+
+int File_GetSize(void)
+{
+	int size=4*sizeof(char)+sizeof(int);
+	size+=Database_GetSize();
+/*	size+=GraphicsConfig_GetSize();*/
+	size+=Graphics_GetSize();
+	return size;
+}
+
 char *File_GetFilename(void)
 {
 	return currentfilename;
+}
+
+char *File_GetDate(void)
+{
+	return filedate;
 }
 
 void File_Result(Desk_save_result result,void *ref)
@@ -106,6 +129,8 @@ void File_Result(Desk_save_result result,void *ref)
 		case Desk_save_SAVEOK:
 			strcpy(currentfilename,newfilename);
 			modified=Desk_FALSE;
+			/*Update window titles*/
+			/*update date*/
 			break;
 		case Desk_save_RECEIVERFAILED:
 			Desk_Error_Report(1,"Data transfer failed: reciever died"); /*msgs, Error2?*/
