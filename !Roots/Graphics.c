@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.35 2000/06/29 21:53:10 AJW Exp $
+	$Id: Graphics.c,v 1.36 2000/07/22 21:11:47 AJW Exp $
 
 */
 
@@ -171,7 +171,7 @@ typedef union details {
 
 typedef struct object {
 	graphictype type;
-	sex sex;
+	sextype sex;
 	details details;
 } object;
 
@@ -179,7 +179,7 @@ typedef struct fieldproperties {
 	graphictype type;
     personfieldtype personfieldtype;
     marriagefieldtype marriagefieldtype;
-	sex sex;
+	sextype sex;
 	textproperties textproperties;
 } fieldproperties;
 
@@ -252,11 +252,11 @@ static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
 static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype=graphictype_INVALID;
-	sex sex=sex_ANY;
+	sextype sex=sex_ANY;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	if (values[0][1]=='_') {
-		sex=toupper(values[0][0]);
+		sex=(sextype)toupper(values[0][0]);
 		values[0]+=2;
 	}
 	if (!strcmp(values[0],LINE)) graphictype=graphictype_LINE;
@@ -961,17 +961,47 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 		if (Config_Title()) {
 			Desk_wimp_point *coords;
 			coords=AJWLib_Font_GetWidthAndHeight(graphicsdata.title.font->handle,Database_GetTitle());
-			Graphics_PlotText(scale,originx,originy,layout->title.x-coords->x/2,layout->title.y-coords->y/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+			if ((originx+((layout->title.x-coords->x/2)*scale)/100)-4<cliprect->max.x) {
+				if ((originx+((layout->title.x+coords->x/2)*scale)/100)+4>cliprect->min.x) {
+					if ((originy+((layout->title.y-Graphics_TitleHeight())*scale)/100)<cliprect->max.y) {
+						Graphics_PlotText(scale,originx,originy,layout->title.x-coords->x/2,layout->title.y-coords->y/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+					}
+				}
+			}
 		}
 	}
 	for (i=0;i<layout->numchildren;i++) {
-		Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
+		if ((originx+((layout->children[i].leftx-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
+			if ((originx+((layout->children[i].rightx+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
+				if ((originy+((layout->children[i].y+Graphics_PersonHeight())*scale)/100)<cliprect->max.y) {
+					if ((originy+((layout->children[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())*scale)/100)>cliprect->min.y) {
+						Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
+					}
+				}
+			}
+		}
 	}
 	for (i=0;i<layout->nummarriages;i++) {
-		Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
+		if ((originx+((layout->marriage[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
+			if ((originx+((layout->marriage[i].x+Graphics_MarriageWidth()+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
+				if ((originy+((layout->marriage[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
+					if ((originy+((layout->marriage[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
+						Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
+					}
+				}
+			}
+		}
 	}
 	for (i=0;i<layout->numpeople;i++) {
-		Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,plotselection ? Database_GetSelect(layout->person[i].person) : Desk_FALSE);
+		if ((originx+((layout->person[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
+			if ((originx+((layout->person[i].x+Graphics_PersonWidth()+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
+				if ((originy+((layout->person[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
+					if ((originy+((layout->person[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
+						Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,plotselection ? Database_GetSelect(layout->person[i].person) : Desk_FALSE);
+					}
+				}
+			}
+		}
 	}
 }
 

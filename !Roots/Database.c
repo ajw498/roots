@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.33 2000/07/06 20:50:51 AJW Exp $
+	$Id: Database.c,v 1.34 2000/07/22 21:11:45 AJW Exp $
 
 */
 
@@ -361,7 +361,7 @@ char *Database_GetName(elementptr person)
 	return result;
 }
 
-sex Database_GetSex(elementptr person)
+sextype Database_GetSex(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(person!=none);
