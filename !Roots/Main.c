@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.5  2000/01/11 17:13:24  AJW
+	Removed Database_Load until it works
+
 	Revision 1.4  1999/10/11 22:30:06  AJW
 	Changed to use Error2
 
@@ -56,8 +59,8 @@
 
 /*	Macros  */
 
-#define VERSION "0.01 (01-Apr-99)"
-#define DIRPREFIX "FT"
+#define VERSION "0.50 (27-Oct-99)"
+#define DIRPREFIX "Roots"
 
 #define iconbarmenu_INFO 0
 #define iconbarmenu_CHOICES 1
@@ -77,7 +80,7 @@ extern Desk_bool halt;
 
 Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 {
-	Database_Load(block->data.message.data.dataload.filename);
+/*	Database_Load(block->data.message.data.dataload.filename);*/
 	return Desk_TRUE;
 }
 
@@ -89,7 +92,7 @@ Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 		return Desk_TRUE;
 	}
 #if DEBUG
-if (block->data.mouse.button.data.adjust==1) halt=Desk_FALSE;
+	if (block->data.mouse.button.data.adjust==1) halt=Desk_FALSE;
 #endif
 	return Desk_FALSE;
 }
@@ -105,6 +108,7 @@ void IconBarMenuClick(int entry, void *r)
 
 int main(void)
 {
+	Desk_Debug_SetLevel(99);
 	Desk_Error2_Init_JumpSig(); /*Just call handleallsignals here?*/
 	Desk_Error2_SetHandler(AJWLib_Error2_ReportFatal);
 	Desk_Resource_Initialise(DIRPREFIX);
