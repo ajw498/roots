@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.57 2000/11/11 21:51:20 AJW Exp $
+	$Id: Graphics.c,v 1.58 2000/11/19 20:53:03 AJW Exp $
 
 */
 
@@ -49,6 +49,7 @@
 
 #define LUA_REENTRANT
 #include "Lua.Lua.h"
+#include "Lua.LuaLib.h"
 
 #include "Database.h"
 #include "Graphics.h"
@@ -1179,6 +1180,7 @@ static void Graphics_LuaInit(void)
 
 	/*Initialise Lua*/
 	luadetails.state=lua_open(0);
+	lua_strlibopen(luadetails.state);
 	/*Replace default error handler*/
 	lua_register(luadetails.state,"_ERRORMESSAGE",Graphics_LuaError);
 	/*Register functions that can be called from Lua*/

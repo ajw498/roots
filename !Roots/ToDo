@@ -42,3 +42,16 @@ third marriages go under the second spouse and the third marriage child can be c
 marriages should have lower prioity than people when being selected
 
 dragging a selectbox when the pointer is over the title does not work
+
+(option) dont create extra spouses when marriage doesn't have both spouses
+
+not copying default styles on RO 3.7
+CRLF in GEDCOM files
+CRLF in User details files
+Emphasize in manual how layout is up to the user and is not controlled by roots, and mention how sibling lines can overlap etc
+when a person is linked to themselves, give details of person then continue loading
+check for 0 length text when exporting drawfiles (does it do this already?)
+example graphics style that prints date of birth if avaliable else date of baptism? (Derrick porter)
+Export of example file give an extra person
+
+
