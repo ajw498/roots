@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.56 2000/11/11 20:24:36 AJW Exp $
+	$Id: Graphics.c,v 1.57 2000/11/11 21:51:20 AJW Exp $
 
 */
 
@@ -217,6 +217,8 @@ static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRe
 static plottextfn Graphics_PlotText=NULL;
 static layout *redrawlayout=NULL;
 static Desk_bool uselua=Desk_FALSE;
+
+static void Graphics_LuaInit(void);
 
 static unsigned int Graphics_RGBToPalette(char *str)
 /* Convert RRGGBB hex colour to a palette format 0xBBGGRR00*/
@@ -692,6 +694,26 @@ void Graphics_LoadPersonFileLine(char *line)
 	personfile[offset+strlen(line)+1]='\0';
 }
 
+void Graphics_LoadLuaFileLine(char *line)
+/* Add the line to the personfile block, allocating as nessacery*/
+{
+	int offset;
+
+	AJWLib_Assert(line!=NULL);
+	if (luafile==NULL) {
+		AJWLib_Flex_Alloc((flex_ptr)&luafile,strlen(line)+2);
+		offset=0;
+	} else {
+		offset=AJWLib_Flex_Size((flex_ptr)&luafile);
+		AJWLib_Flex_Extend((flex_ptr)&luafile,offset+strlen(line)+1);
+		/* Overwrite existing '\0'*/
+		offset--;
+	}
+	strcpy(luafile+offset,line);
+	luafile[offset+strlen(line)]='\n';
+	luafile[offset+strlen(line)+1]='\0';
+}
+
 void Graphics_LoadMarriageFileLine(char *line)
 /* Add the line to the marriagefile block, allocating as nessacery*/
 {
@@ -760,22 +782,38 @@ void Graphics_SetGraphicsStyle(char *style)
 	AJWLib_Assert(style!=NULL);
 	strcpy(currentstyle,style);
 
-	Graphics_ParseStyle();
+	if (luafile!=NULL) {
+		uselua=Desk_TRUE;
+		Graphics_LuaInit();
+	} else {
+		uselua=Desk_FALSE;
+		Graphics_ParseStyle();
+	}
 
 	Desk_Error2_Try {
 		if (Config_ImportGraphicsStyle()) {
+			int type;
 			sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,currentstyle);
-			if (!Desk_File_IsDirectory(filename)) {
-				sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
-				if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
-				Desk_File_SaveMemory(filename,personfile,strlen(personfile));
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
-				Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
-				Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
-				Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
+			Desk_Error2_CheckOS(Desk_SWI(2,1,Desk_SWI_OS_File,17,filename,&type));
+			if (type==0) {
+				/*Not found, so import*/
+				if (uselua) {
+					sprintf(filename,"%s.%s",choiceswrite,GRAPHICSDIR);
+					if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
+					sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
+					Desk_File_SaveMemory(filename,luafile,strlen(luafile));
+				} else {
+					sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
+					if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
+					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
+					Desk_File_SaveMemory(filename,personfile,strlen(personfile));
+					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
+					Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
+					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
+					Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
+					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
+					Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
+				}
 			}
 		}
 	} Desk_Error2_Catch {
@@ -788,53 +826,59 @@ void Graphics_SaveGEDCOM(FILE *file)
 	int i;
 	
 	AJWLib_Assert(file!=NULL);
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	AJWLib_Assert(personfile!=NULL);
-	AJWLib_Assert(marriagefile!=NULL);
-	AJWLib_Assert(dimensionsfile!=NULL);
-	AJWLib_Assert(titlefile!=NULL);
 
 	fprintf(file,"0 @G1@ _GRAPHICS\n");
-	fprintf(file,"1 _PERSONFILE\n2 _LINE ");
-	for (i=0;personfile[i]!='\0';i++) {
-		if (personfile[i]=='\n') {
-			fprintf(file,"\n2 _LINE ");
-		} else {
-			fputc(personfile[i],file);
+	if (uselua) {
+		fprintf(file,"1 _LUAFILE\n2 _LINE ");
+		for (i=0;luafile[i]!='\0';i++) {
+			if (luafile[i]=='\n') {
+				fprintf(file,"\n2 _LINE ");
+			} else {
+				fputc(luafile[i],file);
+			}
 		}
-	}
-	fputc('\n',file);
-
-	fprintf(file,"1 _MARRIAGEFILE\n2 _LINE ");
-	for (i=0;marriagefile[i]!='\0';i++) {
-		if (marriagefile[i]=='\n') {
-			fprintf(file,"\n2 _LINE ");
-		} else {
-			fputc(marriagefile[i],file);
+		fputc('\n',file);
+	} else {
+		fprintf(file,"1 _PERSONFILE\n2 _LINE ");
+		for (i=0;personfile[i]!='\0';i++) {
+			if (personfile[i]=='\n') {
+				fprintf(file,"\n2 _LINE ");
+			} else {
+				fputc(personfile[i],file);
+			}
 		}
-	}
-	fputc('\n',file);
-
-	fprintf(file,"1 _TITLEFILE\n2 _LINE ");
-	for (i=0;titlefile[i]!='\0';i++) {
-		if (titlefile[i]=='\n') {
-			fprintf(file,"\n2 _LINE ");
-		} else {
-			fputc(titlefile[i],file);
+		fputc('\n',file);
+	
+		fprintf(file,"1 _MARRIAGEFILE\n2 _LINE ");
+		for (i=0;marriagefile[i]!='\0';i++) {
+			if (marriagefile[i]=='\n') {
+				fprintf(file,"\n2 _LINE ");
+			} else {
+				fputc(marriagefile[i],file);
+			}
 		}
-	}
-	fputc('\n',file);
-
-	fprintf(file,"1 _DIMENSIONSFILE\n2 _LINE ");
-	for (i=0;dimensionsfile[i]!='\0';i++) {
-		if (dimensionsfile[i]=='\n') {
-			fprintf(file,"\n2 _LINE ");
-		} else {
-			fputc(dimensionsfile[i],file);
+		fputc('\n',file);
+	
+		fprintf(file,"1 _TITLEFILE\n2 _LINE ");
+		for (i=0;titlefile[i]!='\0';i++) {
+			if (titlefile[i]=='\n') {
+				fprintf(file,"\n2 _LINE ");
+			} else {
+				fputc(titlefile[i],file);
+			}
 		}
+		fputc('\n',file);
+	
+		fprintf(file,"1 _DIMENSIONSFILE\n2 _LINE ");
+		for (i=0;dimensionsfile[i]!='\0';i++) {
+			if (dimensionsfile[i]=='\n') {
+				fprintf(file,"\n2 _LINE ");
+			} else {
+				fputc(dimensionsfile[i],file);
+			}
+		}
+		fputc('\n',file);
 	}
-	fputc('\n',file);
 
 	fprintf(file,"1 _CURRENTSTYLE %s\n",currentstyle);
 }
@@ -847,7 +891,7 @@ void Graphics_RemoveStyle(void)
 		lua_close(luadetails.state);
 		for (i=0;i<luadetails.numberoffonts;i++) Desk_Font2_ReleaseFont(&(luadetails.fonts[i].handle));
 		luadetails.numberoffonts=0;
-		if (luafile!=NULL) AJWLib_Flex_Free((flex_ptr)&luafile); 
+		if (luafile!=NULL) AJWLib_Flex_Free((flex_ptr)&luafile);
 	} else {
 		Graphics_ReleaseFonts();
 		graphicsdata.numpersonobjects=0;
@@ -969,7 +1013,6 @@ static int Graphics_LuaClaimFont(lua_State *state)
 {
 	int handle;
 	const char *fontname;
-	Desk_os_error *err;
 
 	if (lua_gettop(state)!=2) Graphics_LuaThrowError(state,"Error.Lua5:Wrong args to %s","ClaimFont");
 	if (!lua_isstring(state,1)) Graphics_LuaThrowError(state,"Error.Lua6:Bad arg %d to %s",1,"ClaimFont");
@@ -980,8 +1023,15 @@ static int Graphics_LuaClaimFont(lua_State *state)
 	luadetails.fonts[handle].fontname=Desk_DeskMem_Malloc(strlen(fontname)+1);
 	strcpy(luadetails.fonts[handle].fontname,fontname);
 	luadetails.fonts[handle].size=(int)(16*lua_tonumber(state,2));
-	err=Desk_Font2_ClaimFont(&(luadetails.fonts[handle].handle),luadetails.fonts[handle].fontname,luadetails.fonts[handle].size,luadetails.fonts[handle].size);
-	if (err) Graphics_LuaThrowError(state,err->errmess);
+	Desk_Error2_Try {
+		Desk_Font2_ClaimFont(&(luadetails.fonts[handle].handle),luadetails.fonts[handle].fontname,luadetails.fonts[handle].size,luadetails.fonts[handle].size);
+	} Desk_Error2_Catch {
+		if (Desk_Error2_globalblock.type==Desk_error2_type_OSERROR) {
+			Graphics_LuaThrowError(state,"Error.NoFont:%s",Desk_Error2_globalblock.data.oserror->errmess);
+		} else {
+			Desk_Error2_ReThrow();
+		}
+	} Desk_Error2_EndCatch
 	luadetails.numberoffonts++;
 	lua_pushnumber(state,handle);
 	return 1;
@@ -1122,6 +1172,46 @@ static void Graphics_LuaCheckError(int returncode)
 	}
 }
 
+static void Graphics_LuaInit(void)
+{
+	luadetails.error="Init Error"; /*Don't use lua if an error occours before we are initialised*/
+	luadetails.numberoffonts=0;
+
+	/*Initialise Lua*/
+	luadetails.state=lua_open(0);
+	/*Replace default error handler*/
+	lua_register(luadetails.state,"_ERRORMESSAGE",Graphics_LuaError);
+	/*Register functions that can be called from Lua*/
+	lua_register(luadetails.state,"PlotLine",Graphics_LuaPlotLine);
+	lua_register(luadetails.state,"PlotRectangle",Graphics_LuaPlotRectangle);
+	lua_register(luadetails.state,"PlotRectangleFilled",Graphics_LuaPlotRectangleFilled);
+	lua_register(luadetails.state,"PlotText",Graphics_LuaPlotText);
+	lua_register(luadetails.state,"ClaimFont",Graphics_LuaClaimFont);
+	lua_register(luadetails.state,"GetField",Graphics_LuaGetField);
+	lua_register(luadetails.state,"GetCoords",Graphics_LuaGetCoords);
+	lua_register(luadetails.state,"GetChild",Graphics_LuaGetChild);
+	lua_register(luadetails.state,"GetParentsMarriage",Graphics_LuaGetParentsMarriage);
+	lua_register(luadetails.state,"GetTextDimensions",Graphics_LuaGetTextDimensions);
+	lua_register(luadetails.state,"Colour",Graphics_LuaColour);
+	/*Load the lua file, and run any bits of it that are not functions*/
+	luadetails.error=NULL;
+	Desk_Error2_Try {
+		Graphics_LuaCheckError(lua_dobuffer(luadetails.state,luafile,AJWLib_Flex_Size((flex_ptr)&luafile)-1,currentstyle));
+		/*Load dimesions from global vars*/
+		Graphics_LuaGetGlobal(luadetails.state,"gapheightabove",graphicsdata.gapheightabove);
+		Graphics_LuaGetGlobal(luadetails.state,"gapheightbelow",graphicsdata.gapheightbelow);
+		Graphics_LuaGetGlobal(luadetails.state,"personwidth",graphicsdata.personwidth);
+		Graphics_LuaGetGlobal(luadetails.state,"personheight",graphicsdata.personheight);
+		Graphics_LuaGetGlobal(luadetails.state,"gapwidth",graphicsdata.gapwidth);
+		Graphics_LuaGetGlobal(luadetails.state,"marriagewidth",graphicsdata.marriagewidth);
+		Graphics_LuaGetGlobal(luadetails.state,"windowborder",graphicsdata.windowborder);
+		Graphics_LuaGetGlobal(luadetails.state,"titleheight",graphicsdata.titleheight);
+	} Desk_Error2_Catch {
+		if (luadetails.error==NULL) luadetails.error="Unknown error";
+		AJWLib_Error2_Report("%s");
+	} Desk_Error2_EndCatch
+}
+
 void Graphics_LoadStyle(char *style)
 {
 	char filename[256];
@@ -1140,50 +1230,23 @@ void Graphics_LoadStyle(char *style)
 	if (Desk_File_IsDirectory(filename)) uselua=Desk_FALSE; else uselua=Desk_TRUE;
 
 	Desk_Error2_Try {
+		strcpy(currentstyle,style);
 		if (uselua) {
 			int size;
 
-			uselua=Desk_FALSE; /*Don't use lua if an error occours before we are initialised*/
-			luadetails.error=NULL;
+			luadetails.error="Init Error"; /*Don't use lua if an error occours before we are initialised*/
 			luadetails.numberoffonts=0;
 			size=Desk_File_Size(filename);
 			AJWLib_Flex_Alloc((flex_ptr)&luafile,size+1);
 			if (size) Desk_File_LoadTo(filename,luafile,NULL);
-			/*Initialise Lua*/
-			luadetails.state=lua_open(0);
-			/*Replace default error handler*/
-			lua_register(luadetails.state,"_ERRORMESSAGE",Graphics_LuaError);
-			/*Register functions that can be called from Lua*/
-			lua_register(luadetails.state,"PlotLine",Graphics_LuaPlotLine);
-			lua_register(luadetails.state,"PlotRectangle",Graphics_LuaPlotRectangle);
-			lua_register(luadetails.state,"PlotRectangleFilled",Graphics_LuaPlotRectangleFilled);
-			lua_register(luadetails.state,"PlotText",Graphics_LuaPlotText);
-			lua_register(luadetails.state,"ClaimFont",Graphics_LuaClaimFont);
-			lua_register(luadetails.state,"GetField",Graphics_LuaGetField);
-			lua_register(luadetails.state,"GetCoords",Graphics_LuaGetCoords);
-			lua_register(luadetails.state,"GetChild",Graphics_LuaGetChild);
-			lua_register(luadetails.state,"GetParentsMarriage",Graphics_LuaGetParentsMarriage);
-			lua_register(luadetails.state,"GetTextDimensions",Graphics_LuaGetTextDimensions);
-			lua_register(luadetails.state,"Colour",Graphics_LuaColour);
-			/*Load the lua file, and run any bits of it that are not functions*/
-			Graphics_LuaCheckError(lua_dobuffer(luadetails.state,luafile,size,style));
-			/*Load dimesions from global vars*/
-			Graphics_LuaGetGlobal(luadetails.state,"gapheightabove",graphicsdata.gapheightabove);
-			Graphics_LuaGetGlobal(luadetails.state,"gapheightbelow",graphicsdata.gapheightbelow);
-			Graphics_LuaGetGlobal(luadetails.state,"personwidth",graphicsdata.personwidth);
-			Graphics_LuaGetGlobal(luadetails.state,"personheight",graphicsdata.personheight);
-			Graphics_LuaGetGlobal(luadetails.state,"gapwidth",graphicsdata.gapwidth);
-			Graphics_LuaGetGlobal(luadetails.state,"marriagewidth",graphicsdata.marriagewidth);
-			Graphics_LuaGetGlobal(luadetails.state,"windowborder",graphicsdata.windowborder);
-			Graphics_LuaGetGlobal(luadetails.state,"titleheight",graphicsdata.titleheight);
-			uselua=Desk_TRUE;
+			luafile[size]='\0';
+			Graphics_LuaInit();
 		} else {
 			Graphics_LoadStyleFile(style,"Person",&personfile);
 			Graphics_LoadStyleFile(style,"Marriage",&marriagefile);
 			Graphics_LoadStyleFile(style,"Dimensions",&dimensionsfile);
 			Graphics_LoadStyleFile(style,"Title",&titlefile);
 			Graphics_ParseStyle();
-			strcpy(currentstyle,style);
 		}
 	} Desk_Error2_Catch {
 		Graphics_RemoveStyle();

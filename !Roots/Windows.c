@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.94 2000/10/20 19:37:34 AJW Exp $
+	$Id: Windows.c,v 1.95 2000/11/11 21:51:25 AJW Exp $
 
 */
 
@@ -195,8 +195,18 @@ void Windows_ChangedLayout(void)
 
 static void Windows_StyleMenuClick(int entry,void *ref)
 {
+	Desk_menu_item *item;
 	Desk_UNUSED(ref);
 	Graphics_RemoveStyle();
+	/*Untick all entries*/
+	item=Desk_Menu_FirstItem(fileconfigmenu);
+	while (!item->menuflags.data.last) {
+		item->menuflags.data.ticked=0;
+		item++;
+	}
+	item->menuflags.data.ticked=0;
+	/*Tick the entry clicked on*/
+	Desk_Menu_SetFlags(fileconfigmenu,entry,1,0);
 	Graphics_LoadStyle(Desk_Menu_GetText(fileconfigmenu,entry));
 	Modules_ChangedStructure();
 }
