@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.11  2000/01/14 13:50:10  AJW
+	Renamed Graphics.h to Windos.h etc
+
 	Revision 1.10  2000/01/14 13:14:55  AJW
 	Changed to Graphics_
 	Added Graphics_Redraw etc.
@@ -77,7 +80,7 @@
 
 #include "Database.h"
 #include "Graphics.h"
-#include "GConfig.h"
+#include "Windows.h"
 #include "Config.h"
 #include "Layout.h"
 #include "Draw.h"
