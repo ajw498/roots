@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.26 2000/05/13 20:32:10 uid1 Exp $
+	$Id: Graphics.c,v 1.27 2000/05/13 22:48:02 AJW Exp $
 
 */
 
@@ -206,6 +206,7 @@ typedef struct graphics {
 } graphics;
 
 static graphics graphicsdata;
+static char *personfile=NULL,*marriagefile=NULL,*dimensionsfile=NULL,*titlefile=NULL;
 static char currentstyle[256]="";
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
 static plottextfn Graphics_PlotText=NULL;
@@ -214,185 +215,6 @@ static unsigned int Graphics_RGBToPalette(char *str)
 {
 	unsigned int colour=(unsigned int)strtol(str,NULL,16);
 	return (((colour & 0x00FF0000)>>8) | ((colour & 0x0000FF00)<<8) | ((colour & 0x000000FF)<<24));
-}
-
-static char *Graphics_PaletteToRGB(unsigned int colour/*,char *buf*/)
-{
-	static char buf[256]; /*???*/
-	sprintf(buf,"%02X%02X%02X",(colour & 0x0000FF00)>>8,(colour & 0x00FF0000)>>16,(colour & 0xFF000000)>>24);
-	return buf;
-}
-
-static void Graphics_SaveDimensions(char *style)
-{
-	FILE *file=NULL;
-	char filename[256];
-	sprintf(filename,"%s.%s.Dimensions",GRAPHICSWRITE,style);
-	file=AJWLib_File_fopen(filename,"w");
-	fprintf(file,"%s,%d\n",PERSONWIDTH,Graphics_ConvertFromOS(graphicsdata.personwidth));
-	fprintf(file,"%s,%d\n",PERSONHEIGHT,Graphics_ConvertFromOS(graphicsdata.personheight));
-	fprintf(file,"%s,%d\n",GAPHEIGHTABOVE,Graphics_ConvertFromOS(graphicsdata.gapheightabove));
-	fprintf(file,"%s,%d\n",GAPHEIGHTBELOW,Graphics_ConvertFromOS(graphicsdata.gapheightbelow));
-	fprintf(file,"%s,%d\n",GAPWIDTH,Graphics_ConvertFromOS(graphicsdata.gapwidth));
-	fprintf(file,"%s,%d\n",MARRIAGEWIDTH,Graphics_ConvertFromOS(graphicsdata.marriagewidth));
-	fprintf(file,"%s,%d\n",SECONDMARRIAGEGAP,Graphics_ConvertFromOS(graphicsdata.secondmarriagegap));
-	fprintf(file,"%s,%d\n",WINDOWBORDER,Graphics_ConvertFromOS(graphicsdata.windowborder));
-	fprintf(file,"%s,%d\n",GAPHEIGHTUNLINKED,Graphics_ConvertFromOS(graphicsdata.gapheightunlinked));
-	AJWLib_File_fclose(file);
-}
-
-static void Graphics_SaveTitle(char *style)
-{
-	FILE *file=NULL;
-	char filename[256];
-	char buffer1[10],buffer2[10];
-	sprintf(filename,"%s.%s.Title",GRAPHICSWRITE,style);
-	file=AJWLib_File_fopen(filename,"w");
-	fprintf(file,"%s,%d,%d,%s,%s,%s\n",FILETITLE,Graphics_ConvertFromOS(graphicsdata.titleheight),graphicsdata.title.size,Graphics_PaletteToRGB(graphicsdata.title.colour/*,buffer1*/),Graphics_PaletteToRGB(graphicsdata.title.bgcolour/*,buffer2*/),graphicsdata.title.fontname);
-	AJWLib_File_fclose(file);
-}
-
-static void Graphics_SavePerson(char *style)
-{
-	FILE *file=NULL;
-	char filename[256];
-	int i;
-	sprintf(filename,"%s.%s.Person",GRAPHICSWRITE,style);
-	file=AJWLib_File_fopen(filename,"w");
-	for (i=0;i<graphicsdata.numpersonobjects;i++) {
-		switch (graphicsdata.person[i].type) {
-			case graphictype_LINE:
-				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",LINE,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
-				break;
-			case graphictype_CHILDLINE:
-				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",CHILDLINE,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
-				break;
-			case graphictype_RECTANGLE:
-				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",BOX,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
-				break;
-			case graphictype_FILLEDRECTANGLE:
-				fprintf(file,"%s,%d,%d,%d,%d,%s\n",FILLEDBOX,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
-				break;
-			case graphictype_CENTREDTEXTLABEL:
-				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",CENTREDTEXT,Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.y),graphicsdata.person[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.bgcolour),graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.text);
-				break;
-			case graphictype_TEXTLABEL:
-				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",TEXT,Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.y),graphicsdata.person[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.bgcolour),graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.text);
-				break;
-			default:
-				AJWLib_Assert(0);
-		}
-	}
-	for (i=0;i<NUMPERSONFIELDS;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) fprintf(file,"%s",CENTREDFIELD); else fprintf(file,"%s",FIELD);
-			fprintf(file,",%d,%d,%d,%s,%s,%s,",Graphics_ConvertFromOS(graphicsdata.personfields[i].textproperties.x),Graphics_ConvertFromOS(graphicsdata.personfields[i].textproperties.y),graphicsdata.personfields[i].textproperties.size,Graphics_PaletteToRGB(graphicsdata.personfields[i].textproperties.colour),Graphics_PaletteToRGB(graphicsdata.personfields[i].textproperties.bgcolour),graphicsdata.personfields[i].textproperties.fontname);
-			switch (i) {
-				case personfieldtype_SURNAME:
-					fprintf(file,"%s\n",SURNAME);
-					break;
-				case personfieldtype_FORENAME:
-					fprintf(file,"%s\n",FORENAME);
-					break;
-				case personfieldtype_NAME:
-					fprintf(file,"%s\n",NAME);
-					break;
-				case personfieldtype_MIDDLENAMES:
-					fprintf(file,"%s\n",MIDDLENAMES);
-					break;
-				case personfieldtype_FULLNAME:
-					fprintf(file,"%s\n",FULLNAME);
-					break;
-				case personfieldtype_TITLE:
-					fprintf(file,"%s\n",TITLE);
-					break;
-				case personfieldtype_TITLEDNAME:
-					fprintf(file,"%s\n",TITLEDNAME);
-					break;
-				case personfieldtype_TITLEDFULLNAME:
-					fprintf(file,"%s\n",TITLEDFULLNAME);
-					break;
-				case personfieldtype_SEX:
-					fprintf(file,"%s\n",SEX);
-					break;
-				case personfieldtype_DOB:
-					fprintf(file,"%s\n",DOB);
-					break;
-				case personfieldtype_DOD:
-					fprintf(file,"%s\n",DOD);
-					break;
-				case personfieldtype_BIRTHPLACE:
-					fprintf(file,"%s\n",BIRTHPLACE);
-					break;
-				case personfieldtype_USER1:
-					fprintf(file,"%s\n",USER1);
-					break;
-				case personfieldtype_USER2:
-					fprintf(file,"%s\n",USER2);
-					break;
-				case personfieldtype_USER3:
-					fprintf(file,"%s\n",USER3);
-					break;
-				default:
-					AJWLib_Assert(0);
-			}
-		}
-	}
-	AJWLib_File_fclose(file);
-}
-
-static void Graphics_SaveMarriage(char *style)
-{
-	FILE *file=NULL;
-	char filename[256];
-	int i;
-	sprintf(filename,"%s.%s.Marriage",GRAPHICSWRITE,style);
-	file=AJWLib_File_fopen(filename,"w");
-	fprintf(file,"%s,%d,%s\n",SIBLINGLINE,Graphics_ConvertFromOS(graphicsdata.siblinglinethickness),Graphics_PaletteToRGB(graphicsdata.siblinglinecolour));
-	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
-		switch (graphicsdata.marriage[i].type) {
-			case graphictype_LINE:
-				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",LINE,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
-				break;
-			case graphictype_CHILDLINE:
-				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",CHILDLINE,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
-				break;
-			case graphictype_RECTANGLE:
-				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",BOX,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
-				break;
-			case graphictype_FILLEDRECTANGLE:
-				fprintf(file,"%s,%d,%d,%d,%d,%s\n",FILLEDBOX,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
-				break;
-			case graphictype_CENTREDTEXTLABEL:
-				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",CENTREDTEXT,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.y),graphicsdata.marriage[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.bgcolour),graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.text);
-				break;
-			case graphictype_TEXTLABEL:
-				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",TEXT,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.y),graphicsdata.marriage[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.bgcolour),graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.text);
-				break;
-			default:
-				AJWLib_Assert(0);
-		}
-	}
-	for (i=0;i<NUMMARRIAGEFIELDS;i++) {
-		if (graphicsdata.marriagefields[i].plot) {
-			if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) fprintf(file,"%s",CENTREDFIELD); else fprintf(file,"%s",FIELD);
-			fprintf(file,",%d,%d,%d,%s,%s,%s,",Graphics_ConvertFromOS(graphicsdata.marriagefields[i].textproperties.x),Graphics_ConvertFromOS(graphicsdata.marriagefields[i].textproperties.y),graphicsdata.marriagefields[i].textproperties.size,Graphics_PaletteToRGB(graphicsdata.marriagefields[i].textproperties.colour),Graphics_PaletteToRGB(graphicsdata.marriagefields[i].textproperties.bgcolour),graphicsdata.marriagefields[i].textproperties.fontname);
-			switch (i) {
-				case marriagefieldtype_PLACE:
-					fprintf(file,"%s\n",PLACE);
-					break;
-				case marriagefieldtype_DATE:
-					fprintf(file,"%s\n",DATE);
-					break;
-				case marriagefieldtype_DIVORCE:
-					fprintf(file,"%s\n",DIVORCE);
-					break;
-				default:
-					AJWLib_Assert(0);
-			}
-		}
-	}
-	AJWLib_File_fclose(file);
 }
 
 static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
@@ -649,23 +471,17 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 	}
 }
 
-static void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
+static void Graphics_ParseFile(char **file,void (*decodefn)(char *values[],int numvalues,int linenum))
 {
-	FILE *file=NULL;
-	char fullfilename[256];
-	int ch=0,line=0;
-	sprintf(fullfilename,"%s.%s",GRAPHICSREAD,style);
-	if (!Desk_File_IsDirectory(fullfilename)) AJWLib_Error2_HandleMsgs2("Error.NoDir:Dir %s does not exist",style);
-	sprintf(fullfilename,"%s.%s.%s",GRAPHICSREAD,style,filename);
-	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs3("Error.NoFile:File %s does not exist in dir %s",filename,style);
-	file=AJWLib_File_fopen(fullfilename,"r"); /*Error will be caught by caller*/
-	while (ch!=EOF) {
+	int ch=0,m=0,line=0;
+	AJWLib_Assert(*file!=NULL);
+	while ((*file)[m]!='\0') {
 		char str[256];
 		int i=-1;
-		ch=fgetc(file);
-		while (ch!=EOF && ch!='\n' && i<254) {
+		ch=(*file)[m++];
+		while (ch!='\0' && ch!='\n' && i<254) {
 			str[++i]=ch;
-			ch=fgetc(file);
+			ch=(*file)[m++];
 		}
 		str[++i]='\0';
 		line++;
@@ -683,7 +499,6 @@ static void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *
 			(*decodefn)(values,j,line);
 		}
 	}
-	AJWLib_File_fclose(file);
 }
 
 int Graphics_PersonHeight(void)
@@ -742,12 +557,13 @@ int Graphics_GetSize(void)
 	int size=0;
 	if (graphicsdata.person!=NULL && graphicsdata.marriage!=NULL) {
 		size+=sizeof(tag)+sizeof(int);
-		size+=sizeof(graphicsdata);
-		size+=sizeof(object)*graphicsdata.numpersonobjects;
-		size+=sizeof(object)*graphicsdata.nummarriageobjects;
-		size+=sizeof(int);
+		size+=strlen(personfile);
+		size+=strlen(marriagefile);
+		size+=strlen(dimensionsfile);
+		size+=strlen(titlefile);
 		size+=strlen(currentstyle);
-		size=(size+4) & ~3; /*Add null and round to a word boundary*/
+		size+=5*sizeof(int);
+		size+=5; /*String terminators*/
 	}
 	return size;
 }
@@ -811,70 +627,6 @@ static void Graphics_ReleaseFonts(void)
 	}
 }
 
-void Graphics_Load(FILE *file)
-{
-	int size;
-	char filename[256];
-	AJWLib_Assert(file!=NULL);
-	AJWLib_Assert(graphicsdata.person==NULL);
-	AJWLib_Assert(graphicsdata.marriage==NULL);
-	AJWLib_File_fread(&graphicsdata,sizeof(graphics),1,file);
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),sizeof(object)*graphicsdata.numpersonobjects+1); /*An extra byte incase there are no objects*/
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),sizeof(object)*graphicsdata.nummarriageobjects+1);
-	AJWLib_File_fread(graphicsdata.person,sizeof(object),graphicsdata.numpersonobjects,file);
-	AJWLib_File_fread(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
-	AJWLib_File_fread(&size,sizeof(int),1,file);
-	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
-	Graphics_ClaimFonts();
-	Desk_Error2_Try {
-		if (Config_ImportGraphicsStyle()) {
-			sprintf(filename,"%s.%s",GRAPHICSREAD,currentstyle);
-			if (!Desk_File_IsDirectory(filename)) {
-				if (!Desk_File_IsDirectory(CONFIGDIR)) Desk_File_CreateDirectory(CONFIGDIR);
-				if (!Desk_File_IsDirectory(GRAPHICSWRITE)) Desk_File_CreateDirectory(GRAPHICSWRITE);
-				sprintf(filename,"%s.%s",GRAPHICSWRITE,currentstyle);
-				if (!Desk_File_IsDirectory(filename)) Desk_File_CreateDirectory(filename);
-				Graphics_SaveDimensions(currentstyle);
-				Graphics_SaveTitle(currentstyle);
-				Graphics_SavePerson(currentstyle);
-				Graphics_SaveMarriage(currentstyle);
-			}
-		}
-	} Desk_Error2_Catch {
-		AJWLib_Error2_ReportMsgs("Error.GraphS:%s");
-	} Desk_Error2_EndCatch
-}
-
-void Graphics_Save(FILE *file)
-{
-	tag tag=tag_GRAPHICS;
-	int size;
-	AJWLib_Assert(file!=NULL);
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	size=Graphics_GetSize();
-	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(&graphicsdata,sizeof(graphicsdata),1,file);
-	AJWLib_File_fwrite(graphicsdata.person,sizeof(object),graphicsdata.numpersonobjects,file);
-	AJWLib_File_fwrite(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
-	size=strlen(currentstyle);
-	size=(size+4) & ~3; /*Add null and round to a word boundary*/
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(&currentstyle,sizeof(char),size,file);
-}
-
-void Graphics_RemoveStyle(void)
-{
-	AJWLib_AssertWarning(graphicsdata.person!=NULL);
-	AJWLib_AssertWarning(graphicsdata.marriage!=NULL);
-	Graphics_ReleaseFonts();
-	graphicsdata.numpersonobjects=0;
-	graphicsdata.nummarriageobjects=0;
-	if (graphicsdata.person!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
-	if (graphicsdata.marriage!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
-}
-
 static void Graphics_DefaultStyle(void)
 {
 	int i;
@@ -899,21 +651,149 @@ static void Graphics_DefaultStyle(void)
 	for (i=0;i<NUMMARRIAGEFIELDS;i++) graphicsdata.marriagefields[i].plot=Desk_FALSE;
 }
 
-void Graphics_LoadStyle(char *style)
+static void Graphics_ParseStyle(void)
 {
+	Graphics_DefaultStyle();
+    AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
+	Graphics_ParseFile(&personfile,Graphics_StorePersonDetails);
+	Graphics_ParseFile(&dimensionsfile,Graphics_StoreDimensionDetails);
+	Graphics_ParseFile(&marriagefile,Graphics_StoreMarriageDetails);
+	Graphics_ParseFile(&titlefile,Graphics_StoreTitleDetails);
+	Graphics_ClaimFonts();
+}
+
+void Graphics_Load(FILE *file)
+{
+	int size;
+	char filename[256];
+	AJWLib_Assert(file!=NULL);
 	AJWLib_Assert(graphicsdata.person==NULL);
 	AJWLib_Assert(graphicsdata.marriage==NULL);
-	AJWLib_Assert(style!=NULL);
-	Graphics_DefaultStyle();
+	AJWLib_Assert(personfile==NULL);
+	AJWLib_Assert(marriagefile==NULL);
+	AJWLib_Assert(dimensionsfile==NULL);
+	AJWLib_Assert(titlefile==NULL);
+	AJWLib_File_fread(&size,sizeof(int),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&personfile,size);
+	AJWLib_File_fread(personfile,sizeof(char),size,file);
+	AJWLib_File_fread(&size,sizeof(int),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&marriagefile,size);
+	AJWLib_File_fread(marriagefile,sizeof(char),size,file);
+	AJWLib_File_fread(&size,sizeof(int),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&titlefile,size);
+	AJWLib_File_fread(titlefile,sizeof(char),size,file);
+	AJWLib_File_fread(&size,sizeof(int),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&dimensionsfile,size);
+	AJWLib_File_fread(dimensionsfile,sizeof(char),size,file);
+	AJWLib_File_fread(&size,sizeof(int),1,file);
+	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
+
+	Graphics_ParseStyle();
+
 	Desk_Error2_Try {
-		AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
-		AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
-		Graphics_ReadFile(style,"Person",Graphics_StorePersonDetails);
-		Graphics_ReadFile(style,"Dimensions",Graphics_StoreDimensionDetails);
-		Graphics_ReadFile(style,"Marriage",Graphics_StoreMarriageDetails);
-		Graphics_ReadFile(style,"Title",Graphics_StoreTitleDetails);
+		if (Config_ImportGraphicsStyle()) {
+			sprintf(filename,"%s.%s",GRAPHICSREAD,currentstyle);
+			if (!Desk_File_IsDirectory(filename)) {
+				if (!Desk_File_IsDirectory(CONFIGDIR)) Desk_File_CreateDirectory(CONFIGDIR);
+				if (!Desk_File_IsDirectory(GRAPHICSWRITE)) Desk_File_CreateDirectory(GRAPHICSWRITE);
+				sprintf(filename,"%s.%s",GRAPHICSWRITE,currentstyle);
+				if (!Desk_File_IsDirectory(filename)) Desk_File_CreateDirectory(filename);
+				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Person");
+				Desk_File_SaveMemory(filename,personfile,strlen(personfile));
+				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Marriage");
+				Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
+				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Dimensions");
+				Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
+				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Title");
+				Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
+			}
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.GraphS:%s");
+	} Desk_Error2_EndCatch
+}
+
+void Graphics_Save(FILE *file)
+{
+	tag tag=tag_GRAPHICS;
+	int size;
+	AJWLib_Assert(file!=NULL);
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	AJWLib_Assert(personfile!=NULL);
+	AJWLib_Assert(marriagefile!=NULL);
+	AJWLib_Assert(dimensionsfile!=NULL);
+	AJWLib_Assert(titlefile!=NULL);
+	size=Graphics_GetSize();
+	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	size=strlen(personfile)+1;
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(personfile,sizeof(char),size,file);
+	size=strlen(marriagefile)+1;
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(marriagefile,sizeof(char),size,file);
+	size=strlen(titlefile)+1;
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(titlefile,sizeof(char),size,file);
+	size=strlen(dimensionsfile)+1;
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(dimensionsfile,sizeof(char),size,file);
+	size=strlen(currentstyle)+1;
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(&currentstyle,sizeof(char),size,file);
+}
+
+void Graphics_RemoveStyle(void)
+{
+	AJWLib_AssertWarning(graphicsdata.person!=NULL);
+	AJWLib_AssertWarning(graphicsdata.marriage!=NULL);
+	Graphics_ReleaseFonts();
+	graphicsdata.numpersonobjects=0;
+	graphicsdata.nummarriageobjects=0;
+	if (graphicsdata.person!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
+	if (graphicsdata.marriage!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
+	if (personfile!=NULL) AJWLib_Flex_Free((flex_ptr)&personfile);
+	if (marriagefile!=NULL) AJWLib_Flex_Free((flex_ptr)&marriagefile);
+	if (dimensionsfile!=NULL) AJWLib_Flex_Free((flex_ptr)&dimensionsfile);
+	if (titlefile!=NULL) AJWLib_Flex_Free((flex_ptr)&titlefile);
+}
+
+static void Graphics_LoadStyleFile(char *style,char *filename,char **anchor)
+{
+	int size;
+	char fullfilename[256];
+	AJWLib_Assert(style!=NULL);
+	AJWLib_Assert(filename!=NULL);
+	AJWLib_Assert(*anchor==NULL);
+	sprintf(fullfilename,"%s.%s.%s",GRAPHICSREAD,style,filename);
+	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs3("Error.NoFile:File %s does not exist in dir %s",filename,style);
+	size=Desk_File_Size(fullfilename);
+	AJWLib_Flex_Alloc((flex_ptr)anchor,size+1);
+	Desk_File_LoadTo(fullfilename,*anchor,NULL);
+	(*anchor)[size]='\0';
+}
+
+void Graphics_LoadStyle(char *style)
+{
+	char filename[256];
+	AJWLib_Assert(graphicsdata.person==NULL);
+	AJWLib_Assert(graphicsdata.marriage==NULL);
+	AJWLib_Assert(personfile==NULL);
+	AJWLib_Assert(marriagefile==NULL);
+	AJWLib_Assert(dimensionsfile==NULL);
+	AJWLib_Assert(titlefile==NULL);
+	AJWLib_Assert(style!=NULL);
+	Desk_Error2_Try {
+		sprintf(filename,"%s.%s",GRAPHICSREAD,style);
+		if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs2("Error.NoDir:Dir %s does not exist",style);
+		Graphics_LoadStyleFile(style,"Person",&personfile);
+		Graphics_LoadStyleFile(style,"Marriage",&marriagefile);
+		Graphics_LoadStyleFile(style,"Dimensions",&dimensionsfile);
+		Graphics_LoadStyleFile(style,"Title",&titlefile);
+		Graphics_ParseStyle();
 		strcpy(currentstyle,style);
-		Graphics_ClaimFonts();
 	} Desk_Error2_Catch {
 		Graphics_RemoveStyle();
 		Graphics_DefaultStyle();
