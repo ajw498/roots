@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.40 2000/02/21 23:58:43 uid1 Exp $
+	$Id: Windows.c,v 1.41 2000/02/23 21:32:59 uid1 Exp $
 
 */
 
@@ -849,22 +849,8 @@ int Windows_GetSize(void)
 	int i,size=0;
 	for (i=0;i<MAXWINDOWS;i++)
 		if (windows[i].handle!=0) size+=sizeof(savedata)+Layout_GetSize(windows[i].layout);
-	return size;
+	return size; /*This is now WRONG*/
 }
-
-/*
-void Windows_Load(FILE *file)
-{
-	int i;
-	savedata data;
-	for (i=0;i<MAXWINDOWS;i++) AJWLib_Assert(windows[i].handle==0);
-	while (fread(&data,sizeof(savedata),1,file)) {
-		layout *layout=NULL;
-		AJWLib_Assert(data.size>=sizeof(savedata));
-		if (data.size>sizeof(savedata)) layout=Layout_Load(file);
-		Windows_OpenWindow(data.type,data.person,data.generations,layout);
-	}
-} */
 
 void Windows_Load(FILE *file)
 {
@@ -892,32 +878,10 @@ layout *Windows_Save(FILE *file,int *index)
 		AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
 		AJWLib_File_fwrite(&size,sizeof(int),1,file);
 		AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
-		return windows[i].layout;
+		if (windows[i].type==wintype_NORMAL) return windows[i].layout;
 	}
 	return NULL;
 }
-
-/*
-void Windows_Save(FILE *file)
-{
-	int i;
-	Desk_bool writtenlayout=Desk_FALSE;
-	for (i=0;i<MAXWINDOWS;i++) {
-		if (windows[i].handle!=0) {
-			savedata data;
-			data.type=windows[i].type;
-			data.person=windows[i].person;
-			data.generations=windows[i].generations;
-			data.size=sizeof(savedata);
-			if (data.type==wintype_NORMAL && !writtenlayout) data.size+=Layout_GetSize(windows[i].layout);
-			AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
-			if (data.type==wintype_NORMAL && !writtenlayout) {
-				Layout_Save(windows[i].layout,file);
-				writtenlayout=Desk_TRUE;
-			}
-		}
-	}
-} */
 
 Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
