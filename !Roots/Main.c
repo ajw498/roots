@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.25 2000/09/14 13:50:13 AJW Exp $
+	$Id: Main.c,v 1.26 2000/09/18 15:58:15 AJW Exp $
 	
 */
 
@@ -25,7 +25,7 @@
 #include "Desk.Filing.h"
 #include "Desk.Sprite.h"
 #include "Desk.GFX.h"
-#include "Desk.ColourTran.h"
+#include "Desk.Hourglass.h"
 
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
@@ -68,10 +68,10 @@ extern Desk_bool halt;
 static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 {
 	Desk_UNUSED(ref);
-	if (Database_GetSize()) {
+	if (Database_Loaded()) {
 		Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
 	} else {
-		File_LoadFile(block->data.message.data.dataload.filename);
+		File_LoadGEDCOM(block->data.message.data.dataload.filename,block->data.message.data.dataload.filetype==ROOTS_FILETYPE ? Desk_FALSE : Desk_TRUE);
 	}
 	return Desk_TRUE;
 }
@@ -80,14 +80,14 @@ static Desk_bool ReceiveDataOpen(Desk_event_pollblock *block, void *ref)
 {
 	Desk_UNUSED(ref);
 	/*Ignore if we already have a file loaded*/
-	if (Database_GetSize()) return Desk_FALSE;
+	if (Database_Loaded()) return Desk_FALSE;
 	/*Ignore if it isn't a treefile*/
 	if (block->data.message.data.dataopen.filetype!=ROOTS_FILETYPE) return Desk_FALSE;
 	/*Return message to say we'll load the file*/
 	block->data.message.header.action=Desk_message_DATAOPEN;
 	block->data.message.header.yourref=block->data.message.header.myref;
 	Desk_Wimp_SendMessage(Desk_event_USERMESSAGEACK,&(block->data.message),block->data.message.header.sender,0);
-	File_LoadGEDCOM(block->data.message.data.dataopen.filename);
+	File_LoadGEDCOM(block->data.message.data.dataopen.filename,Desk_FALSE);
 	return Desk_TRUE;
 }
 
@@ -125,6 +125,7 @@ static void IconBarMenuClick(int entry, void *ref)
 
 int main(int argc,char *argv[])
 {
+	Desk_Hourglass_On();
 	MemCheck_Init();
 	MemCheck_RegisterArgs(argc,argv);
 	MemCheck_InterceptSCLStringFunctions();
@@ -161,14 +162,16 @@ int main(int argc,char *argv[])
 		AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
 		Modules_Init();
 	} Desk_Error2_Catch {
+		Desk_Hourglass_Off();
 		AJWLib_Error2_Report("Fatal error while initialising (%s)");
 		return EXIT_FAILURE;
 	} Desk_Error2_EndCatch
 	if (argc>2) {
 		Desk_Msgs_Report(1,"Error.CmdLine:Too many arguments");
 	} else if (argc==2) {
-		File_LoadGEDCOM(argv[1]);
+		File_LoadGEDCOM(argv[1],Desk_FALSE);
 	}
+	Desk_Hourglass_Off();
 	while (Desk_TRUE) {
 		Desk_Error2_Try {
 			Modules_ReflectChanges();

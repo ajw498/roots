@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.80 2000/09/14 13:50:16 AJW Exp $
+	$Id: Windows.c,v 1.81 2000/09/18 15:58:21 AJW Exp $
 
 */
 
@@ -124,10 +124,9 @@
 #define info_MODIFIED 1
 #define info_TYPE 2
 #define info_FILENAME 0
-#define info_SIZE 3
-#define info_PEOPLE 4
-#define info_DATE 10
-#define info_ICON 5
+#define info_PEOPLE 3
+#define info_DATE 8
+#define info_ICON 4
 
 #define save_ICON 3
 #define save_OK 0
@@ -138,16 +137,10 @@
 #define unsaved_CANCEL 3
 #define unsaved_SAVE 0
 
-#define fileconfig_USER1 1
-#define fileconfig_USER2 2
-#define fileconfig_USER3 3
-#define fileconfig_OK 8
-#define fileconfig_CANCEL 9
-
 #define SWI_Wimp_SpriteOp 0x400E9
 #define SWI_Wimp_DragBox 0x400D0
 
-#define Windows_SetPointerShape(name,num) Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_Wimp_SpriteOp,36,NULL,name,num | 0x20,8,8,0,NULL))
+#define Windows_SetPointerShape(name,num) Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_Wimp_SpriteOp,36,NULL,name,num | 0x20,num==1 ? 0 : 8,num==1 ? 0 : 8,0,NULL))
 
 
 typedef struct windowdata {
@@ -208,11 +201,13 @@ extern layout *debuglayout;
 static windowdata windows[MAXWINDOWS];
 static Desk_bool menusdeletedvalid=Desk_FALSE;
 static int numwindows;
-static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin/*,savegedcomwin*/,scalewin,unsavedwin,fileconfigwin;
+static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconfigmenu=NULL;
 static elementptr newviewperson;
 static mouseclickdata mousedata;
 static savedata nextloadwindowdata;
+
+Desk_window_handle fieldconfigwin;
 
 static void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 {
@@ -911,12 +906,11 @@ static void Windows_SetUpMenu(void)
 	int i=0;
 	Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
 	Desk_Icon_SetText(savedrawwin,save_FILENAME,AJWLib_Msgs_TempLookup("File.Draw:Drawfile"));
+	Desk_Icon_SetText(savegedcomwin,save_FILENAME,AJWLib_Msgs_TempLookup("File.GED:GEDCOM"));
 	sprintf(buffer,"%d",Database_GetNumPeople());
 	Desk_Icon_SetText(fileinfowin,info_PEOPLE,buffer);
 	Desk_Icon_SetText(fileinfowin,info_FILENAME,File_GetFilename());
 	Desk_Icon_SetText(fileinfowin,info_MODIFIED,File_GetModified() ? AJWLib_Msgs_TempLookup("Mod.Yes:Yes") : AJWLib_Msgs_TempLookup("Mod.No:No"));
-	Desk_Error2_CheckOS(Desk_SWI(3,0,Desk_SWI_OS_ConvertFileSize,File_GetSize(),buffer,sizeof(buffer)));
-	Desk_Icon_SetText(fileinfowin,info_SIZE,buffer);
 	Desk_Icon_SetText(fileinfowin,info_DATE,File_GetDate());
 	Desk_Icon_SetInteger(scalewin,scale_TEXT,mousedata.window->scale);
 	if (fileconfigmenu) {
@@ -1193,22 +1187,6 @@ void Windows_Relayout(void)
 	}
 }
 
-int Windows_GetSize(void)
-{
-	int i,size=0;
-	Desk_bool donelayout=Desk_FALSE;
-	for (i=0;i<MAXWINDOWS;i++) {
-		if (windows[i].handle!=0) {
-			size+=sizeof(savedata)+sizeof(tag)+sizeof(int);
-			if (windows[i].type==wintype_NORMAL || !donelayout) {
-				size+=Layout_GetSize(windows[i].layout);
-				donelayout=Desk_TRUE;
-			}
-		}
-	}
-	return size;
-}
-
 void Windows_CreateWindow(wintype type) {
 	/* Create the window using details stored in nextloadwindowdata*/
 	Windows_OpenWindow(type,nextloadwindowdata.person,nextloadwindowdata.generations,nextloadwindowdata.scale,&(nextloadwindowdata.coords));
@@ -1250,44 +1228,6 @@ void Windows_SetScale(int val) {
 	nextloadwindowdata.scale=val;
 }
 
-void Windows_Load(FILE *file)
-{
-	savedata data;
-	AJWLib_Assert(file!=NULL);
-	AJWLib_File_fread(&data,sizeof(savedata),1,file);
-	Windows_OpenWindow(data.type,data.person,data.generations,data.scale,&(data.coords));
-}
-
-layout *Windows_Save(FILE *file,int *index)
-{
-	int i=(*index)++;
-	savedata data;
-	tag tag=tag_WINDOW;
-	int size=sizeof(savedata)+sizeof(tag)+sizeof(int);
-	AJWLib_Assert(file!=NULL);
-	if (i>=MAXWINDOWS) {
-		*index=-1;
-		return NULL;
-	}
-	AJWLib_Assert(i>=0);
-	if (windows[i].handle) {
-		Desk_Window_GetCoords(windows[i].handle,&(data.coords));
-		data.type=windows[i].type;
-		data.person=windows[i].person;
-		data.generations=windows[i].generations;
-		data.scale=windows[i].scale;
-		data.reserved[0]=0;
-		data.reserved[1]=0;
-		data.reserved[2]=0;
-		data.reserved[3]=0;
-		AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
-		AJWLib_File_fwrite(&size,sizeof(int),1,file);
-		AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
-		if (windows[i].type==wintype_NORMAL) return windows[i].layout;
-	}
-	return NULL;
-}
-
 layout *Windows_SaveGEDCOM(FILE *file,int *index)
 {
 	Desk_convert_block coords;
@@ -1321,7 +1261,7 @@ static void Windows_OpenSaveWindow(void)
 		AJWLib_Window_OpenTransient(savewin);
 		/*How do I close all windows once savebox has been dealt with?*/
 	} else {
-		File_SaveFile(NULL,NULL);
+		File_SaveGEDCOM(NULL,NULL);
 		Windows_CloseAllWindows();
 	}
 }
@@ -1338,7 +1278,7 @@ void Windows_CloseAllWindows(void)
 			windows[i].handle=NULL;
 		}
 	}
-	Desk_Error2_TryCatch(Desk_Window_Hide(fileconfigwin);,)
+	Desk_Error2_TryCatch(Desk_Window_Hide(fieldconfigwin);,)
 	Desk_Error2_TryCatch(Print_CloseWindow();,)
 	Desk_Error2_TryCatch(File_Remove();,)
 }
@@ -1382,7 +1322,7 @@ void Windows_FileModified(void)
 	if (File_GetModified()) strcat(title," *");
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
-			if (windows[i].type==wintype_NORMAL) Desk_Window_SetTitle(windows[i].handle,title);
+			if (windows[i].type==wintype_NORMAL && windows[i].layout!=NULL) Desk_Window_SetTitle(windows[i].handle,title);
 		}
 	}
 }
@@ -1553,24 +1493,55 @@ Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_FileConfigCancel(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(ref);
+	if (block->data.mouse.button.data.select) {
+		if (Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_OK),AJWLib_Msgs_TempLookup("Icon.Set:"))) Database_Remove();
+		Desk_Window_Hide(block->data.mouse.window);
+		return Desk_TRUE;
+	}
+	return Desk_FALSE;
+}
+
+static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
+{
+	int i;
+
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	Database_SetUserDesc(0,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER1));
-	Database_SetUserDesc(1,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER2));
-	Database_SetUserDesc(2,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER3));
-	if (block->data.mouse.button.data.select) Desk_Window_Hide(block->data.mouse.window);
+	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+		Database_SetPersonUserDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i));
+		Database_SetPersonGEDCOMDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i));
+	}
+	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+		Database_SetMarriageUserDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i));
+		Database_SetMarriageGEDCOMDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i));
+	}
+	if (Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_OK),AJWLib_Msgs_TempLookup("Icon.Set:"))) {
+		File_LoadGEDCOM(NULL,Desk_TRUE);
+		Desk_Window_Hide(block->data.mouse.window);
+	} else {
+		if (block->data.mouse.button.data.select) Desk_Window_Hide(block->data.mouse.window);
+	}
 	return Desk_TRUE;
 }
 
 static void Windows_OpenFileConfig(void)
 {
-	Desk_Icon_SetText(fileconfigwin,fileconfig_USER1,Database_GetUserDesc(0));
-	Desk_Icon_SetText(fileconfigwin,fileconfig_USER2,Database_GetUserDesc(1));
-	Desk_Icon_SetText(fileconfigwin,fileconfig_USER3,Database_GetUserDesc(2));
-	Desk_Window_Show(fileconfigwin,Desk_open_CENTERED);
-	Desk_Icon_SetCaret(fileconfigwin,fileconfig_USER1);
+	int i;
+
+	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,Database_GetPersonUserDesc(i));
+		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,Database_GetPersonGEDCOMDesc(i));
+	}
+	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,Database_GetMarriageUserDesc(i));
+		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,Database_GetMarriageGEDCOMDesc(i));
+	}
+	Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Set:"));
+	Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(fieldconfigwin,fieldconfig_USERPERSONBASE);
 }
 
 static void Windows_FileMenuClick(int entry,void *ref)
@@ -1784,16 +1755,16 @@ void Windows_Init(void)
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,File_Result,1024*10/*Filesize estimate?*/,ROOTS_FILETYPE,NULL);
 	savedrawwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
-/*	savegedcomwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);*/
+	savegedcomwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
 	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);
-/*	Desk_Menu_AddSubMenu(exportmenu,exportmenu_GEDCOM,(Desk_menu_ptr)savegedcomwin);*/
-	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);
+	Desk_Menu_AddSubMenu(exportmenu,exportmenu_GEDCOM,(Desk_menu_ptr)savegedcomwin);
+/*	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);*/
 	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
-/*	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL*Need a result handler?*,1024*10 *Filesize estimate?*,Desk_filetype_TEXT,NULL);*/
-	fileconfigwin=Desk_Window_Create("FileConfig",Desk_template_TITLEMIN);
-	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_OK,Windows_FileConfigOk,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);
-	AJWLib_Window_KeyHandler(fileconfigwin,fileconfig_OK,Windows_FileConfigOk,fileconfig_CANCEL,Windows_Cancel,NULL);
+	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_TEXT,(void *)1);
+	fieldconfigwin=Desk_Window_Create("FieldConfig",Desk_template_TITLEMIN);
+	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
+	AJWLib_Window_KeyHandler(fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
 }
 

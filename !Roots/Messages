@@ -47,6 +47,7 @@ Scale.4:120
 Tree.Title:Family Tree
 
 File.Draw:Drawfile
+File.GED:GEDCOM
 File.Tree:Untitled
 
 Mod.Yes:YES
@@ -54,11 +55,43 @@ Mod.No:NO
 
 Win.Desc:Descendents of
 Win.Anc:Ancestors of
-Win.Unlkd:Unlinked
 
-User.Desc1:Profession
-User.Desc2:Status
-User.Desc3:Other
+Icon.Set:Set
+Icon.Imp:Import
+
+User.P1:Date of birth
+User.P2:Date of death
+User.P3:Birthplace
+User.P4:Profession
+User.P5:Status
+User.P6:ID
+User.P7:Christening
+User.P8:*
+User.P9:*
+User.P10:*
+
+User.M1:Place
+User.M2:Date
+User.M3:Divorce
+User.M4:*
+User.M5:Other
+
+GED.P1:INDI.BIRT.DATE
+GED.P2:INDI.DEAT.DATE
+GED.P3:INDI.BIRT.PLAC
+GED.P4:INDI.prof
+GED.P5:INDI.stat
+GED.P6:INDI.id
+GED.P7:INDI.christ
+GED.P8:INDI.other
+GED.P9:*
+GED.P10:*
+
+GED.M1:FAM.MARR.PLAC
+GED.M2:FAM.MARR.DATE
+GED.M3:FAM.DIV
+GED.M4:*
+GED.M5:*
 
 Error.NoMem:Not enough free memory.
 Error.Marrd:These two people are already married to each other.
