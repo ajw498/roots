@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.99 2000/11/14 22:56:58 AJW Exp $
+	$Id: Windows.c,v 1.100 2000/11/21 20:04:28 AJW Exp $
 
 */
 
@@ -313,7 +313,7 @@ void Windows_Relayout(void)
 			Desk_Error2_Try {
 				switch (windows[i].type) {
 					case wintype_NORMAL:
-						Layout_LayoutLines(windows[i].layout);
+						Layout_LayoutLines(windows[i].layout,Desk_FALSE);
 						Layout_LayoutTitle(windows[i].layout);
 						break;
 					case wintype_DESCENDENTS:
@@ -666,6 +666,7 @@ static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
 		Database_SetMarriageGEDCOMDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i));
 	}
 	if (Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_OK),AJWLib_Msgs_TempLookup("Icon.Set:"))) {
+		Config_SetSeparateMarriages(NULL,Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES));
 		File_LoadGEDCOM(NULL,Desk_TRUE);
 		Desk_Window_Hide(block->data.mouse.window);
 	} else {

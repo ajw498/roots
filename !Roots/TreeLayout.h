@@ -7,7 +7,7 @@
 layout *Layout_LayoutNormal(void);
 layout *Layout_LayoutDescendents(elementptr person, int generations);
 layout *Layout_LayoutAncestors(elementptr person, int generations);
-void Layout_LayoutLines(layout *layout);
+void Layout_LayoutLines(layout *layout,Desk_bool layoutseparatemarriages);
 void Layout_LayoutTitle(layout *layout);
 void TreeLayout_AddMarriage(layout *layout,elementptr marriage);
 void Layout_SelectDescendents(layout *layout,elementptr person);

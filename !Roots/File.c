@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.40 2000/11/14 22:56:51 AJW Exp $
+	$Id: File.c,v 1.41 2000/11/21 20:04:20 AJW Exp $
 
 */
 
@@ -375,6 +375,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 
 		if (prescan) return;
 		person=File_GetElementFromID(data,element_PERSON);
+		if (Database_GetElementType(person)==element_MARRIAGE) Config_SetSeparateMarriages(NULL,Desk_TRUE);
 		Layout_GEDCOMNewPerson(person);
 
 	} else if (!Desk_stricmp(tag,"_LAYOUT._PERSON._X")) {
@@ -406,18 +407,17 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		elementptr person;
 
 		if (prescan) return;
-		if (Config_SeparateMarriages()) {
-			person=File_GetElementFromID(data,element_MARRIAGE);
-			Layout_GEDCOMNewPerson(person);
-		}
+		Config_SetSeparateMarriages(NULL,Desk_TRUE);
+		person=File_GetElementFromID(data,element_MARRIAGE);
+		Layout_GEDCOMNewPerson(person);
 
 	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._X")) {
 		if (prescan) return;
-		if (Config_SeparateMarriages()) Layout_GEDCOMNewPersonX(atoi(data));
+		Layout_GEDCOMNewPersonX(atoi(data));
 
 	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._Y")) {
 		if (prescan) return;
-		if (Config_SeparateMarriages()) Layout_GEDCOMNewPersonY(atoi(data));
+		Layout_GEDCOMNewPersonY(atoi(data));
 
 	} else if (!Desk_stricmp(tag,"")) {
 	} else {
@@ -600,6 +600,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,Database_GetMarriageUserDesc(i));
 					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,Database_GetMarriageGEDCOMDesc(i));
 				}
+				Desk_Icon_SetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES,Config_SeparateMarriages());
 			} else {
 				File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
 			}
@@ -614,7 +615,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 				} else {
 					gedcomlayout=Layout_GetGEDCOMLayout();
 					if (gedcomlayout==NULL) gedcomlayout=Layout_LayoutNormal();
-					Layout_LayoutLines(gedcomlayout);
+					Layout_LayoutLines(gedcomlayout,Desk_FALSE);
 				}
 				Windows_LayoutNormal(gedcomlayout,Desk_FALSE);
 				if (!plain) strcpy(currentfilename,filename); else strcpy(currentfilename,"GEDCOM");
