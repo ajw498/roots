@@ -140,7 +140,7 @@ void Database_StopEditing(void);
 char *Database_GetUserDesc(int num);
 void Database_SetUserDesc(int num,char *desc);
 sextype Database_GetSex(elementptr person);
-
+void Database_SaveGEDCOM(FILE *file);
 
 #endif
 

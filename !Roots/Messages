@@ -26,7 +26,7 @@ Title.File:File
 Menu.File:Info,Save,Export,Choices...,Print...
 
 Title.Export:Export
-Menu.Export:~GEDCOM,Draw,~Text
+Menu.Export:GEDCOM,Draw
 
 Item.Person:Person
 Item.Marriage:Marriage

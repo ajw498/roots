@@ -14,6 +14,8 @@ typedef enum tag {
 
 Desk_bool File_SaveFile(char *filename,void *ref);
 
+Desk_bool File_SaveGEDCOM(char *filename,void *ref);
+
 void File_LoadFile(char *filename);
 
 void File_New(void);

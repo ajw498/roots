@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.34 2000/07/22 21:11:45 AJW Exp $
+	$Id: Database.c,v 1.35 2000/07/26 20:55:02 AJW Exp $
 
 */
 
@@ -720,7 +720,7 @@ void Database_SaveGEDCOM(FILE *file)
 {
 	elementptr marriage,child;
 	int i;
-	AJWLib_Assert(database==NULL);
+	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(file!=NULL);
 	for (i=0;i<database[0].element.file.numberofelements;i++) {
 		switch (database[i].type) {
