@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.31 2000/10/20 19:37:30 AJW Exp $
+	$Id: Main.c,v 1.32 2000/11/06 23:45:58 AJW Exp $
 	
 */
 
@@ -138,6 +138,7 @@ int main(int argc,char *argv[])
 	MemCheck_InterceptSCLStringFunctions();
 	MemCheck_SetStoreMallocFunctions(1);
 	MemCheck_SetAutoOutputBlocksInfo(0);
+/*	MemCheck_SetQuitting(1,1);*/
 	Desk_Error2_Init_JumpSig();
 	signal(SIGABRT,SIG_DFL);
 	Desk_Error2_Try {

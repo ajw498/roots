@@ -19,6 +19,8 @@ void Layout_AddElement(layout *layout,elementptr person,int x,int y,int width,in
 void Layout_AddTransient(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid,flags flags);
 int Layout_FindXCoord(layout *layout,elementptr person);
 int Layout_FindYCoord(layout *layout,elementptr person);
+int Layout_FindWidth(layout *layout,elementptr person);
+int Layout_FindHeight(layout *layout,elementptr person);
 int Layout_FindXGridCoord(layout *layout,elementptr person);
 int Layout_FindYGridCoord(layout *layout,elementptr person);
 void Layout_RemoveElement(layout *layout,elementptr person);

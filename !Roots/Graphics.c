@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.53 2000/11/05 12:03:43 AJW Exp $
+	$Id: Graphics.c,v 1.54 2000/11/06 23:45:53 AJW Exp $
 
 */
 
@@ -578,11 +578,6 @@ int Graphics_TitleHeight(void)
 	return graphicsdata.titleheight;
 }
 
-Desk_wimp_point *Graphics_TitleWidthAndHeight(void)
-{
-	return AJWLib_Font_GetWidthAndHeightGiven(graphicsdata.title.fontname,16*graphicsdata.title.size,Database_GetTitle());
-}
-
 static void Graphics_ClaimFonts(void)
 /* Claim a font handle for each font used*/
 {
@@ -944,6 +939,7 @@ static int Graphics_LuaClaimFont(lua_State *state)
 	int handle;
 	const char *fontname;
 	Desk_os_error *err;
+	int FIXME; /*Free all claimed fonts when finished*/
 
 	if (lua_gettop(state)!=2) lua_error(state,"Incorrect number of arguments to function ClaimFont");
 	handle=luadetails.numberoffonts;
@@ -961,13 +957,13 @@ static int Graphics_LuaClaimFont(lua_State *state)
 
 static int Graphics_LuaGetField(lua_State *state)
 {
-	const char *fieldname;
+	char *fieldname;
 	elementptr element;
 
 	if (lua_gettop(state)!=2) lua_error(state,"Incorrect number of arguments to function GetField");
 	element=(elementptr)lua_tonumber(state,1);
-	fieldname=lua_tostring(state,2);
-	lua_pushstring(state,Database_GetField(element,(char *)fieldname));
+	fieldname=(char *)lua_tostring(state,2);
+	lua_pushstring(state,Database_GetField(element,fieldname));
 	return 1;
 }
 
@@ -996,9 +992,50 @@ static int Graphics_LuaGetChild(lua_State *state)
 	return 0;
 }
 
-/*gettextdimensions(handle,text)
-getchild(marriage)
-getparentsmarriage(person)*/
+static int Graphics_LuaGetParentsMarriage(lua_State *state)
+{
+	elementptr element;
+
+	if (lua_gettop(state)!=1) lua_error(state,"Incorrect number of arguments to function GetParentsMarriage");
+	element=(elementptr)lua_tonumber(state,1);
+	element=Database_GetParentsMarriage(element);
+	if (element!=none) {
+		lua_pushnumber(state,element);
+		return 1;
+	}
+	return 0;
+}
+
+static int Graphics_LuaGetTextDimensions(lua_State *state)
+{
+	int handle;
+	char *text;
+	Desk_wimp_point *bbox;
+
+	if (lua_gettop(state)!=2) lua_error(state,"Incorrect number of arguments to function GetTextDimensions");
+	handle=(int)lua_tonumber(state,1);
+	text=(char *)lua_tostring(state,2);
+	bbox=AJWLib_Font_GetWidthAndHeight(luadetails.fonts[handle].handle->handle,text);
+	lua_pushnumber(state,bbox->x);
+	lua_pushnumber(state,bbox->y);
+	return 2;
+}
+
+static int Graphics_LuaColour(lua_State *state)
+{
+	unsigned int colour,red,green,blue;
+
+	if (lua_gettop(state)!=3) lua_error(state,"Incorrect number of arguments to function Colour");
+	red=(unsigned int)lua_tonumber(state,1);
+	green=(unsigned int)lua_tonumber(state,2);
+	blue=(unsigned int)lua_tonumber(state,3);
+	if (red>255) red=255;
+	if (green>255) green=255;
+	if (blue>255) blue=255;
+	colour=((red<<8) | (green<<16) | (blue<<24));
+	lua_pushnumber(state,colour);
+	return 1;
+}
 
 static int Graphics_LuaError(lua_State *state)
 {
@@ -1053,38 +1090,48 @@ void Graphics_LoadStyle(char *style)
 	AJWLib_Assert(dimensionsfile==NULL);
 	AJWLib_Assert(titlefile==NULL);
 	AJWLib_Assert(style!=NULL);
-	luadetails.error=NULL;
-	luadetails.numberoffonts=0;
-	/*Initialise Lua*/
-	luadetails.state=lua_open(0);
-	/*Replace default error handler*/
-	lua_register(luadetails.state,"_ERRORMESSAGE",Graphics_LuaError);
-	/*Register functions that can be called from Lua*/
-	lua_register(luadetails.state,"PlotLine",Graphics_LuaPlotLine);
-	lua_register(luadetails.state,"PlotRectangle",Graphics_LuaPlotRectangle);
-	lua_register(luadetails.state,"PlotRectangleFilled",Graphics_LuaPlotRectangleFilled);
-	lua_register(luadetails.state,"PlotText",Graphics_LuaPlotText);
-	lua_register(luadetails.state,"ClaimFont",Graphics_LuaClaimFont);
-	lua_register(luadetails.state,"GetField",Graphics_LuaGetField);
-	lua_register(luadetails.state,"GetCoords",Graphics_LuaGetCoords);
-	lua_register(luadetails.state,"GetChild",Graphics_LuaGetChild);
-	/*Load the lua file, and run any bits of it that are not functions*/
-	Graphics_LuaCheckError(lua_dofile(luadetails.state,"<Roots$Dir>.LuaCode"));
+
 	uselua=Desk_TRUE;
-	Desk_Error2_Try {
-		sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,style);
-		if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs("Error.NoDir:Dir %s does not exist",style);
-		Graphics_LoadStyleFile(style,"Person",&personfile);
-		Graphics_LoadStyleFile(style,"Marriage",&marriagefile);
-		Graphics_LoadStyleFile(style,"Dimensions",&dimensionsfile);
-		Graphics_LoadStyleFile(style,"Title",&titlefile);
-		Graphics_ParseStyle();
-		strcpy(currentstyle,style);
-	} Desk_Error2_Catch {
-		Graphics_RemoveStyle();
-		Graphics_DefaultStyle();
-		Desk_Error2_ReThrow();
-	} Desk_Error2_EndCatch
+
+	if (uselua) {
+		luadetails.error=NULL;
+		luadetails.numberoffonts=0;
+		/*Initialise Lua*/
+		luadetails.state=lua_open(0);
+		/*Replace default error handler*/
+		lua_register(luadetails.state,"_ERRORMESSAGE",Graphics_LuaError);
+		/*Register functions that can be called from Lua*/
+		lua_register(luadetails.state,"PlotLine",Graphics_LuaPlotLine);
+		lua_register(luadetails.state,"PlotRectangle",Graphics_LuaPlotRectangle);
+		lua_register(luadetails.state,"PlotRectangleFilled",Graphics_LuaPlotRectangleFilled);
+		lua_register(luadetails.state,"PlotText",Graphics_LuaPlotText);
+		lua_register(luadetails.state,"ClaimFont",Graphics_LuaClaimFont);
+		lua_register(luadetails.state,"GetField",Graphics_LuaGetField);
+		lua_register(luadetails.state,"GetCoords",Graphics_LuaGetCoords);
+		lua_register(luadetails.state,"GetChild",Graphics_LuaGetChild);
+		lua_register(luadetails.state,"GetParentsMarriage",Graphics_LuaGetParentsMarriage);
+		lua_register(luadetails.state,"GetTextDimensions",Graphics_LuaGetTextDimensions);
+		lua_register(luadetails.state,"Colour",Graphics_LuaColour);
+		/*Load the lua file, and run any bits of it that are not functions*/
+		Graphics_LuaCheckError(lua_dofile(luadetails.state,"<Roots$Dir>.LuaCode"));
+		/*Load dimesions from global vars*/
+	} else {
+}{/*Temporary*/
+		Desk_Error2_Try {
+			sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,style);
+			if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs("Error.NoDir:Dir %s does not exist",style);
+			Graphics_LoadStyleFile(style,"Person",&personfile);
+			Graphics_LoadStyleFile(style,"Marriage",&marriagefile);
+			Graphics_LoadStyleFile(style,"Dimensions",&dimensionsfile);
+			Graphics_LoadStyleFile(style,"Title",&titlefile);
+			Graphics_ParseStyle();
+			strcpy(currentstyle,style);
+		} Desk_Error2_Catch {
+			Graphics_RemoveStyle();
+			Graphics_DefaultStyle();
+			Desk_Error2_ReThrow();
+		} Desk_Error2_EndCatch
+	}
 }
 
 char *Graphics_GetCurrentStyle(void)
@@ -1102,7 +1149,7 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 		luadetails.originx=originx;
 		luadetails.originy=originy;
 		luadetails.scale=scale;
-		if (luadetails.error) return; /*Avoid infinite loop of error message causeing redraw causeing error...*/
+		if (luadetails.error) return; /*Avoid infinite loop of error message causing redraw causeing error...*/
 		lua_getglobal(luadetails.state,"RedrawPerson");
 		lua_pushnumber(luadetails.state,person);
 		lua_pushnumber(luadetails.state,x);
@@ -1180,7 +1227,7 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,width,height,EORCOLOUR);
 }
 
-static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,int width,int height,elementptr marriage,Desk_bool selected)
+static void Graphics_PlotMarriage(int scale,int originx,int originy,elementptr marriage,int x,int y,int width,int height,Desk_bool selected)
 {
 	int i,xcoord=0;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -1233,11 +1280,48 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,width,height,EORCOLOUR);
 }
 
-static void Graphics_PlotChildren(int scale,int originx,int originy,int leftx,int rightx,int y)
+static void Graphics_PlotChildLine(int scale,int originx,int originy,int x,int y,int width,int height)
 {
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	Graphics_PlotLine(scale,originx,originy,leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
+	if (uselua) {
+		luadetails.originx=originx;
+		luadetails.originy=originy;
+		luadetails.scale=scale;
+		if (luadetails.error) return; /*Avoid infinite loop of error message causing redraw causing error...*/
+		lua_getglobal(luadetails.state,"RedrawLine");
+		lua_pushnumber(luadetails.state,x);
+		lua_pushnumber(luadetails.state,y);
+		lua_pushnumber(luadetails.state,width);
+		lua_pushnumber(luadetails.state,height);
+		Graphics_LuaCheckError(lua_call(luadetails.state,4,0));
+	} else {
+		Graphics_PlotLine(scale,originx,originy,x,y,x+width,y+height,graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
+	}
+}
+
+static void Graphics_PlotTitle(int scale,int originx,int originy,int x,int y,int width,int height)
+{
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	if (uselua) {
+		luadetails.originx=originx;
+		luadetails.originy=originy;
+		luadetails.scale=scale;
+		if (luadetails.error) return; /*Avoid infinite loop of error message causing redraw causing error...*/
+		lua_getglobal(luadetails.state,"RedrawTitle");
+		lua_pushstring(luadetails.state,Database_GetTitle());
+		lua_pushnumber(luadetails.state,x);
+		lua_pushnumber(luadetails.state,y);
+		lua_pushnumber(luadetails.state,width);
+		lua_pushnumber(luadetails.state,height);
+		Graphics_LuaCheckError(lua_call(luadetails.state,5,0));
+	} else {
+		Desk_wimp_point *fontbbox;
+
+		fontbbox=AJWLib_Font_GetWidthAndHeightGiven(graphicsdata.title.fontname,16*graphicsdata.title.size,Database_GetTitle());
+		Graphics_PlotText(scale,originx,originy,x+(width-fontbbox->x)/2,y+(height-fontbbox->y)/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+	}
 }
 
 void Graphics_SetFunctions(plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
@@ -1252,17 +1336,17 @@ void Graphics_PlotElement(layout *layout,elementptr element,int scale,int origin
 {
 	redrawlayout=layout;
 	switch (Database_GetElementType(element)) {
-		case element_CHILDLINE:
-			Graphics_PlotChildren(scale,originx,originy,x,x+width,y);
+		case element_LINE:
+			Graphics_PlotChildLine(scale,originx,originy,x,y,width,height);
 			break;
 		case element_TITLE:
-			Graphics_PlotText(scale,originx,originy,x,y,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+			Graphics_PlotTitle(scale,originx,originy,x,y,width,height);
 			break;
 		case element_PERSON:
 			Graphics_PlotPerson(scale,originx,originy,element,x,y,width,height,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
 			break;
 		case element_MARRIAGE:
-			Graphics_PlotMarriage(scale,originx,originy,x,y,width,height,element,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
+			Graphics_PlotMarriage(scale,originx,originy,element,x,y,width,height,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
 			break;
 	}
 }

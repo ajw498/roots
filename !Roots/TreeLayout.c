@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.47 2000/10/21 15:07:20 AJW Exp $
+	$Id: TreeLayout.c,v 1.48 2000/11/06 23:46:02 AJW Exp $
 
 */
 
@@ -45,20 +45,18 @@ void Layout_LayoutTitle(layout *layout)
 /*Create the title transient, should be called after all other elements and transients have been placed*/
 {
 	Desk_wimp_rect bbox;
-	Desk_wimp_point *fontbbox;
 	flags flags;
 
 	AJWLib_Assert(layout!=NULL);
 
 	if (!Config_Title()) return;
 	bbox=Layout_FindExtent(layout,Desk_FALSE);
-	fontbbox=Graphics_TitleWidthAndHeight();
 	flags.editable=1;
 	flags.moveable=0;
 	flags.linkable=0;
 	flags.snaptogrid=0;
 	flags.selectable=0;
-	Layout_AddTransient(layout,element_TITLE,(bbox.max.x+bbox.min.x-fontbbox->x)/2,bbox.max.y+Graphics_WindowBorder()+(Graphics_TitleHeight()-fontbbox->y)/2,fontbbox->x,Graphics_TitleHeight()-Graphics_WindowBorder(),0,0,flags);
+	Layout_AddTransient(layout,element_TITLE,bbox.min.x,bbox.max.y,bbox.max.x-bbox.min.x,Graphics_TitleHeight(),0,0,flags);
 }
 
 static void Layout_ExtendGeneration(int generation)
@@ -84,7 +82,6 @@ static void Layout_ExtendGeneration(int generation)
 
 static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 {
-	flags flags;
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
 
@@ -93,27 +90,29 @@ static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 		elementptr marriage;
 		if ((marriage=Database_GetParentsMarriage(person))!=none) {
 			/*Only plot line if the person has parents*/
-			int leftpos=INFINITY,rightpos=-INFINITY,marriagepos=INFINITY;
-			do {
-				/*Find leftmost and rightmost positions of siblings*/
-				int pos;
-				pos=Layout_FindXCoord(layout,person);
-				if (pos<leftpos) leftpos=pos;
-				if (pos>rightpos) rightpos=pos;
-			} while ((person=Database_GetSiblingLtoR(person))!=none);
-			leftpos+=Graphics_PersonWidth()/2;
-			rightpos+=Graphics_PersonWidth()/2;
-			/*See if parents marriage is further left or right than the siblings*/
-			marriagepos=Layout_FindXCoord(layout,marriage)+Graphics_MarriageWidth()/2;
-			if (marriagepos<leftpos) leftpos=marriagepos;
-			if (marriagepos>rightpos) rightpos=marriagepos;
-			/*Create the line*/
+			int leftpos,rightpos,marriagey;
+			flags flags;
+
 			flags.editable=0;
 			flags.moveable=0;
 			flags.linkable=0;
 			flags.snaptogrid=0;
 			flags.selectable=0;
-			Layout_AddTransient(layout,element_CHILDLINE,leftpos,y,rightpos-leftpos,0,0,0,flags);
+
+			leftpos=rightpos=Layout_FindXCoord(layout,marriage)+Layout_FindWidth(layout,marriage)/2;
+			marriagey=Layout_FindYCoord(layout,marriage)-Graphics_GapHeightBelow();
+			do {
+				/*Find leftmost and rightmost positions of siblings*/
+				int x,y;
+				x=Layout_FindXCoord(layout,person)+Layout_FindWidth(layout,person)/2;
+				y=Layout_FindYCoord(layout,person)+Layout_FindHeight(layout,person);
+				if (x<leftpos) leftpos=x;
+				if (x>rightpos) rightpos=x;
+				/*Create the vertical line*/
+				Layout_AddTransient(layout,element_LINE,x,y+Graphics_GapHeightAbove(),0,marriagey-(y+Graphics_GapHeightAbove()),0,0,flags);
+			} while ((person=Database_GetSiblingLtoR(person))!=none);
+			/*Create the horizontal line*/
+			Layout_AddTransient(layout,element_LINE,leftpos,marriagey,rightpos-leftpos,0,0,0,flags);
 		}
 	}
 }

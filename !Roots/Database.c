@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.49 2000/11/05 12:03:40 AJW Exp $
+	$Id: Database.c,v 1.50 2000/11/06 23:45:48 AJW Exp $
 
 */
 
@@ -129,6 +129,8 @@ elementtype Database_GetElementType(elementptr element)
 	AJWLib_Assert(database!=NULL);
 	
 	if (element<=0) return (elementtype)element;
+	AJWLib_AssertWarning(element<database[0].element.file.numberofelements);
+	if (element>=database[0].element.file.numberofelements) return element_NONE;
 	return database[element].type;
 }
 
@@ -1335,24 +1337,20 @@ void Database_New(void)
 
 		sprintf(tag,"User.P%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (!strcmp(buffer,"*")) strcpy(buffer,"");
-		strcpy(personuser[i],buffer);
+		if (strcmp(buffer,"*")==0) strcpy(personuser[i],""); else strcpy(personuser[i],buffer);
 		sprintf(tag,"GED.P%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (!strcmp(buffer,"*")) strcpy(buffer,"");
-		strcpy(personGEDCOM[i],buffer);
+		if (strcmp(buffer,"*")==0) strcpy(personGEDCOM[i],""); else strcpy(personGEDCOM[i],buffer);
 	}
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
 		char tag[20], *buffer;
 
 		sprintf(tag,"User.M%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (!strcmp(buffer,"*")) strcpy(buffer,"");
-		strcpy(marriageuser[i],buffer);
+		if (strcmp(buffer,"*")==0) strcpy(marriageuser[i],""); else strcpy(marriageuser[i],buffer);
 		sprintf(tag,"GED.M%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (!strcmp(buffer,"*")) strcpy(buffer,"");
-		strcpy(marriageGEDCOM[i],buffer);
+		if (strcmp(buffer,"*")==0) strcpy(marriageGEDCOM[i],""); else strcpy(marriageGEDCOM[i],buffer);
 	}
 }
 
