@@ -1,8 +1,8 @@
 /*
-	FT - Graphics Configuration
+	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.47 2000/10/05 14:46:38 AJW Exp $
+	$Id: Graphics.c,v 1.48 2000/10/11 16:18:31 AJW Exp $
 
 */
 
@@ -259,7 +259,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
 			}
@@ -274,7 +274,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
-				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
 			}
@@ -380,7 +380,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 			if (numvalues!=3) {
 				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
-				graphicsdata.siblinglinethickness=Graphics_ConvertToOS(values[1]);
+				graphicsdata.siblinglinethickness=(int)strtol(values[1],NULL,10);
 				graphicsdata.siblinglinecolour=Graphics_RGBToPalette(values[2]);
 			}
 			break;
@@ -395,7 +395,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 			}
 			break;
@@ -409,7 +409,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.thickness=(int)strtol(values[5],NULL,10);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
 			}
 			break;

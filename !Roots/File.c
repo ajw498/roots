@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.32 2000/09/25 18:44:11 AJW Exp $
+	$Id: File.c,v 1.33 2000/10/11 16:18:29 AJW Exp $
 
 */
 
@@ -585,6 +585,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 					Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
 				} else {
 					gedcomlayout=Layout_GetGEDCOMLayout();
+					if (gedcomlayout==NULL) gedcomlayout=Layout_LayoutNormal();
 					Layout_LayoutLines(gedcomlayout);
 				}
 				Windows_LayoutNormal(gedcomlayout,Desk_FALSE);
