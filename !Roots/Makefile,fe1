@@ -49,3 +49,9 @@ LINK		=	DrLink $(LINKFLAGS)
 $(TARGET):	$(OBJECTS) $(LIBS)
 	$(LINK) -o $@ $(OBJECTS) $(LIBS)
 
+remove:
+
+clean:	remove
+	rm !RunImage
+	rm *.o
+
