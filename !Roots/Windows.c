@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.15  1999/10/25 16:08:48  AJW
+	Added centering of fields
+
 	Revision 1.14  1999/10/24 23:16:38  AJW
 	Added person to layout when adding a second marriage
 	Added person to layout in a better position when adding a child
@@ -99,6 +102,7 @@
 #define REDRAWOVERLAP 4
 
 #define SWI_ColourTrans_SetFontColours 0x4074F
+#define SWI_Font_ScanString 0x400A1
 
 #define EORCOLOUR 0xFFFFFF00
 #define EORCOLOURRED 0xFFFF0000
@@ -188,10 +192,19 @@ void Graphics_RedrawMarriage(Desk_window_handle win,marriagelayout *marriage)
 	Desk_Window_ForceRedraw(win,marriage->x-REDRAWOVERLAP,marriage->y-REDRAWOVERLAP,marriage->x+Graphics_MarriageWidth()+REDRAWOVERLAP,marriage->y+Graphics_PersonHeight()+REDRAWOVERLAP);
 }
 
+int AJWLib_Font_GetWidth(Desk_font_handle handle,const char *str)
+{
+	int width,height;
+	Desk_Error2_CheckOS(Desk_SWI(5,5,SWI_Font_ScanString,handle,str,1<<8,INFINITY,INFINITY,NULL,NULL,NULL,&width,&height));
+	Desk_Font_ConverttoOS(width,height,&width,&height);
+	return width;
+}
+
 void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
 {
 	int i;
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
+		int xcoord=0;
 		switch (graphicsdata.person[i].type) {
 			case graphictype_RECTANGLE:
 				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
@@ -208,18 +221,20 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
 				AJWLib_Draw_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,&matrix);
 				break;
+			case graphictype_CENTREDTEXTLABEL:
+				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
 			case graphictype_TEXTLABEL:
 				Desk_Font_SetFont(graphicsdata.person[i].details.textlabel.properties.font->handle);
 				Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,14);
-				Desk_Font_Paint(graphicsdata.person[i].details.textlabel.text,Desk_font_plot_OSCOORS,x+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y);
+				Desk_Font_Paint(graphicsdata.person[i].details.textlabel.text,Desk_font_plot_OSCOORS,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y);
 				break;
 		}
 	}
 	for (i=0;i<NUMPERSONFIELDS;i++) {
 		if (graphicsdata.personfields[i].plot) {
 			char fieldtext[256]=""; /*what is max field length?*/
+			int xcoord=0;
 			switch (i) {
-			/*A centered field?*/
 				case personfieldtype_SURNAME:
 					strcat(fieldtext,Database_GetPersonData(person)->surname);
 					break;
@@ -274,7 +289,8 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 			}
 			Desk_Font_SetFont(graphicsdata.personfields[i].textproperties.font->handle);
 			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,14));
-			Desk_Font_Paint(fieldtext,Desk_font_plot_OSCOORS,x+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y);
+			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
+			Desk_Font_Paint(fieldtext,Desk_font_plot_OSCOORS,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y);
 		}
 	}
 	if (selected) {

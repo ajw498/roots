@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.7  1999/10/25 16:09:28  AJW
+	Added centering of fields
+
 	Revision 1.6  1999/10/24 23:31:30  AJW
 	Added centred text fields
 
@@ -92,7 +95,7 @@ void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 
 void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 {
-	graphictype graphictype;
+	graphictype graphictype=graphictype_INVALID;
 	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE; /*Use a messages file?*/
 	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
 	else if (!strcmp(values[0],"box")) graphictype=graphictype_RECTANGLE;
@@ -101,7 +104,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 	else if (!strcmp(values[0],"field")) graphictype=graphictype_FIELD;
 	else if (!strcmp(values[0],"centredtext")) graphictype=graphictype_CENTREDTEXTLABEL;
 	else if (!strcmp(values[0],"centredfield")) graphictype=graphictype_CENTREDFIELD;
-	else graphictype=graphictype_INVALID; /*give an error?*/
+	else Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
 	switch (graphictype) {
 		case graphictype_LINE:
 		case graphictype_CHILDLINE:
@@ -148,6 +151,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[5]);
 			}
 			break;
+		case graphictype_CENTREDTEXTLABEL:
 		case graphictype_TEXTLABEL:
 			if (numvalues!=8) {
 				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
@@ -155,7 +159,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				int size;
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
 				/*Check for flex error*/
-				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype_TEXTLABEL;
+				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype;
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.x=(int)strtol(values[1],NULL,10);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.y=(int)strtol(values[2],NULL,10);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.colour=Graphics_RGBToPalette(values[4]);
@@ -165,6 +169,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				Desk_Font2_ClaimFont(&(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.font),values[6],16*size,16*size);
 			}
 			break;
+		case graphictype_CENTREDFIELD:
 		case graphictype_FIELD:
 			if (numvalues!=8) {
 				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
@@ -192,6 +197,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				else Desk_Error_Report(1,"Syntax error in person file, line %d (unknown field type)",linenum); /*what is field?*/
 				/*Error2 error?*/
 				graphicsdata.personfields[field].plot=Desk_TRUE;
+				graphicsdata.personfields[field].type=graphictype;
 				graphicsdata.personfields[field].textproperties.x=(int)strtol(values[1],NULL,10);
 				graphicsdata.personfields[field].textproperties.y=(int)strtol(values[2],NULL,10);
 				graphicsdata.personfields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
