@@ -3,6 +3,10 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.13  2000/01/14 19:42:18  AJW
+	Added Database_Load and Remove
+	Added Asserts
+
 	Revision 1.12  2000/01/13 23:33:02  AJW
 	Added GetNumPeople and GetSize
 	Moved InfoWin handling to Graphics.c
@@ -54,6 +58,7 @@
 #include "Desk.DeskMem.h"
 #include "Desk.Filing.h"
 
+#include "AJWLib.Assert.h"
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
 #include "AJWLib.Msgs.h"
@@ -110,7 +115,7 @@
 #define titlemenu_Ms 3
 #define titlemenu_Dr 4
 
-static element *database;
+static element *database=NULL;
 static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin;
 Desk_menu_ptr sexmenu,titlemenu;
@@ -118,19 +123,24 @@ static int numpeople=0;
 
 void Database_FudgeLinked(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	database[0].file.linkedpeople=person;
 }
 
 void Database_FudgeMarriageSwap(elementptr marriage)
 {
-	elementptr temp=database[marriage].marriage.principal;
+	elementptr temp;
+	AJWLib_Assert(database!=NULL);
+	temp=database[marriage].marriage.principal;
 	database[marriage].marriage.principal=database[marriage].marriage.spouse;
 	database[marriage].marriage.spouse=temp;
 }
 
 Desk_bool Database_IsUnlinked(elementptr person)
 {
-	elementptr unlinkedpeople=Database_GetUnlinked(none);
+	elementptr unlinkedpeople;
+	AJWLib_Assert(database!=NULL);
+	unlinkedpeople=Database_GetUnlinked(none);
 	while (unlinkedpeople!=none) {
 		if (unlinkedpeople==person) return Desk_TRUE;
 		unlinkedpeople=Database_GetUnlinked(unlinkedpeople);
@@ -140,83 +150,97 @@ Desk_bool Database_IsUnlinked(elementptr person)
 
 persondata *Database_GetPersonData(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return NULL;
 	return &(database[person].person.data);
 }
 
 elementptr Database_GetUnlinked(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return database[0].file.unlinkedpeople;
 	return database[person].person.nextunlinked;
 }
 
 elementptr Database_GetLinked(void)
 {
+	AJWLib_Assert(database!=NULL);
 	return database[0].file.linkedpeople;
 }
 
 elementptr Database_GetMother(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	return database[person].person.mother;
 }
 
 elementptr Database_GetFather(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	return database[person].person.father;
 }
 
 elementptr Database_GetSiblingRtoL(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	return database[person].person.siblingsrtol;
 }
 
 elementptr Database_GetSiblingLtoR(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	return database[person].person.siblingsltor;
 }
 
 elementptr Database_GetLeftChild(elementptr marriage)
 {
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return none;
 	return database[marriage].marriage.leftchild;
 }
 
 elementptr Database_GetRightChild(elementptr marriage)
 {
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return none;
 	return database[marriage].marriage.rightchild;
 }
 
 elementptr Database_GetSpouseFromMarriage(elementptr marriage)
 {
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return none;
 	return database[marriage].marriage.spouse;
 }
 
 elementptr Database_GetPrincipalFromMarriage(elementptr marriage)
 {
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return none;
 	return database[marriage].marriage.principal;
 }
 
 elementptr Database_GetMarriage(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	return database[person].person.marriage;
 }
 
 marriagedata *Database_GetMarriageData(elementptr marriage)
 {
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return NULL;
 	return &(database[marriage].marriage.data);
 }
 
 Desk_bool Database_IsFirstMarriage(elementptr marriage)
 {
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return Desk_FALSE;
 	if (database[marriage].marriage.previous==none) return Desk_TRUE;
 	return Desk_FALSE;
@@ -225,6 +249,7 @@ Desk_bool Database_IsFirstMarriage(elementptr marriage)
 elementptr Database_GetMarriageLtoR(elementptr person)
 {
 	elementptr marriage;
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	marriage=Database_GetMarriage(person);
 	if (marriage==none) return none;
@@ -236,6 +261,7 @@ elementptr Database_GetMarriageLtoR(elementptr person)
 elementptr Database_GetMarriageRtoL(elementptr person)
 {
 	elementptr marriage,marriage2;
+	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
 	marriage=Database_GetMarriage(person);
 	if (marriage==none) return none;
@@ -248,6 +274,7 @@ elementptr Database_GetMarriageRtoL(elementptr person)
 char *Database_GetName(elementptr person)
 {
 	static char result[256];
+	AJWLib_Assert(database!=NULL);
 	strcpy(result,"");
 	if (strlen(database[person].person.data.forename)) {
 		strcat(result,database[person].person.data.forename);
@@ -262,6 +289,7 @@ char *Database_GetName(elementptr person)
 char *Database_GetFullName(elementptr person)
 {
 	static char result[256];
+	AJWLib_Assert(database!=NULL);
 	strcpy(result,"");
 	if (strlen(database[person].person.data.forename)) {
 		strcat(result,database[person].person.data.forename);
@@ -280,6 +308,7 @@ char *Database_GetFullName(elementptr person)
 char *Database_GetTitledName(elementptr person)
 {
 	static char result[256];
+	AJWLib_Assert(database!=NULL);
 	strcpy(result,"");
 	if (strlen(database[person].person.data.title)) {
 		strcat(result,database[person].person.data.title);
@@ -298,6 +327,7 @@ char *Database_GetTitledName(elementptr person)
 char *Database_GetTitledFullName(elementptr person)
 {
 	static char result[256];
+	AJWLib_Assert(database!=NULL);
 	strcpy(result,"");
 	if (strlen(database[person].person.data.title)) {
 		strcat(result,database[person].person.data.title);
@@ -319,6 +349,7 @@ char *Database_GetTitledFullName(elementptr person)
 
 void Database_UnlinkPerson(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	database[person].person.nextunlinked=database[0].file.unlinkedpeople;
 	database[0].file.unlinkedpeople=person;
 	database[person].person.father=none;
@@ -331,6 +362,7 @@ void Database_UnlinkPerson(elementptr person)
 void Database_RemoveSpouse(elementptr person)
 {
 	elementptr principal,marriage,spouse;
+	AJWLib_Assert(database!=NULL);
 	marriage=Database_GetMarriage(person);
 	if (marriage==none) return;
 	if (Database_GetLeftChild(marriage)!=none) return;
@@ -355,6 +387,7 @@ void Database_RemoveSpouse(elementptr person)
 void Database_RemoveParents(elementptr person)
 {
 	elementptr spouse,principal,marriage,child;
+	AJWLib_Assert(database!=NULL);
 	marriage=Database_GetMarriage(person);
 	if (marriage==none) return;
 	if (database[marriage].marriage.next!=none) return;
@@ -380,6 +413,7 @@ void Database_RemoveParents(elementptr person)
 void Database_RemoveChild(elementptr child)
 {
 	elementptr leftsibling,rightsibling,marriage;
+	AJWLib_Assert(database!=NULL);
 	if (child==none) return;
 	if (Database_GetMarriage(child)) return;
 	leftsibling=Database_GetSiblingRtoL(child);
@@ -398,6 +432,7 @@ void Database_RemoveChild(elementptr child)
 void Database_UnlinkUnlinkedPerson(elementptr person)
 {
 	int i;
+	AJWLib_Assert(database!=NULL);
 	i=database[0].file.unlinkedpeople;
 	database[person].person.father=none;
 	database[person].person.mother=none;
@@ -416,6 +451,7 @@ void Database_UnlinkUnlinkedPerson(elementptr person)
 void Database_Marry(elementptr linked,elementptr unlinked)
 {
 	elementptr marriage;
+	AJWLib_Assert(database!=NULL);
 	if (Database_IsUnlinked(linked)) return;
 	if (!Database_IsUnlinked(unlinked)) return;
 	if (Database_GetMarriage(linked) && Database_GetPrincipalFromMarriage(Database_GetMarriage(linked))!=linked) {
@@ -455,6 +491,7 @@ void Database_Marry(elementptr linked,elementptr unlinked)
 void Database_AddParents(elementptr child,elementptr mother,elementptr father)
 {
 	elementptr marriage;
+	AJWLib_Assert(database!=NULL);
 	Database_UnlinkUnlinkedPerson(mother);
 	Database_Marry(mother,father);
 	marriage=Database_GetMarriage(mother);
@@ -467,6 +504,7 @@ void Database_AddParents(elementptr child,elementptr mother,elementptr father)
 
 void Database_AddChild(elementptr marriage,elementptr child)
 {
+	AJWLib_Assert(database!=NULL);
 	Database_UnlinkUnlinkedPerson(child);
 	database[child].person.siblingsltor=none;
 	database[child].person.siblingsrtol=database[marriage].marriage.rightchild;
@@ -480,6 +518,7 @@ void Database_AddChild(elementptr marriage,elementptr child)
 
 void Database_LinkPerson(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	if (database[0].file.linkedpeople!=none) return;
 	Database_UnlinkUnlinkedPerson(person);
 	database[0].file.linkedpeople=person;
@@ -488,6 +527,7 @@ void Database_LinkPerson(elementptr person)
 
 void Database_EditPerson(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_SURNAME,database[person].person.data.surname);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_FORENAME,database[person].person.data.forename);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_MIDDLENAMES,database[person].person.data.middlenames);
@@ -518,6 +558,7 @@ void Database_EditPerson(elementptr person)
 
 Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref)
 {
+	AJWLib_Assert(database!=NULL);
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	editingperson=none;
 	Desk_Window_Hide(editpersonwin);
@@ -526,6 +567,7 @@ Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref)
 
 Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 {
+	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingperson==none) return Desk_FALSE;
 	Desk_Icon_GetText(editpersonwin,editpersonicon_SURNAME,database[editingperson].person.data.surname);
 	Desk_Icon_GetText(editpersonwin,editpersonicon_FORENAME,database[editingperson].person.data.forename);
@@ -550,6 +592,7 @@ Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 
 Desk_bool Database_CancelEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 {
+	AJWLib_Assert(database!=NULL);
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	editingmarriage=none;
 	Desk_Window_Hide(editmarriagewin);
@@ -558,6 +601,7 @@ Desk_bool Database_CancelEditMarriageWindow(Desk_event_pollblock *block,void *re
 
 Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 {
+	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingmarriage==none) return Desk_FALSE;
 	Desk_Icon_GetText(editmarriagewin,editmarriageicon_PLACE,database[editingmarriage].marriage.data.place);
 /*	Desk_Icon_GetText(editmarriagewin,editmarriageicon_DATE,database[editingmarriage].marriage.data.date);*/
@@ -569,6 +613,7 @@ Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 void Database_EditMarriage(elementptr marriage)
 {
 	char name[256];
+	AJWLib_Assert(database!=NULL);
 	if (marriage==none) return;
 	sprintf(name,"%s %s",database[database[marriage].marriage.principal].person.data.forename,database[database[marriage].marriage.principal].person.data.surname);
 	Desk_Icon_SetText(editmarriagewin,editmarriageicon_PRINCIPAL,name);
@@ -582,6 +627,7 @@ void Database_EditMarriage(elementptr marriage)
 
 void Database_Delete(elementptr person)
 {
+	AJWLib_Assert(database!=NULL);
 	Database_UnlinkUnlinkedPerson(person);
 	database[person].freeelement.next=database[0].file.freeelement;
 	database[0].file.freeelement=person;
@@ -593,6 +639,7 @@ void Database_Add(void)
 {
 	elementptr newperson;
 	static int newpersonnumber=1;
+	AJWLib_Assert(database!=NULL);
 	if ((newperson=database[0].file.freeelement)==none) {
 		AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1));
 		newperson=database[0].file.numberofelements++;
@@ -626,36 +673,43 @@ void Database_Add(void)
 
 void Database_SexMenuClick(int entry,void *ref)
 {
+	AJWLib_Assert(database!=NULL);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_SEX,Desk_Menu_GetText(sexmenu,entry));
 }
 
 void Database_TitleMenuClick(int entry,void *ref)
 {
+	AJWLib_Assert(database!=NULL);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_TITLE,Desk_Menu_GetText(titlemenu,entry));
 }
 
 int Database_GetNumPeople(void)
 {
+	AJWLib_Assert(database!=NULL);
 	return numpeople;
 }
 
 char *Database_GetTitle(void)
 {
+	AJWLib_Assert(database!=NULL);
 	return database[0].file.filetitle;
 }
 
 char *Database_GetDescription(void)
 {
+	AJWLib_Assert(database!=NULL);
 	return database[0].file.filedescription;
 }
 
 int Database_GetSize(void)
 {
+	AJWLib_Assert(database!=NULL);
 	return database[0].file.numberofelements*sizeof(element);
 }
 
 void Database_Save(FILE *file)
 {
+	AJWLib_Assert(database!=NULL);
 /*Remove free elements?*/
 /*Consistency check?*/
 	AJWLib_File_fwrite(database,sizeof(element),database[0].file.numberofelements,file);
@@ -663,18 +717,19 @@ void Database_Save(FILE *file)
 
 void Database_Load(FILE *file)
 {
-/*	Desk_file_handle loadfile;
-	int size;
-	size=Desk_File_Size(filename);
-	AJWLib_Flex_Extend((flex_ptr)&database,size);
-	loadfile=Desk_File_Open(filename,Desk_file_READ);
-	Desk_File_ReadBytes(loadfile,database,size);
-	Desk_File_Close(loadfile);
-*/	Modules_ChangedStructure();
+	AJWLib_Assert(database!=NULL);
+/*Remove free elements?*/
+/*Consistency check?*/
+	AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element));
+	AJWLib_File_fread(database,sizeof(element),1,file);
+	AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*database[0].file.numberofelements);
+	AJWLib_File_fread(database+1,sizeof(element),database[0].file.numberofelements-1,file);
+	Modules_ChangedStructure();
 }
 
 void Database_New(void)
 {
+	AJWLib_Assert(database==NULL);
 	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element));
 	strcpy(database[0].file.filetitle,"Fred"); /**/
 	strcpy(database[0].file.filedescription,"");
@@ -685,11 +740,18 @@ void Database_New(void)
 	strcpy(database[0].file.userdesc[0],"Other1"); /*??*/
 	strcpy(database[0].file.userdesc[1],"Other2");
 	strcpy(database[0].file.userdesc[2],"Other3");
-	File_NewFile(); /*This shouldn't be here*/
+}
+
+void Database_Remove(void)
+{
+	AJWLib_Assert(database!=NULL);
+	AJWLib_Flex_Free((flex_ptr)&database);
+	/*Close any windows if open?*/
 }
 
 void Database_Init(void)
 {
+	AJWLib_Assert(database==NULL);
 	Database_New();
 	editpersonwin=Desk_Window_Create("EditPerson",Desk_template_TITLEMIN);
 	editmarriagewin=Desk_Window_Create("EditMarriage",Desk_template_TITLEMIN);
