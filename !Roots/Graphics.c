@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.29 2000/05/14 22:34:04 AJW Exp $
+	$Id: Graphics.c,v 1.30 2000/06/10 22:38:45 AJW Exp $
 
 */
 
@@ -55,6 +55,8 @@
 
 #define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7))
 #define Graphics_ConvertFromOS(x) ((int)(x/7))
+
+#define SWI_PDriver_DeclareFont 0x80155
 
 
 #define NUMPERSONFIELDS 15
@@ -566,6 +568,34 @@ int Graphics_GetSize(void)
 		size+=5; /*String terminators*/
 	}
 	return size;
+}
+
+void Graphics_DeclareFonts(void)
+{
+	int i;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.title.fontname,0));
+	for (i=0;i<graphicsdata.numpersonobjects;i++) {
+		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.person[i].details.textlabel.properties.fontname,0));
+		}
+	}
+	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
+		if (graphicsdata.personfields[i].plot) {
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.personfields[i].textproperties.fontname,0));
+		}
+	}
+	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
+		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.marriage[i].details.textlabel.properties.fontname,0));
+		}
+	}
+	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
+		if (graphicsdata.marriagefields[i].plot) {
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.marriagefields[i].textproperties.fontname,0));
+		}
+	}
 }
 
 static void Graphics_ClaimFonts(void)

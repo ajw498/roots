@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.1 2000/05/16 22:23:01 AJW Exp $
+	$Id: Print.c,v 1.2 2000/06/10 22:38:47 AJW Exp $
 
 */
 
@@ -61,47 +61,86 @@
 #include "File.h"
 #include "Print.h"
 
-#define print_OK 19
-#define print_CANCEL 18
-#define print_UPRIGHT 16
-#define print_SIDEWAYS 17
-#define print_SCALETEXT 7
-#define print_SCALETOFITTEXT 8
+#define print_OK 14
+#define print_CANCEL 13
+#define print_UPRIGHT 11
+#define print_SIDEWAYS 12
 #define print_COPIES 1
 #define print_COPIESDOWN 2
 #define print_COPIESUP 3
 #define print_SCALE 4
 #define print_SCALEDOWN 5
 #define print_SCALEUP 6
-#define print_SCALEFIT 9
-#define print_SCALEFITDOWN 10
-#define print_SCALEFITUP 11
-#define print_OVERLAP 13
-#define print_OVERLAPDOWN 14
-#define print_OVERLAPUP 15
+#define print_OVERLAP 8
+#define print_OVERLAPDOWN 9
+#define print_OVERLAPUP 10
+#define print_NUMPAGES 19
+#define print_CENTRE 20
+
+#define SWI_PDriver_PageSize 0x80143
+
+#define SWAP(x,y) {\
+	int temp=x;\
+	x=y;\
+	y=temp;\
+}
+
 
 typedef struct printdata {
 	int copies;
 	int scale;
 	Desk_bool portrait;
-    int overlap;
-    layout *layout;
+	int overlap;
+	layout *layout;
+	Desk_wimp_rect printablearea;
+	Desk_wimp_rect treeextent;
+	Desk_wimp_point pagesize;
+	Desk_wimp_point pagesizeos;
+	Desk_wimp_point offset;
+	Desk_wimp_point pages;
 } printdata;
 
 static Desk_window_handle printwin;
 static printdata data;
 
+static void Print_PlotText(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
+{
+}
+
+static void Print_CalcValues(void)
+{
+	int total;
+	data.copies=1;
+	data.portrait=Desk_TRUE;
+	data.scale=100;
+	data.overlap=10;
+	Desk_Font_ConvertToOS(data.printablearea.max.x-data.printablearea.min.x,data.printablearea.max.y-data.printablearea.min.y,&data.pagesizeos.x,&data.pagesizeos.y);
+	if (!data.portrait) SWAP(data.pagesizeos.x,data.pagesizeos.y);
+	/*Scale factor?*/
+	data.pages.x=0;
+	total=data.treeextent.max.x-data.treeextent.min.x;
+	while (total>0) {
+		data.pages.x++;
+		total-=data.pagesizeos.x-data.overlap;
+	}
+	if (/*Centre*/0) data.offset.x=(-total)/2; else data.offset.x=0;
+	data.pages.y=0;
+	total=data.treeextent.max.y-data.treeextent.min.y;
+	while (total>0) {
+		data.pages.y++;
+		total-=data.pagesizeos.y-data.overlap;
+	}
+	if (/*Centre*/0) data.offset.y=(-total)/2; else data.offset.y=-total;
+}
+
 static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 {
-	Desk_wimp_point pagesize,position,pagesizeos;
-	Desk_wimp_rect printablearea,rect,cliprect,treeextent;
+	Desk_wimp_point position;
+	Desk_wimp_rect rect,cliprect;
 	Desk_print_transformation matrix;
 	int more,rectid,pagex,pagey;
 	printdata *ref=printblk->reference;
 
-	Desk_PDriver_PageSize(&pagesize,&printablearea);
-	treeextent=Layout_FindExtent(ref->layout,Desk_FALSE);
-	Desk_Font_ConvertToOS(pagesize.x-(printablearea.min.x+printablearea.max.x),pagesize.y-(printablearea.min.y+printablearea.max.y),&pagesizeos.x,&pagesizeos.y);
 	if (ref->portrait) {
 	/*Scale factor?*/
 		matrix.xx=1<<16;
@@ -109,28 +148,29 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 		matrix.yy=1<<16;
 		matrix.yx=0;
 	} else {
-		int temp=pagesizeos.x;
-		pagesizeos.x=pagesizeos.y;
-		pagesizeos.y=temp;
 		matrix.xx=0;
 		matrix.xy=1<<16;
 		matrix.yy=0;
 		matrix.yx=1<<16;
 	}
 	Desk_Error2_Try {
-		/*Declare fonts*/
-		for (pagex=0;pagex<1/**/;pagex++) {
-			for (pagey=0;pagey<1/**/;pagey++) {
-				rect.min.x=treeextent.min.x+(pagesizeos.x-ref->overlap)*pagex; /*Minus a point as in the PRMS?*/
-				rect.min.y=treeextent.min.y+(pagesizeos.y-ref->overlap)*pagey;
-				rect.max.x=rect.min.x+pagesizeos.x;
-				rect.max.y=rect.min.y+pagesizeos.y;
-				position.x=printablearea.min.x;
-				position.y=printablearea.min.y;
+		Desk_printer_info infoblk;
+		Desk_PDriver_Info(&infoblk);
+		if (infoblk.features.data.declarefont) Graphics_DeclareFonts();
+		for (pagey=data.pages.y-1;pagey>=0;pagey--) {
+			for (pagex=0;pagex<data.pages.x;pagex++) {
+				rect.min.x=0; /*Minus a point as in the PRMS?*/
+				rect.min.y=0;
+				rect.max.x=rect.min.x+ref->pagesizeos.x;
+				rect.max.y=rect.min.y+ref->pagesizeos.y;
+				position.x=ref->printablearea.min.x;
+				position.y=ref->printablearea.min.y;
 				Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
 				Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
 				while (more) {
-					Graphics_Redraw(ref->layout,ref->scale,0,pagesizeos.y,&cliprect,Desk_FALSE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
+/*					Desk_ColourTrans_SetGCOL(0x0,0,0);
+					Desk_GFX_Rectangle(0,0,100,100);
+*/					Graphics_Redraw(ref->layout,ref->scale,ref->offset.x-ref->treeextent.min.x-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-ref->treeextent.min.y-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect,Desk_FALSE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Print_PlotText);
 					Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
 				}
 			}
@@ -158,11 +198,13 @@ static Desk_bool Print_Ok(Desk_event_pollblock *block,void *ref)
 
 void Print_OpenWindow(layout *layout)
 {
-	data.copies=1;
-	data.portrait=Desk_TRUE;
-	data.scale=100;
-	data.overlap=10;
 	data.layout=layout;
+/*	Desk_PDriver_PageSize(&pagesize,&printablearea);*/ /*Desk_PDriver_PageSize() seems to be broken*/
+	Desk_SWI(0,7,SWI_PDriver_PageSize,NULL,&data.pagesize.x,&data.pagesize.y,&data.printablearea.min.x,&data.printablearea.min.y,&data.printablearea.max.x,&data.printablearea.max.y);
+	data.treeextent=Layout_FindExtent(data.layout,Desk_FALSE);
+
+	Print_CalcValues();
+
 	Desk_Window_Show(printwin,Desk_open_CENTERED);
 }
 
