@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.59 2001/02/03 20:26:13 AJW Exp $
+	$Id: Database.c,v 1.60 2004/01/05 22:42:51 AJW Exp $
 
 */
 
@@ -1203,7 +1203,7 @@ static void Database_WriteTag(FILE *file,char *tag)
 {
 	int level=0;
 	static char previous[256]="";
-	char *new,*old,*origtag;
+	char *newtag,*old,*origtag;
 
 	if (file==NULL) {
 		/*Reset*/
@@ -1211,19 +1211,19 @@ static void Database_WriteTag(FILE *file,char *tag)
 		return;
 	}
 	old=previous;
-	new=origtag=tag;
+	newtag=origtag=tag;
 	/* Skip all levels in the new tag that are also present in the old tag*/
-	while (*old!='\0' && *new==*old) {
+	while (*old!='\0' && *newtag==*old) {
 		if (*old=='.') {
 			level++;
-			tag=new+1;
+			tag=newtag+1;
 		}
-		new++;
+		newtag++;
 		old++;
 	}
-	if (*new=='.' && *old=='\0') {
+	if (*newtag=='.' && *old=='\0') {
 		level++;
-		tag=new+1;
+		tag=newtag+1;
 	}
 
 	strcpy(previous,origtag);
