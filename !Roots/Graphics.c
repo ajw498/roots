@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.22 2000/02/28 17:07:19 uid1 Exp $
+	$Id: Graphics.c,v 1.23 2000/02/28 23:00:50 uid1 Exp $
 
 */
 
@@ -315,7 +315,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 
 static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 {
-	graphictype graphictype;
+	graphictype graphictype=graphictype_INVALID;
 	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE;
 	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
 	else if (!strcmp(values[0],"siblingline")) graphictype=graphictype_SIBLINGLINE;
@@ -323,7 +323,8 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 	else if (!strcmp(values[0],"filledbox")) graphictype=graphictype_FILLEDRECTANGLE;
 	else if (!strcmp(values[0],"text")) graphictype=graphictype_TEXTLABEL;
 	else if (!strcmp(values[0],"field")) graphictype=graphictype_FIELD;
-	else graphictype=graphictype_INVALID;
+	else if (!strcmp(values[0],"centredfield")) graphictype=graphictype_CENTREDFIELD;
+	else Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 	switch (graphictype) {
 		case graphictype_SIBLINGLINE:
 			if (numvalues!=3) {
@@ -375,13 +376,14 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[5]);
 			}
 			break;
+		case graphictype_CENTREDTEXTLABEL:
 		case graphictype_TEXTLABEL:
 			if (numvalues!=8) {
 				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
 				int size;
 				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),(++graphicsdata.nummarriageobjects)*sizeof(object));
-				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_TEXTLABEL;
+				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype;
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.x=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.y=Graphics_ConvertToOS(values[2]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.colour=Graphics_RGBToPalette(values[4]);
@@ -390,6 +392,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 				size=(int)strtol(values[3],NULL,10);
 			}
 			break;
+		case graphictype_CENTREDFIELD:
 		case graphictype_FIELD:
 			if (numvalues!=8) {
 				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
@@ -405,6 +408,7 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 					break;
 				}
 				graphicsdata.marriagefields[field].plot=Desk_TRUE;
+				graphicsdata.marriagefields[field].type=graphictype;
 				graphicsdata.marriagefields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriagefields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
 				graphicsdata.marriagefields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
@@ -763,7 +767,7 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 
 static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
 {
-	int i;
+	int i,xcoord=0;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	AJWLib_Assert(marriage>0);
@@ -780,8 +784,10 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 			case graphictype_LINE:
 				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
+			case graphictype_CENTREDTEXTLABEL:
+				xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.text)/2;
 			case graphictype_TEXTLABEL:
-				Graphics_PlotText(scale,originx,originy,x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
+				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
 				break;
 		}
 	}
@@ -801,7 +807,8 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 				default:
 					strcpy(fieldtext,"Unimplemented");
 			}
-			Graphics_PlotText(scale,originx,originy,x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
+			if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriagefields[i].textproperties.font->handle,fieldtext)/2;
+			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 		}
 	}
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
