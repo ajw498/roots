@@ -3,37 +3,37 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.34 2004/01/05 22:42:56 AJW Exp $
+	$Id: Main.c,v 1.35 2001/06/11 23:10:14 AJW Exp $
 	
 */
 
 #include "MemCheck:MemCheck.h"
 
-#include "Desk.Window.h"
-#include "Desk.Error2.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
-#include "Desk.Str.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.GFX.h"
-#include "Desk.Hourglass.h"
+#include "Desk/Window.h"
+#include "Desk/Error2.h"
+#include "Desk/Event.h"
+#include "Desk/EventMsg.h"
+#include "Desk/Handler.h"
+#include "Desk/Hourglass.h"
+#include "Desk/Icon.h"
+#include "Desk/Menu.h"
+#include "Desk/Msgs.h"
+#include "Desk/Resource.h"
+#include "Desk/Screen.h"
+#include "Desk/Template.h"
+#include "Desk/Str.h"
+#include "Desk/File.h"
+#include "Desk/Filing.h"
+#include "Desk/Sprite.h"
+#include "Desk/GFX.h"
+#include "Desk/Hourglass.h"
 
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Error2.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.DrawFile.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,6 +44,7 @@
 #include "Modules.h"
 #include "Windows.h"
 #include "File.h"
+#include "EditGraphics.h"
 #include "Config.h"
 #include "Shareware.h"
 
@@ -159,7 +160,7 @@ int main(int argc,char *argv[])
 		Desk_Event_Claim(Desk_event_CLOSE,Desk_event_ANY,Desk_event_ANY,Desk_Handler_CloseWindow,NULL);
 		Desk_Event_Claim(Desk_event_OPEN,Desk_event_ANY,Desk_event_ANY,Desk_Handler_OpenWindow,NULL);
 		Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
-		/*Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);*/
+		Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
 		Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
 		Desk_Template_LoadFile("Templates");
 		quitwin=Desk_Window_Create("Quit",Desk_template_TITLEMIN);
