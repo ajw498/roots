@@ -30,3 +30,5 @@ Emphasize in manual how layout is up to the user and is not controlled by roots,
 example graphics style that prints date of birth if avaliable else date of baptism? (Derrick porter)
 
 BUG: if you select two people who are married, but not their marriage (in separate marriages mode) then delete them, if their mariage is earlier in the layout then it will get deleted but the loop in Layout_DeleteSelected will not take account of this and so might miss someone.
+
+Very large trees do not redraw properly, like the printing problem.

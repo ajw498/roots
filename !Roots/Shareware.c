@@ -2,7 +2,7 @@
 	Roots - Shareware stuff
 	© Alex Waugh 1999
 
-	$Id: Shareware.c,v 1.2 2000/11/21 22:12:34 AJW Exp $
+	$Id: Shareware.c,v 1.3 2000/12/12 19:24:52 AJW Exp $
 	
 */
 
@@ -30,10 +30,7 @@ static unsigned int Shareware_CalcValue(char *user)
 {
 	unsigned int value=0x0AA00AA0;
 
-	while (*user) {
-		if (*user!='\r') value= (value>>8) | (((value & 0xFF) ^ (*user))<<24);
-		user++;
-	}
+	while (*user) value= (value>>8) | (((value & 0xFF) ^ (*user++))<<24);
 	value|=0x01000000;
 	value^=0x02000000;
 	return value;
@@ -89,9 +86,9 @@ int main(void)
 {
 	char buffer[256];
 
-	printf("Enter user name\n");
+	fprintf(stderr,"Enter user name\n");
 	fgets(buffer,255,stdin);
-	printf("\n\nValue is %u\n",Shareware_CalcValue(buffer));
+	printf("%s%u\n",buffer,Shareware_CalcValue(buffer));
 	return 0;
 }
 
