@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.34  2000/01/14 13:49:00  AJW
+	Changed Graphics.h to Windows.h etc
+
 	Revision 1.33  2000/01/14 13:16:16  AJW
 	Moved Graphics_Redraw to GraphicsConfig
 	Renamed Graphics_* to Windows_*
@@ -151,7 +154,7 @@
 #include "Database.h"
 #include "Graphics.h"
 #include "Modules.h"
-#include "GConfig.h"
+#include "Windows.h"
 #include "Config.h"
 #include "Layout.h"
 #include "Drawfile.h"
