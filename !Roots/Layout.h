@@ -1,68 +1,15 @@
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
-#ifndef ELEMENTPTR
-#define ELEMENTPTR
-
-typedef int elementptr;
-
-typedef enum elementtype {
-	element_TITLE=-5,
-	element_CHILDLINE,
-	element_NONE=0,
-	element_PERSON,
-	element_MARRIAGE,
-	element_SELECTION,
-	element_FREE,
-	element_FILE
-} elementtype;
-
-#endif
-
-typedef struct flags {
-	unsigned int editable   : 1;
-	unsigned int moveable   : 1;
-	unsigned int linkable   : 1;
-	unsigned int snaptogrid : 1;
-	unsigned int selectable : 1;
-} flags;
-
-typedef struct elementlayout {
-	int x;
-	int y;
-	int xgrid;
-	int ygrid;
-	elementptr element;
-	int width;
-	int height;
-	flags flags;
-} elementlayout;
-
-typedef struct titlelayout {
-	int x;
-	int y;
-} titlelayout;
-
-typedef struct layout {
-	titlelayout title;
-	elementlayout *person;
-	int numpeople;
-	elementlayout *transients;
-	int numtransients;
-	int gridx;
-	int gridy;
-	flags flags;
-} layout;
-
-typedef struct mouseclickdata {
-	struct windowdata *window;
-	elementptr element;
-	Desk_wimp_point pos;
-	Desk_bool transient;
-} mouseclickdata;
+#include "LayoutStruct.h"
+#include "DatabaseStruct.h"
+#include "WindowsStruct.h"
 
 extern mouseclickdata mousedata;
 
+Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref);
+void Layout_ResizeWindow(windowdata *windowdata);
+Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata);
 void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection);
 int Layout_NearestGeneration(int y);
 layout *Layout_New(void);

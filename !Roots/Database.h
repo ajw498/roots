@@ -1,38 +1,9 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-#include "Desk.Window.h"
-#include "Layout.h"
+#include "DatabaseStruct.h"
+#include "LayoutStruct.h"
 
-#define none 0
-#define FIELDSIZE 40
-#define NUMBERPERSONUSERFIELDS 10
-#define NUMBERMARRIAGEUSERFIELDS 5
-
-#ifndef ELEMENTPTR
-#define ELEMENTPTR
-
-typedef int elementptr;
-
-typedef enum elementtype {
-	element_TITLE=-5,
-	element_CHILDLINE,
-	element_NONE=0,
-	element_PERSON,
-	element_MARRIAGE,
-	element_SELECTION,
-	element_FREE,
-	element_FILE
-} elementtype;
-
-#endif
-
-typedef enum sextype {
-	sex_MALE='M',
-	sex_FEMALE='F',
-	sex_UNKNOWN='U',
-	sex_ANY='A'
-} sextype;
 
 void Database_Link(layout *layout,elementptr start,elementptr end);
 Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end);

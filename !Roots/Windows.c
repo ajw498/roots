@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.93 2000/10/16 11:45:09 AJW Exp $
+	$Id: Windows.c,v 1.94 2000/10/20 19:37:34 AJW Exp $
 
 */
 
@@ -148,10 +148,6 @@ typedef struct savedata {
 	int scale;
 	Desk_convert_block coords;
 } savedata;
-
-Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref);
-Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata);
-void Layout_ResizeWindow(windowdata *windowdata);
 
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
