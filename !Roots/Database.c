@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.54 2000/11/13 20:26:10 AJW Exp $
+	$Id: Database.c,v 1.55 2000/11/19 20:53:01 AJW Exp $
 
 */
 
@@ -256,7 +256,7 @@ void Database_SetMarriageUser(int num,elementptr marriage,char *str)
 
 char *Database_GetField(elementptr element,char *fieldname)
 {
-	char sexstr[]="U";
+	static char sexstr[]="U";
 	int i;
 
 	AJWLib_Assert(database!=NULL);
