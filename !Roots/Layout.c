@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.54 2000/11/12 19:58:43 AJW Exp $
+	$Id: Layout.c,v 1.55 2000/11/12 20:25:15 AJW Exp $
 
 */
 
@@ -316,7 +316,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.54 2000/11/12 19:58:43 AJW Exp $
+	$Id: Layout.c,v 1.55 2000/11/12 20:25:15 AJW Exp $
 
 */
 
@@ -977,22 +977,30 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 	/*Set up the centered position*/
 	dragdata.centered=INFINITY;
 
-/*	if (!marriage)*/ {
+	if (Database_GetElementType(person)==element_PERSON) {
 		Desk_bool allsiblings=Desk_TRUE;
 		elementptr person1=person,person2=person;
 		int x,rightx=-INFINITY,leftx=INFINITY;
+		elementptr leftperson=person;
+
 		while ((person1=Database_GetSiblingLtoR(person1))!=none) {
 			if (!Layout_GetSelect(person1)) allsiblings=Desk_FALSE;
-			if ((x=Layout_FindXCoord(windowdata->layout,person1))<leftx) leftx=x;
+			if ((x=Layout_FindXCoord(windowdata->layout,person1))<leftx) {
+				leftx=x;
+				leftperson=person1;
+			}
 			if (x>rightx) rightx=x;
 		}
 		do {
 			if (!Layout_GetSelect(person2)) allsiblings=Desk_FALSE;
-			if ((x=Layout_FindXCoord(windowdata->layout,person2))<leftx) leftx=x;
+			if ((x=Layout_FindXCoord(windowdata->layout,person2))<leftx) {
+				leftx=x;
+				leftperson=person2;
+			}
 			if (x>rightx) rightx=x;
 		} while ((person2=Database_GetSiblingRtoL(person2))!=none);
 		if (allsiblings) {
-			int centre=(rightx+leftx+Graphics_PersonWidth())/2;
+			int centre=(rightx+leftx+Layout_FindWidth(windowdata->layout,leftperson))/2;
 			elementptr marriage=Database_GetMarriage(Database_GetMother(person));
 			int marriagepos=INFINITY;
 			if (marriage) marriagepos=Layout_FindXCoord(windowdata->layout,marriage)+Layout_FindWidth(windowdata->layout,marriage)/2;
@@ -1000,21 +1008,25 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 		} else {
 			dragdata.centered=INFINITY;
 		}
-	}/* else {
+	} else {
 		if (Database_GetRightChild(person)) {
 			int tempx,rightx=-INFINITY,leftx=INFINITY,centre,marriagepos;
 			elementptr person1=Database_GetRightChild(person);
+			elementptr leftperson=person1;
 			do {
-				if ((tempx=Layout_FindXCoord(windowdata->layout,person1))<leftx) leftx=tempx;
+				if ((tempx=Layout_FindXCoord(windowdata->layout,person1))<leftx) {
+					leftx=tempx;
+					leftperson=person1;
+				}
 				if (tempx>rightx) rightx=tempx;
 			} while ((person1=Database_GetSiblingRtoL(person1))!=none);
-			centre=(rightx+leftx+Graphics_PersonWidth())/2;
-			marriagepos=Layout_FindMarriageXCoord(windowdata->layout,person)+Graphics_MarriageWidth()/2;
+			centre=(rightx+leftx+Layout_FindWidth(windowdata->layout,leftperson))/2;
+			marriagepos=Layout_FindXCoord(windowdata->layout,person)+Layout_FindWidth(windowdata->layout,person)/2;
 			dragdata.centered=centre+(mousex-marriagepos);
 		} else {
 			dragdata.centered=INFINITY;
 		}
-	}*/
+	}
 
 	Desk_Wimp_DragBox(&dragblk);
 	Desk_Drag_SetHandlers(Layout_MoveDragPoll,Layout_MoveDragEnd,&dragdata);
