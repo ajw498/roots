@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Drawfile.c,v $
+	Revision 1.7  2000/01/11 13:07:45  AJW
+	Added options and centering on page
+
 	Revision 1.6  2000/01/09 17:50:08  AJW
 	Added text functions
 
@@ -70,6 +73,13 @@
 #include "Config.h"
 #include "Layout.h"
 #include "Drawfile.h"
+
+#define swap(x,y) \
+{ \
+	int temp=x; \
+	x=y; \
+	y=temp; \
+}
 
 extern graphics graphicsdata;
 static drawfile_diagram *drawfile=NULL;
@@ -196,22 +206,54 @@ void Drawfile_CreateTable(void)
 	}
 }
 
+void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
+{
+	const int sizeoftable=64+24;
+	int *object;
+	AJWLib_Flex_MidExtend((flex_ptr)&drawfile,40,sizeoftable);
+	object=(int *)((char *)drawfile+40);
+	object[0]=11; /*Options tag*/
+	object[1]=sizeoftable;
+	object[2]=0; /*Boundingbox (not used)*/
+	object[3]=0;
+	object[4]=0;
+	object[5]=0;
+	object[6]=papersize; /*Paper size A3=&400 A4=&500 etc.*/
+	object[7]=landscape ? 1<<4 : 0; /*Paper limits (bit 0 show limits, bit 4 landscape)*/
+	object[8]=0x3FF00000; /*Grid spacing (floating point)*/
+	object[9]=0; /*2nd part of grid spacing*/
+	object[10]=2; /*Grid division*/
+	object[11]=0; /*Grid (rectangular=0 isometric<>0)*/
+	object[12]=0; /*Grid auto ajust?*/
+	object[13]=0; /*Grid Shown*/
+	object[14]=0; /*Grid lock*/
+	object[15]=1; /*Units 0 inches <>0 cm*/
+	object[16]=1; /*Zoom multiplier*/
+	object[17]=1; /*Zoom divider*/
+	object[18]=0; /*Zoom locking*/
+	object[19]=1; /*Toolbox*/
+	object[20]=1<<7; /*Mode bit 7=select*/
+	object[21]=0; /*Bytes in undo buffer*/
+}
+
 void Drawfile_PlotText(int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
 {
 	int fontnumber=Drawfile_AddFont(font);
 	int *object;
 	int sizeofpath=52;
+	Desk_wimp_point *bbox;
 	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
 	sizeofpath+=strlen(text)+4;
 	sizeofpath&=~3; /*word align the size*/
 	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
+	bbox=AJWLib_Font_GetWidthAndHeight(font,size*16,text);
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=1; /*Text object*/
 	object[1]=sizeofpath;
 	object[2]=x<<8; /*Boundingbox*/
 	object[3]=y<<8;
-	object[4]=(x+1000)<<8;
-	object[5]=(y+1000)<<8;
+	object[4]=(x+bbox->x)<<8;
+	object[5]=(y+bbox->y)<<8;
 	object[6]=fgcolour; /*unsigned???*/
 	object[7]=bgcolour;
 	object[8]=fontnumber;
@@ -225,6 +267,11 @@ void Drawfile_PlotText(int x,int y,int handle,char *font,int size,unsigned int b
 void Drawfile_Save(char *filename,layout *layout)
 {
 	Desk_wimp_rect box;
+	int paperwidth=21*70,paperheight=30*70; /*Get correct values*/
+	int papersize;
+	int width,height;
+	int xoffset,yoffset;
+	Desk_bool landscape=Desk_FALSE;
 	Drawfile_FreeFontArray();
 	AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
 	strcpy(drawfile->tag,"Draw");
@@ -232,12 +279,27 @@ void Drawfile_Save(char *filename,layout *layout)
 	drawfile->minor_version=0;
 	strcpy(drawfile->source,"Roots       "); /*Padded with spaces*/
 	box=Layout_FindExtent(layout,Desk_FALSE);
-	drawfile->bbox.min.x=0; /*offset?*/
-	drawfile->bbox.min.y=0;
-	drawfile->bbox.max.x=(box.max.x-box.min.x)<<8;
-	drawfile->bbox.max.y=(box.max.y-box.min.y)<<8;
-	Graphics_Redraw(layout,-box.min.x,-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+	width=box.max.x-box.min.x;
+	height=box.max.y-box.min.y;
+	if (width>height) {
+		swap(width,height);
+		landscape=Desk_TRUE;
+	}
+	for (papersize=0x500;papersize>0x100;papersize-=0x100) {
+		if (width<paperwidth && height<paperheight) break;
+		swap(paperwidth,paperheight);
+		paperheight*=2;
+	}
+	xoffset=(paperwidth-width)/2;
+	yoffset=(paperheight-height)/2;
+	if (landscape) swap(xoffset,yoffset);
+	drawfile->bbox.min.x=xoffset;
+	drawfile->bbox.min.y=yoffset;
+	drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
+	drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
+	Graphics_Redraw(layout,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
 	Drawfile_CreateTable();
+	Drawfile_CreateOptions(papersize,landscape);
 	Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
 	AJWLib_Flex_Free((flex_ptr)&drawfile);
 	Drawfile_FreeFontArray();
