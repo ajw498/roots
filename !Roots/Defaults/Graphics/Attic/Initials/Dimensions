@@ -1,0 +1,20 @@
+# Dimensions file
+#
+# All dimensions are in mm
+
+# Width of a person
+PersonWidth,40
+# Height of a person
+PersonHeight,15
+# Height of gap from top of person to line joining siblings
+GapHeightAbove,10
+# Height of gap from bottom of person to line joining siblings
+GapHeightBelow,10
+# Minimum width of gap between people
+GapWidth,15
+# Width of gap between a married couple
+MarriageWidth,12
+# Minimum width between a second spouse and the first
+SecondMarriageGap,3
+# Width of blank space to leave around outside of each window
+WindowBorder,4

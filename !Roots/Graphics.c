@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.46 2000/09/26 12:13:11 AJW Exp $
+	$Id: Graphics.c,v 1.47 2000/10/05 14:46:38 AJW Exp $
 
 */
 
@@ -83,6 +83,8 @@
 #define NAME           "name"
 #define MIDDLENAMES    "middlenames"
 #define FULLNAME       "fullname"
+#define INITIALEDMIDDLENAME "initialedmiddlename"
+#define INITIALEDNAME "initialedname"
 #define SEX            "sex"
 
 
@@ -91,11 +93,10 @@ typedef enum personfieldtype {
 	personfieldtype_SURNAME,
 	personfieldtype_FORENAME,
 	personfieldtype_MIDDLENAMES,
-	personfieldtype_TITLE,
 	personfieldtype_FULLNAME,
 	personfieldtype_NAME,
-	personfieldtype_TITLEDNAME,
-	personfieldtype_TITLEDFULLNAME,
+	personfieldtype_INITIALEDMIDDLENAME,
+	personfieldtype_INITIALEDNAME,
 	personfieldtype_SEX
 } personfieldtype;
 
@@ -324,6 +325,8 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				else if (!strcmp(values[7],NAME)) field=personfieldtype_NAME;
 				else if (!strcmp(values[7],MIDDLENAMES)) field=personfieldtype_MIDDLENAMES;
 				else if (!strcmp(values[7],FULLNAME)) field=personfieldtype_FULLNAME;
+				else if (!strcmp(values[7],INITIALEDMIDDLENAME)) field=personfieldtype_INITIALEDMIDDLENAME;
+				else if (!strcmp(values[7],INITIALEDNAME)) field=personfieldtype_INITIALEDNAME;
 				else if (!strcmp(values[7],SEX)) field=personfieldtype_SEX;
 				else {
 					int i;
@@ -927,6 +930,12 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 						break;
 					case personfieldtype_FULLNAME:
 						strcpy(fieldtext,Database_GetFullName(person));
+						break;
+					case personfieldtype_INITIALEDMIDDLENAME:
+						strcpy(fieldtext,Database_GetInitialedMiddleName(person));
+						break;
+					case personfieldtype_INITIALEDNAME:
+						strcpy(fieldtext,Database_GetInitialedName(person));
 						break;
 					case personfieldtype_SEX:
 						sprintf(fieldtext,"%c",Database_GetSex(person));

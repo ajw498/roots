@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.43 2000/09/25 18:44:08 AJW Exp $
+	$Id: Database.c,v 1.44 2000/10/05 14:46:35 AJW Exp $
 
 */
 
@@ -668,6 +668,51 @@ char *Database_GetFullName(elementptr person)
 		strcat(result," ");
 	}
 	if (strlen(database[person].element.person.data.surname)) {
+		strcat(result,database[person].element.person.data.surname);
+	}
+	return result;
+}
+
+char *Database_GetInitialedMiddleName(elementptr person)
+{
+	static char result[256];
+	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(person!=none);
+	strcpy(result,"");
+	if (database[person].element.person.data.forename[0]!='\0') {
+		strcat(result,database[person].element.person.data.forename);
+		strcat(result," ");
+	}
+	if (database[person].element.person.data.middlenames[0]!='\0') {
+		int len=strlen(result);
+		result[len]=database[person].element.person.data.middlenames[0];
+		result[len+1]=' ';
+		result[len+2]='\0';
+	}
+	if (database[person].element.person.data.surname[0]!='\0') {
+		strcat(result,database[person].element.person.data.surname);
+	}
+	return result;
+}
+
+char *Database_GetInitialedName(elementptr person)
+{
+	static char result[256];
+	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(person!=none);
+	strcpy(result,"");
+	if (database[person].element.person.data.forename[0]!='\0') {
+		result[0]=database[person].element.person.data.forename[0];
+		result[1]=' ';
+		result[2]='\0';
+	}
+	if (database[person].element.person.data.middlenames[0]!='\0') {
+		int len=strlen(result);
+		result[len]=database[person].element.person.data.middlenames[0];
+		result[len+1]=' ';
+		result[len+2]='\0';
+	}
+	if (database[person].element.person.data.surname[0]!='\0') {
 		strcat(result,database[person].element.person.data.surname);
 	}
 	return result;

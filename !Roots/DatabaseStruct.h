@@ -102,6 +102,8 @@ Desk_bool Database_Loaded(void);
 void Database_LinkAllMarriages(void);
 char *Database_GetPersonUserField(elementptr person,int num);
 char *Database_GetMarriageUserField(elementptr marriage,int num);
+char *Database_GetInitialedMiddleName(elementptr person);
+char *Database_GetInitialedName(elementptr person);
 
 #endif
 
