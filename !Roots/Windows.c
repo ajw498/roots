@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.75 2000/07/22 19:04:51 AJW Exp $
+	$Id: Windows.c,v 1.76 2000/07/26 20:55:08 AJW Exp $
 
 */
 
@@ -80,7 +80,6 @@
 
 #define exportmenu_GEDCOM 0
 #define exportmenu_DRAW 1
-#define exportmenu_TEXT 2
 
 #define personmenu_EDIT 0
 #define personmenu_DELETE 1
@@ -192,7 +191,7 @@ extern layout *debuglayout;
 static windowdata windows[MAXWINDOWS];
 static Desk_bool menusdeletedvalid=Desk_FALSE;
 static int numwindows;
-static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,scalewin,unsavedwin,fileconfigwin;
+static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin,fileconfigwin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconfigmenu=NULL;
 static elementptr newviewperson;
 static mouseclickdata mousedata;
@@ -1593,7 +1592,7 @@ void Windows_Init(void)
 	selectmenu=AJWLib_Menu_CreateFromMsgs("Title.Select:","Menu.Select:",Windows_SelectMenuClick,NULL);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_PERSON,personmenu);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_FILE,filemenu);
-/*	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);*/
+	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_INFO,(Desk_menu_ptr)fileinfowin);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_SELECT,selectmenu);
 	Desk_Icon_Shade(newviewwin,newview_ANCESTOR);
@@ -1612,9 +1611,12 @@ void Windows_Init(void)
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);
 	savedrawwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
-/*	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);*/
-	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);
+	savegedcomwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
+	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);
+	Desk_Menu_AddSubMenu(exportmenu,exportmenu_GEDCOM,(Desk_menu_ptr)savegedcomwin);
+/*	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);*/
 	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
+	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_TEXT,NULL);
 	fileconfigwin=Desk_Window_Create("FileConfig",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_OK,Windows_FileConfigOk,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);

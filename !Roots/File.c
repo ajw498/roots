@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.24 2000/06/22 19:07:26 AJW Exp $
+	$Id: File.c,v 1.25 2000/07/26 20:55:05 AJW Exp $
 
 */
 
@@ -72,6 +72,23 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 		modified=Desk_FALSE; /*This is assumed to have been ok unless File_Result told otherwise, as File_result does not get called if all ok when save button is clicked on */
 		Windows_FileModified();
 		File_GetCurrentTime();
+	} Desk_Error2_Catch {
+		if (file) fclose(file);
+		AJWLib_Error2_ReportMsgs("Error.Save:%s");
+	} Desk_Error2_EndCatch
+    return Desk_TRUE;
+}
+
+Desk_bool File_SaveGEDCOM(char *filename,void *ref)
+{
+	FILE *file=NULL;
+	Desk_UNUSED(ref);
+	if (filename==NULL) filename=currentfilename;
+	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"w");,AJWLib_Error2_ReportMsgs("Error.Save:%s"); return Desk_TRUE;)
+	/*file is guaranteed to be valid if we get here*/
+	Desk_Error2_Try {
+		Database_SaveGEDCOM(file);
+		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
 		if (file) fclose(file);
 		AJWLib_Error2_ReportMsgs("Error.Save:%s");

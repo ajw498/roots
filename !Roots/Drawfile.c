@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.17 2000/06/17 21:25:46 AJW Exp $
+	$Id: Drawfile.c,v 1.18 2000/07/26 20:55:04 AJW Exp $
 
 */
 
@@ -253,7 +253,7 @@ static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int 
 
 static void Drawfile_Create(layout *layout,Desk_bool printing)
 {
-	Desk_wimp_rect box;
+	Desk_wimp_rect box,cliprect;
 	int paperwidth=21*70,paperheight=30*70; /*Get correct values*/
 	int papersize=0x500;
 	int width,height;
@@ -269,6 +269,10 @@ static void Drawfile_Create(layout *layout,Desk_bool printing)
 	box=Layout_FindExtent(layout,Desk_FALSE);
 	width=box.max.x-box.min.x;
 	height=box.max.y-box.min.y;
+	cliprect.min.x=-INFINITY;
+	cliprect.min.y=-INFINITY;
+	cliprect.max.x=INFINITY;
+	cliprect.max.y=INFINITY;
 	if (!printing) {
 		if (width>height) {
 			SWAP(width,height);
@@ -287,7 +291,7 @@ static void Drawfile_Create(layout *layout,Desk_bool printing)
 	drawfile->bbox.min.y=yoffset;
 	drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
 	drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
-	Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+	Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&cliprect,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
 	if (!printing) Drawfile_CreateOptions(papersize,landscape);
 	Drawfile_CreateTable();
 }
