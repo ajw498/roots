@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.88 2000/10/13 19:25:56 AJW Exp $
+	$Id: Windows.c,v 1.89 2000/10/14 15:55:31 AJW Exp $
 
 */
 
@@ -141,15 +141,6 @@
 #define SWI_Wimp_SpriteOp 0x400E9
 #define SWI_Wimp_DragBox 0x400D0
 
-typedef struct windowdata {
-	Desk_window_handle handle;
-	wintype type;
-	elementptr person;
-	int generations;
-	layout *layout;
-	int scale;
-} windowdata;
-
 typedef struct savedata {
 	wintype type;
 	elementptr person;
@@ -168,13 +159,8 @@ typedef struct mouseclickdata {
 
 extern mouseclickdata mousedata;
 
-Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata);
 Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref);
-
-
-#ifdef DEBUG
-extern layout *debuglayout;
-#endif
+Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata);
 
 /*static*/ windowdata windows[MAXWINDOWS];
 /*static*/ Desk_bool menusdeletedvalid=Desk_FALSE;
@@ -230,13 +216,48 @@ static void Windows_StyleMenuClick(int entry,void *ref)
 	Modules_ChangedStructure();
 }
 
-void Windows_SetUpMenu(void)
+void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 {
 	char buffer[20];
 	Desk_filing_dirdata dir;
 	char *name=NULL;
 	char dirname[256];
 	int i=0;
+
+	AJWLib_Menu_Shade(mainmenu,mainmenu_ADDPERSON);
+	AJWLib_Menu_Shade(personmenu,personmenu_EDIT);
+	AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
+	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
+	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
+	Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Person:Person"));
+
+	AJWLib_Menu_UnShade(mainmenu,mainmenu_ADDPERSON);
+	/*AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);*/ /*Temporary, until selected descendents etc. works again*/
+
+	switch (selected) {
+		case element_PERSON:
+			AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+			AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
+			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+			break;
+		case element_MARRIAGE:
+			AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+			AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
+			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+			Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Marriage:Marriage"));
+			break;
+		case element_SELECTION:
+			AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+			Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Select:Selection"));
+			break;
+		case element_NONE:
+			AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
+			break;
+		default:
+			break;
+	}
+
 	Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
 	Desk_Icon_SetText(savedrawwin,save_FILENAME,AJWLib_Msgs_TempLookup("File.Draw:Drawfile"));
 	Desk_Icon_SetText(savegedcomwin,save_FILENAME,AJWLib_Msgs_TempLookup("File.GED:GEDCOM"));
@@ -274,6 +295,8 @@ void Windows_SetUpMenu(void)
 	}
 	AJWLib_Menu_Register(fileconfigmenu,Windows_StyleMenuClick,NULL);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_GRAPHICSSTYLE,fileconfigmenu);
+
+	Desk_Menu_Show(mainmenu,x,y);
 }
 
 Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref)
@@ -528,10 +551,6 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 	switch (type) {
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
-#ifdef DEBUG
-			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
-			windows[newwindow].layout=debuglayout;
-#endif
 			windows[newwindow].layout=layoutnormal;
 			break;
 		case wintype_DESCENDENTS:
@@ -548,10 +567,6 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 			windows[newwindow].layout=NULL;
-#ifdef DEBUG
-			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
-			windows[newwindow].layout=debuglayout;
-#endif
 			windows[newwindow].layout=Layout_LayoutAncestors(person,generations);
 			break;
 		default:
@@ -560,7 +575,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 	}
 	if (type!=wintype_NORMAL || layoutnormal!=NULL) Windows_ResizeWindow(&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Windows_MouseClick,&windows[newwindow]);
-	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Layout_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
 	Windows_OpenWindowCentered(&windows[newwindow],coords);
 	File_Modified();

@@ -58,6 +58,7 @@ typedef struct layout {
 } layout;
 
 int Layout_NearestGeneration(int y);
+layout *Layout_New(void);
 void Layout_Free(layout *layout);
 Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y);

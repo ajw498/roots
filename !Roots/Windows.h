@@ -2,7 +2,6 @@
 #define WINDOWS_H
 
 #include "Database.h"
-#include "Layout.h"
 
 #define INFINITY 999999
 
@@ -23,6 +22,17 @@ typedef enum wintype {
 	wintype_ANCESTORS,
 	wintype_CLOSERELATIVES
 } wintype;
+
+typedef struct windowdata {
+	Desk_window_handle handle;
+	wintype type;
+	elementptr person;
+	int generations;
+	layout *layout;
+	int scale;
+} windowdata;
+
+#include "Layout.h"
 
 extern Desk_window_handle fieldconfigwin;
 
@@ -49,5 +59,6 @@ void Windows_SetScrollY(int val);
 void Windows_SetPerson(elementptr person);
 void Windows_SetGenerations(int val);
 void Windows_SetScale(int val);
+void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y);
 
 #endif
