@@ -3,38 +3,10 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Log: Main.c,v $
-	Revision 1.9  2000/01/17 16:47:43  AJW
-	Altered Windows_OpenWindow calls
-
-	Revision 1.8  2000/01/14 19:43:04  AJW
-	Enabled file loading
-
-	Revision 1.7  2000/01/14 13:45:57  AJW
-	Renamed Graphics.h to Windows.h
-
-	Revision 1.6  2000/01/14 13:02:49  AJW
-	Changed Graphics_ to Windows_
-
-	Revision 1.5  2000/01/11 17:13:24  AJW
-	Removed Database_Load until it works
-
-	Revision 1.4  1999/10/11 22:30:06  AJW
-	Changed to use Error2
-
-	Revision 1.3  1999/10/10 20:55:20  AJW
-	Modified to use Desk
-
-	Revision 1.2  1999/10/02 18:46:37  AJW
-	I'm not sure what has changed
-
-	Revision 1.1  1999/09/27 15:25:18  AJW
-	Initial revision
-
+	$Id: Main.c,v 1.10 2000/02/20 19:45:17 uid1 Exp $
 	
 */
 
-/*	Includes  */
 
 #include "Desk.Window.h"
 #include "Desk.Error2.h"
@@ -69,7 +41,6 @@
 #include "Windows.h"
 #include "File.h"
 
-/*	Macros  */
 
 #define VERSION "0.50 (27-Oct-99)"
 #define DIRPREFIX "Roots"
@@ -78,7 +49,6 @@
 #define iconbarmenu_CHOICES 1
 #define iconbarmenu_QUIT 2
 
-/*	Variables  */
 
 Desk_window_handle info;
 Desk_menu_ptr iconbarmenu;
@@ -86,21 +56,25 @@ Desk_menu_ptr iconbarmenu;
 #if DEBUG
 extern Desk_bool halt;
 #endif
-/*	Functions  */
-
-
 
 Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 {
-	File_LoadFile(block->data.message.data.dataload.filename);
+	if (Database_GetSize()) {
+		Desk_Error2_HandleText("Cannot load while there is another loaded");
+	} else {
+		File_LoadFile(block->data.message.data.dataload.filename);
+	}
 	return Desk_TRUE;
 }
 
 Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 {
 	if (block->data.mouse.button.data.select==1) {
-		Windows_OpenWindow(wintype_UNLINKED,none,0,NULL);
-		Windows_OpenWindow(wintype_NORMAL,none,0,NULL);
+		if (!Windows_BringToFront()) {
+			File_New();
+			Windows_OpenWindow(wintype_UNLINKED,none,0,NULL);
+			Windows_OpenWindow(wintype_NORMAL,none,0,NULL);
+		}
 		return Desk_TRUE;
 	}
 #if DEBUG
@@ -135,7 +109,7 @@ int main(void)
 	Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
 	Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
 	Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
-	info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","©Alex Waugh 1999",VERSION);
+	info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
 	Desk_Template_LoadFile("Templates");
 	iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
 	Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)info);

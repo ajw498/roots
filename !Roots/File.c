@@ -2,38 +2,9 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Log: File.c,v $
-	Revision 1.9  2000/01/17 16:58:13  AJW
-	Enabled calling of Windows_Load
-
-	Revision 1.8  2000/01/14 19:42:48  AJW
-	Added File_LoadFile
-
-	Revision 1.7  2000/01/14 13:50:31  AJW
-	Renamed Graphics.h to Windows.h etc
-
-	Revision 1.6  2000/01/14 13:08:22  AJW
-	Changed Graphics_ to Windows_
-
-	Revision 1.5  2000/01/13 23:30:36  AJW
-	Added Graphics_GetDate
-
-	Revision 1.4  2000/01/13 22:58:36  AJW
-	Added call to Graphics_Save
-
-	Revision 1.3  2000/01/13 18:07:36  AJW
-	Added handling of modified flag, and storing current filename
-
-	Revision 1.2  2000/01/13 17:02:09  AJW
-	Altered to be a SaveHandler for Desk_Save_* fns
-
-	Revision 1.1  2000/01/11 17:10:49  AJW
-	Initial revision
-
+	$Id: File.c,v 1.10 2000/02/20 19:45:19 uid1 Exp $
 
 */
-
-/*	Includes  */
 
 #include "Desk.Window.h"
 #include "Desk.Error.h"
@@ -104,7 +75,6 @@ void File_LoadFile(char *filename)
 	FILE *file;
 	char fileid[5];
 	int fileversion;
-	strcpy(newfilename,filename);
 	file=AJWLib_File_fopen(filename,"r");
 	AJWLib_File_fread(fileid,1,4,file);
 	AJWLib_File_fread(&fileversion,4,1,file);
@@ -121,23 +91,30 @@ void File_LoadFile(char *filename)
 		}
 		Desk_Error_Report(1,"This was produced by a later version of Roots, but I will try to load it anyway"); /*Give a choice? msgs*/
 	}
+	Database_New();
 	Database_Load(file);
 /*	Graphics_Load(file);*/
 	Windows_Load(file);
 	AJWLib_File_fclose(file);
+	strcpy(currentfilename,filename);
+	modified=Desk_FALSE;
+	Windows_FilenameChanged(currentfilename);
+	/*update date*/
 	/*Error handling*/
 }
 
-void File_NewFile(void)
+void File_New(void)
 {
 	modified=Desk_FALSE;
 	strcpy(currentfilename,"Untitled");
 	strcpy(filedate,"Tomorrow"); /**/
+	Database_New();
 }
 
 void File_Modified(void)
 {
 	modified=Desk_TRUE;
+	Windows_FileModified();
 }
 
 Desk_bool File_GetModified(void)
@@ -170,7 +147,7 @@ void File_Result(Desk_save_result result,void *ref)
 		case Desk_save_SAVEOK:
 			strcpy(currentfilename,newfilename);
 			modified=Desk_FALSE;
-			/*Update window titles*/
+			Windows_FilenameChanged(currentfilename);
 			/*update date*/
 			break;
 		case Desk_save_RECEIVERFAILED:

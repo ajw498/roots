@@ -1,13 +1,8 @@
 #ifndef WINDOWS_H
 #define WINDOWS_H
 
-#ifndef DATABASE_H
 #include "Database.h"
-#endif
-
-#ifndef LAYOUT_H
 #include "Layout.h"
-#endif
 
 #define INFINITY 999999
 
@@ -28,6 +23,8 @@ void Windows_Edit(void);
 
 void Windows_ChangedLayout(void);
 
+Desk_bool Windows_BringToFront(void);
+
 void Windows_OpenWindow(wintype type,elementptr person,int generations,layout *layout);
 
 void Windows_Relayout(void);
@@ -38,5 +35,8 @@ void Windows_Save(FILE *file);
 
 void Windows_Load(FILE *file);
 
+void Windows_FilenameChanged(char *filename);
+
+void Windows_FileModified(void);
 
 #endif

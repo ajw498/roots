@@ -41,12 +41,12 @@ LINK		=	DrLink $(LINKFLAGS)
 
 
 
-.c.o: $(HEADERS) $(LIBS)
+.c.o: $(HEADERS)
 	$(CC) $< -o $@
 
 
 
-$(TARGET):	$(OBJECTS) $(LIBS)
+$(TARGET):	$(OBJECTS) $(LIBS) $(HEADERS)
 	$(LINK) -o $@ $(OBJECTS) $(LIBS)
 
 remove:
