@@ -101,6 +101,7 @@ Error.GraphS:Error importing the graphics style (%s)
 Error.Load:Unable to load file (%s)
 Error.DrawS:Unable to save drawfile (%s)
 Error.Save:Unable to save file (%s)
+Error:PDrvr:Please load a printer driver and try again
 Error.NoLoad:You cannot load a file while there is another file already loaded
 Error.NotRoot:This is not a Roots file or is corrupt.
 Error.TooLong:A line in the file is too long

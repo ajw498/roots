@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.7 2000/10/03 13:53:24 AJW Exp $
+	$Id: Print.c,v 1.8 2000/10/05 12:59:45 AJW Exp $
 
 */
 
@@ -241,23 +241,33 @@ static Desk_bool Print_Ok(Desk_event_pollblock *block,void *ref)
 void Print_OpenWindow(layout *layout)
 {
 	char *driver,name[]="Unknown";
-	data.layout=layout;
-/*	Desk_PDriver_PageSize(&pagesize,&printablearea);*/ /*Desk_PDriver_PageSize() seems to be broken*/
-	Desk_SWI(0,7,SWI_PDriver_PageSize,NULL,&data.pagesize.x,&data.pagesize.y,&data.printablearea.min.x,&data.printablearea.min.y,&data.printablearea.max.x,&data.printablearea.max.y);
-	data.treeextent=Layout_FindExtent(data.layout,Desk_FALSE);
-	if (Config_Title()) data.treeextent.max.y+=Graphics_TitleHeight();
-	Desk_Window_Show(printwin,Desk_open_CENTERED);
-	Desk_Icon_SetText(printwin,print_FROM,"1");
-	Desk_Icon_SetText(printwin,print_TO,"999");
-	Print_CalcValues(NULL,NULL);
-	driver=Desk_PDriver_PrinterName();
-	if (driver) {
-		MemCheck_RegisterMiscBlock_String(driver);
-	} else {
-		driver=name;
-	}
-	Desk_Window_SetTitle(printwin,driver);
-	Desk_Icon_SetCaret(printwin,print_COPIES);
+
+	Desk_Error2_Try {
+		data.layout=layout;
+		driver=Desk_PDriver_PrinterName();
+		if (driver) {
+			MemCheck_RegisterMiscBlock_String(driver);
+		} else {
+			driver=name;
+		}
+	/*	Desk_PDriver_PageSize(&pagesize,&printablearea);*/ /*Desk_PDriver_PageSize() seems to be broken*/
+		Desk_Error2_CheckOS(Desk_SWI(0,7,SWI_PDriver_PageSize,NULL,&data.pagesize.x,&data.pagesize.y,&data.printablearea.min.x,&data.printablearea.min.y,&data.printablearea.max.x,&data.printablearea.max.y));
+		data.treeextent=Layout_FindExtent(data.layout,Desk_FALSE);
+		if (Config_Title()) data.treeextent.max.y+=Graphics_TitleHeight();
+		Desk_Window_Show(printwin,Desk_open_CENTERED);
+		Desk_Icon_SetText(printwin,print_FROM,"1");
+		Desk_Icon_SetText(printwin,print_TO,"999");
+		Print_CalcValues(NULL,NULL);
+		Desk_Window_SetTitle(printwin,driver);
+		Desk_Icon_SetCaret(printwin,print_COPIES);
+	} Desk_Error2_Catch {
+		if (Desk_Error2_globalblock.type==Desk_error2_type_OSERROR && Desk_Error2_globalblock.data.oserror->errnum==486) {
+			/* SWI number not known error - printer driver not loaded*/
+			Desk_Msgs_Report(1,"Error.PDrvr:Please load a printer driver and try again");
+		} else {
+			Desk_Error2_ReThrow();
+		}
+	} Desk_Error2_EndCatch
 }
 
 void Print_CloseWindow(void)

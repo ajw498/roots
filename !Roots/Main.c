@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.29 2000/10/03 14:43:52 AJW Exp $
+	$Id: Main.c,v 1.30 2000/10/05 12:59:43 AJW Exp $
 	
 */
 
@@ -21,6 +21,7 @@
 #include "Desk.Resource.h"
 #include "Desk.Screen.h"
 #include "Desk.Template.h"
+#include "Desk.Str.h"
 #include "Desk.File.h"
 #include "Desk.Filing.h"
 #include "Desk.Sprite.h"
