@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.66 2001/02/03 19:54:31 AJW Exp $
+	$Id: Layout.c,v 1.67 2001/02/03 20:26:15 AJW Exp $
 
 */
 
@@ -183,6 +183,13 @@ void Layout_DeleteSelected(layout *layout)
 	for (i=0;i<layout->numpeople;i++) {
 		if (Layout_GetSelect(layout->person[i].element)) {
 			Database_RemoveElement(layout,layout->person[i].element);
+			Modules_ChangedStructure();
+			i--; /*This item in the layout has been removed, and so everyone above has moved down by one place*/
+		}
+	}
+	for (i=0;i<layout->numtransients;i++) {
+		if (Layout_GetSelect(layout->transients[i].element)) {
+			Database_RemoveElement(layout,layout->transients[i].element);
 			Modules_ChangedStructure();
 			i--; /*This item in the layout has been removed, and so everyone above has moved down by one place*/
 		}
@@ -398,7 +405,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.66 2001/02/03 19:54:31 AJW Exp $
+	$Id: Layout.c,v 1.67 2001/02/03 20:26:15 AJW Exp $
 
 */
 

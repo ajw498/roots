@@ -1,14 +1,7 @@
-reports
-searching
-arrange siblings according to age etc
-name completion
-
 More keyboard shortcuts
 Searching for a person on the tree
 Cut and paste of people
-Editing a person details on the tree itself rather than opening a separate window
-Support CONT GEDCOM tag
-Allow fields to be larger (Only 40 characters per field allowed at present)
+Editing a person details on the tree itself rather than opening a separate window?
 
 7. Possible extensions
 Would it be possible to allow children from an individual without a
@@ -25,12 +18,12 @@ display of page boundaries
 
 (option) dont create extra spouses when marriage doesn't have both spouses
 
-not copying default styles on RO 3.7
+
 Emphasize in manual how layout is up to the user and is not controlled by roots, and mention how sibling lines can overlap etc
 example graphics style that prints date of birth if avaliable else date of baptism? (Derrick porter)
 
 BUG: if you select two people who are married, but not their marriage (in separate marriages mode) then delete them, if their mariage is earlier in the layout then it will get deleted but the loop in Layout_DeleteSelected will not take account of this and so might miss someone.
 
 Very large trees do not redraw properly, like the printing problem.
-Click menu over a marriage when not using separate marriages, the marriage menu is not accessable.
+
 Ctrl-X in writeable icon seems to mess things up - does it replace 0 terminator with CR?
