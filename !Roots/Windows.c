@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.71 2000/06/26 19:44:03 AJW Exp $
+	$Id: Windows.c,v 1.72 2000/06/26 21:45:11 AJW Exp $
 
 */
 
@@ -64,11 +64,12 @@
 
 #define mainmenu_FILE 0
 #define mainmenu_PERSON 1
-#define mainmenu_SELECT 2
-#define mainmenu_NEWVIEW 3
-#define mainmenu_SCALE 4
-#define mainmenu_SEARCH 5
-#define mainmenu_REPORTS 6
+#define mainmenu_ADDPERSON 2
+#define mainmenu_SELECT 3
+#define mainmenu_NEWVIEW 4
+#define mainmenu_SCALE 5
+#define mainmenu_SEARCH 6
+#define mainmenu_REPORTS 7
 
 #define filemenu_INFO 0
 #define filemenu_SAVE 1
@@ -80,7 +81,7 @@
 #define exportmenu_DRAW 1
 #define exportmenu_TEXT 2
 
-#define personmenu_ADD 0
+#define personmenu_EDIT 0
 #define personmenu_DELETE 1
 
 #define selectmenu_DESCENDENTS 0
@@ -793,32 +794,6 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	Desk_Drag_SetHandlers(NULL,Windows_LinkDragEnd,&dragdata);
 }
 
-static void Windows_SetUpPersonMenu(void)
-{
-	elementptr marriage;
-	if ((marriage=Database_GetMarriage(mousedata.element))==none) {
-		AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-	} else if (Database_GetMother(mousedata.element)) {
-		/*no*/
-	} else if (Database_GetLeftChild(marriage)) {
-		/*maybe*/
-		elementptr principal,spouse;
-		principal=Database_GetPrincipalFromMarriage(marriage);
-		spouse=Database_GetSpouseFromMarriage(marriage);
-		if (Database_GetMarriageLtoR(Database_GetMarriageLtoR(principal))==none) {
-			if (Database_GetMother(principal)==none && Database_GetMother(spouse)==none) {
-				if (Database_GetSiblingLtoR(Database_GetLeftChild(marriage))==none) {
-					AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-				}
-			}
-		}
-	} else if (Database_GetPrincipalFromMarriage(marriage)!=mousedata.element) {
-		AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-	} else if (Database_GetMarriageLtoR(Database_GetMarriageLtoR(mousedata.element))==none) {
-		AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
-	}
-}
-
 static void Windows_SetUpMenu(void)
 {
 	char buffer[20];
@@ -839,6 +814,7 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	windowdata *windowdata=ref;
 	int mousex,mousey,i;
 	Desk_convert_block blk;
+	elementtype selected;
 	if (!block->data.mouse.button.data.menu) Desk_Icon_SetCaret(block->data.mouse.window,-1);
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
@@ -848,10 +824,12 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	mousedata.window=windowdata;
 	mousedata.pos.x=mousex;
 	mousedata.pos.y=mousey;
-	AJWLib_Menu_Shade(personmenu,personmenu_ADD);
+	AJWLib_Menu_Shade(mainmenu,mainmenu_ADDPERSON);
+	AJWLib_Menu_Shade(personmenu,personmenu_EDIT);
 	AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
-	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
+	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
+	Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Person:Person"));
 	/*See if we clicked on a person*/
 	for (i=windowdata->layout->numpeople-1;i>=0;i--) {
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
@@ -884,10 +862,8 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		Windows_UnselectAll(windowdata);
 		switch (mousedata.type) {
 			case element_PERSON:
-				Database_EditPerson(mousedata.element);
-				break;
 			case element_MARRIAGE:
-				Database_EditMarriage(mousedata.element);
+				Database_Edit(mousedata.element);
 				break;
 			case element_TITLE:
 				Database_EditTitle();
@@ -900,6 +876,15 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 			/*Only menu and double clicks are relevent for these windows*/
 			if (block->data.mouse.button.data.menu) {
 				Windows_SetUpMenu();
+				switch (mousedata.type) {
+					case element_MARRIAGE:
+						Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Marriage:Marriage"));
+						/*No break*/
+					case element_PERSON:
+						AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
+						AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+						break;
+				}
 				Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 			}
 			break;
@@ -907,14 +892,44 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 			switch (block->data.mouse.button.value) {
 				case Desk_button_MENU:
 					Windows_SetUpMenu();
-					AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
-					AJWLib_Menu_UnShade(personmenu,personmenu_ADD);
-					switch (mousedata.type) {
+					AJWLib_Menu_UnShade(mainmenu,mainmenu_ADDPERSON);
+					/*AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);*/ /*Temporary, until selected descendents etc. works again*/
+					selected=Database_AnyoneSelected();
+					if (selected==element_NONE) {
+						switch (mousedata.type) {
+							case element_PERSON:
+								Database_Select(mousedata.element);
+								Windows_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+								selected=element_PERSON;
+								break;
+							case element_MARRIAGE:
+								Database_Select(mousedata.element);
+								Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+								selected=element_MARRIAGE;
+								/*Register menusdeleted handler*/
+								break;
+						}
+					}
+					switch (selected) {
 						case element_PERSON:
-							Windows_SetUpPersonMenu();
-							/*No break;*/
-/*						case element_MARRIAGE:
-							AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);*/ /*Temporary, until selected descendents etc. works again*/
+							AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+							AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
+							AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+							break;
+						case element_MARRIAGE:
+							AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+							AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
+							AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+							Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Marriage:Marriage"));
+							break;
+						case element_SELECTION:
+							AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+							AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
+							Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Select:Selection"));
+							break;
+						case element_NONE:
+							AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
+							break;
 					}
 					Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 					break;
@@ -1249,6 +1264,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 
 static void Windows_MainMenuClick(int entry,void *ref)
 {
+	volatile elementptr newperson;
 	char buffer[10]="";
 	Desk_UNUSED(ref);
 	switch (entry) {
@@ -1286,6 +1302,14 @@ static void Windows_MainMenuClick(int entry,void *ref)
 			Desk_Window_Show(scalewin,Desk_open_CENTERED);
 			Desk_Icon_SetCaret(scalewin,scale_TEXT);
 			break;
+		case mainmenu_ADDPERSON:
+			newperson=Database_Add();
+			Desk_Error2_Try {
+				Layout_AddPerson(mousedata.window->layout,newperson,mousedata.pos.x,Layout_NearestGeneration(mousedata.pos.y));
+			} Desk_Error2_Catch {
+				Database_Delete(newperson);
+				AJWLib_Error2_Report("%s");
+			} Desk_Error2_EndCatch
 	}
 }
 
@@ -1424,26 +1448,16 @@ static Desk_bool Windows_SaveDraw(char *filename,void *ref)
 
 static void Windows_PersonMenuClick(int entry,void *ref)
 {
-	elementptr newperson;
 	Desk_UNUSED(ref);
-	Desk_Error2_Try {
-		switch (entry) {
-			case personmenu_ADD:
-				newperson=Database_Add();
-				Desk_Error2_Try {
-					Layout_AddPerson(mousedata.window->layout,newperson,mousedata.pos.x,Layout_NearestGeneration(mousedata.pos.y));
-				} Desk_Error2_Catch {
-					Database_Delete(newperson);
-				} Desk_Error2_EndCatch
-				break;
-/*			case personmenu_DELETE:
-				Database_Delete(mousedata.element);
-				AJWLib_Menu_Shade(personmenu,entry);
-				break;
-*/		}
-	} Desk_Error2_Catch {
-		AJWLib_Error2_Report("%s");
-	} Desk_Error2_EndCatch
+	switch (entry) {
+		case personmenu_EDIT:
+			Database_Edit(mousedata.element);
+			break;
+		case personmenu_DELETE:
+			Database_DeleteSelected(mousedata.window->layout);
+			AJWLib_Menu_Shade(personmenu,entry);
+			break;
+	}
 }
 
 static void Windows_SelectMenuClick(int entry,void *ref)
