@@ -125,6 +125,8 @@ void Database_RemoveSpouse(elementptr person);
 void Database_RemoveParents(elementptr person);
 void Database_Add(void);
 void Database_Delete(elementptr person);
+int Database_GetNumPeople(void);
+int Database_GetSize(void);
 
 #endif
 
