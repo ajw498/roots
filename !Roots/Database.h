@@ -4,6 +4,13 @@
 #include "DatabaseStruct.h"
 #include "LayoutStruct.h"
 
+#define fieldconfig_OK 2
+
+extern Desk_window_handle fieldconfigwin;
+
+extern struct fieldconfigicons fieldconfigpersonicons[];
+extern struct fieldconfigicons fieldconfigmarriageicons[];
+
 
 void Database_OpenFileConfig(void);
 Desk_bool Database_ElementValid(elementptr person);
@@ -55,6 +62,14 @@ char *Database_GetMarriageUserDesc(int num);
 void Database_SetMarriageUserDesc(int num,char *desc);
 char *Database_GetMarriageGEDCOMDesc(int num);
 void Database_SetMarriageGEDCOMDesc(int num,char *desc);
+char *Database_GetMarriageFieldList(int num);
+void Database_SetMarriageFieldList(int num,char *desc);
+int Database_GetMarriageFieldType(int num);
+void Database_SetMarriageFieldType(int num,int type);
+char *Database_GetPersonFieldList(int num);
+void Database_SetPersonFieldList(int num,char *desc);
+int Database_GetPersonFieldType(int num);
+void Database_SetPersonFieldType(int num,int type);
 sextype Database_GetSex(elementptr person);
 void Database_SaveGEDCOM(FILE *file,Desk_bool plainGEDCOM);
 void Database_SetTitle(char *title);

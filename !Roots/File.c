@@ -2,25 +2,25 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.48 2002/07/27 14:45:20 ajw Exp $
+	$Id: File.c,v 1.49 2002/07/27 19:21:52 ajw Exp $
 
 */
 
-#include "Desk.Error.h"
-#include "Desk.Error2.h"
-#include "Desk.Msgs.h"
-#include "Desk.File.h"
-#include "Desk.Icon.h"
-#include "Desk.KernelSWIs.h"
-#include "Desk.DeskMem.h"
-#include "Desk.Window.h"
-#include "Desk.str.h"
-#include "Desk.Hourglass.h"
+#include "Desk/Error.h"
+#include "Desk/Error2.h"
+#include "Desk/Msgs.h"
+#include "Desk/File.h"
+#include "Desk/Icon.h"
+#include "Desk/KernelSWIs.h"
+#include "Desk/DeskMem.h"
+#include "Desk/Window.h"
+#include "Desk/str.h"
+#include "Desk/Hourglass.h"
 
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Error2.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Assert.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Assert.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -148,7 +148,8 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		if (strcmp(data,"Roots") && !plain) AJWLib_Error2_HandleMsgs("Error.NotRoot:");
 
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.VERS")) {
-		/*Check version?*/
+		if (!plain && atof(data)>ROOTS_VERSION_NUMBER) Desk_Msgs_Report(1,"Error.TooNew:");
+		
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.CORP")) {
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.CORP.ADDR")) {
 	} else if (!Desk_stricmp(tag,"HEAD.CHAR")) {
@@ -179,6 +180,14 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		if (prescan) return;
 		Database_SetPersonGEDCOMDesc(user,data);
 
+	} else if (!Desk_stricmp(tag,"_FILEINFO._PERSONUSER._TYPE")) {
+		if (prescan) return;
+		Database_SetPersonFieldType(user,atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._PERSONUSER._LIST")) {
+		if (prescan) return;
+		Database_SetPersonFieldList(user,data);
+
 	} else if (!Desk_stricmp(tag,"_FILEINFO._MARRIAGEUSER")) {
 		user=atoi(data);
 
@@ -189,6 +198,14 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 	} else if (!Desk_stricmp(tag,"_FILEINFO._MARRIAGEUSER._GEDCOM")) {
 		if (prescan) return;
 		Database_SetMarriageGEDCOMDesc(user,data);
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._MARRIAGEUSER._TYPE")) {
+		if (prescan) return;
+		Database_SetMarriageFieldType(user,atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._MARRIAGEUSER._LIST")) {
+		if (prescan) return;
+		Database_SetMarriageFieldList(user,data);
 
 	} else if (!Desk_stricmp(tag,"INDI")) {
 		if (prescan) return;
@@ -440,18 +457,17 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		if (prescan) {
 			if (!Desk_strnicmp(tag,"INDI.",5)) {
 				for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-					float FIXME_NOW;
-					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i),tag)) return;
-					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i),"")) {
-						Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,tag);
+					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfigpersonicons[i].gedcom),tag)) return;
+					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfigpersonicons[i].gedcom),"")) {
+						Desk_Icon_SetText(fieldconfigwin,fieldconfigpersonicons[i].gedcom,tag);
 						return;
 					}
 				}
 			} else if (!Desk_strnicmp(tag,"FAM.",4)) {
 				for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i),tag)) return;
-					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i),"")) {
-						Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,tag);
+					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfigmarriageicons[i].gedcom),tag)) return;
+					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfigmarriageicons[i].gedcom),"")) {
+						Desk_Icon_SetText(fieldconfigwin,fieldconfigmarriageicons[i].gedcom,tag);
 						return;
 					}
 				}

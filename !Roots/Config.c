@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.25 2002/07/27 14:45:19 ajw Exp $
+	$Id: Config.c,v 1.26 2002/07/27 19:21:51 ajw Exp $
 
 */
 
@@ -107,7 +107,7 @@ static void Config_SetChoicesPath(void)
 void Config_SaveFileConfig(void)
 /*Save file config as the default*/
 {
-	FILE *file,FIXME_NOW;
+	FILE *file;
 
 	Desk_Error2_Try {
 		char buffer[256];
@@ -123,6 +123,12 @@ void Config_SaveFileConfig(void)
 		}
 		fprintf(file,"%d\n",Config_SeparateMarriages());
 		fprintf(file,"%d\n",Config_JoinMarriages());
+		for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+			fprintf(file,"%d\n%s\n",Database_GetPersonFieldType(i),Database_GetPersonFieldList(i));
+		}
+		for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+			fprintf(file,"%d\n%s\n",Database_GetMarriageFieldType(i),Database_GetMarriageFieldList(i));
+		}
 		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
 		AJWLib_Error2_ReportMsgs("Error.SChoice:%s");
@@ -174,10 +180,34 @@ void Config_LoadFileConfig(void)
 					Database_SetMarriageGEDCOMDesc(i,buffer);
 				}
 			}
-			fscanf(file,"%d",&i);
+			fscanf(file,"%d\n",&i);
 			config.separatemarriages=(Desk_bool)i; /*Don't use Config_Set.. as this would cause layout to be changed, and a layout might not currently be loaded*/
-			fscanf(file,"%d",&i);
+			fscanf(file,"%d\n",&i);
 			config.joinmarriages=(Desk_bool)i;
+			for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+				if (fgets(buffer,256,file)) {
+					Database_SetPersonFieldType(i,atoi(buffer));
+				}
+				if (fgets(buffer,256,file)) {
+					int len;
+	
+					len=strlen(buffer);
+					if (len>0) if (buffer[len-1]=='\n') buffer[len-1]='\0';
+					Database_SetPersonFieldList(i,buffer);
+				}
+			}
+			for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+				if (fgets(buffer,256,file)) {
+					Database_SetMarriageFieldType(i,atoi(buffer));
+				}
+				if (fgets(buffer,256,file)) {
+					int len;
+	
+					len=strlen(buffer);
+					if (len>0) if (buffer[len-1]=='\n') buffer[len-1]='\0';
+					Database_SetMarriageFieldList(i,buffer);
+				}
+			}
 			AJWLib_File_fclose(file);
 		}
 	} Desk_Error2_Catch {

@@ -93,7 +93,7 @@ memcheck: clean
 #	SetType !Run Obey
 
 clean:
-	rm -f *.o
+	rm -f $(OBJECTS)
 	rm -f $(TARGET)
 
 
