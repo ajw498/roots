@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.38 2002/08/01 14:56:58 ajw Exp $
+	$Id: Main.c,v 1.39 2002/08/01 15:36:22 ajw Exp $
 	
 */
 
@@ -85,11 +85,11 @@ static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 				File_LoadGEDCOM(block->data.message.data.dataload.filename,block->data.message.data.dataload.filetype==ROOTS_FILETYPE ? Desk_FALSE : Desk_TRUE);
 			}
 		}
-	} else {
+	} /*else {
 		if (block->data.message.data.dataload.filetype==Desk_filetype_DRAWFILE) {
 			Windows_AddDrawfile(block->data.message.data.dataload.window,&(block->data.message.data.dataload.pos),block->data.message.data.dataload.filename);
 		}
-	}
+	}*/
 	return Desk_TRUE;
 }
 
