@@ -125,3 +125,64 @@ data-processing program is not enough.  But the chart-drawing is perhaps
 the hardest bit to program as the slow development of Alex Waugh's Roots
 program shows.
 
+
+
+
+> A diagram is still needed to explain the various measurements used.
+
+I'll try to include one in the manual for the next release.
+
+> I've started playing with the styles... How about linking a text entry for a
+> person with a field - eg. <b:> with <dateofbirth>? If the field is
+> empty, then don't print the text.
+
+This is possible if you edit the style by hand, although not currently
+with the style editor.
+
+> 
+> > As the output can be a draw file, how about importing drawfiles into the
+> > display?
+>
+> Do you mean as a picture to accompany a particular person?
+> 
+
+Hmmm... not sure that I meant that - I was more interested in putting a
+decorative frame around the title for the tree.
+
+Here's what I'm doing with your program:
+
+I'm slowly converting all my old draw files into !Roots files for easy
+editing. The other idea that came to me is that I would like to include
+the date the tree was created and/or subsequently updated. I add this
+'by hand' at the moment.
+
+The !Roots file is then saved and a drop shadow frame is added to the
+whole tree and then converted into a GIF file for inclusion on the
+internet. I use !TextEase for these two jobs 'cause its so easy to do
+and get a file that will fit in the maximum width I have available in
+the html frame.
+
+I have yet to devise a style in !Roots that produces a narrow
+enough tree - the Victorians always seem to have had lots of children! -
+and so subsequently *always* move some of the marriage links to a space
+below the male using !Draw. I do this to get the tree to fit a landscape
+A4 sheet of paper or to fit the html frame.
+
+I also add hot links into the tree by importing the GIF file into
+!ImageMap2 to find out the coordinates of the names I've previously set
+to a blue colour within !Draw. Because of this, I don't assign
+male/female designations to a person within !Roots, but colour them
+after I've exported the file. As I add more people, so this process is
+repeated to change another name to a blue link, starting from the !Draw
+file saved within Textease.
+
+And lastly(!), I add roll-over buttons to the html page to link to other
+pages. As I have *no* artistic talent, creating a simple button was a
+big chore. Taking some of the routines you use in !Roots, it would be
+easy to produce a program that did the job for me ... :-)
+
+Cheers.
+-- 
+Bryn Harries
+brynmor@harries.worldonline.co.uk
+
