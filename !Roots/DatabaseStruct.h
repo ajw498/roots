@@ -15,13 +15,14 @@
 typedef int elementptr;
 
 typedef enum elementtype {
-	element_NONE,
+	element_TITLE=-5,
+	element_CHILDLINE,
+	element_NONE=0,
 	element_PERSON,
 	element_MARRIAGE,
 	element_SELECTION,
 	element_FREE,
-	element_FILE,
-	element_TITLE
+	element_FILE
 } elementtype;
 
 #endif
@@ -33,6 +34,7 @@ typedef enum sextype {
 	sex_ANY='A'
 } sextype;
 
+elementtype Database_GetElementType(elementptr element);
 elementptr Database_GetLinked(int *index);
 elementptr Database_GetLinkedMarriages(int *index);
 void Database_SetFlag(elementptr person);

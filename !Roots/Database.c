@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.45 2000/10/13 19:25:43 AJW Exp $
+	$Id: Database.c,v 1.46 2000/10/16 11:44:55 AJW Exp $
 
 */
 
@@ -123,9 +123,19 @@ static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin,edittitlewin;
 static Desk_menu_ptr sexmenu;
 
+elementtype Database_GetElementType(elementptr element)
+{
+	AJWLib_Assert(database!=NULL);
+	
+	if (element<=0) return (elementtype)element;
+	return database[element].type;
+}
+
 elementptr Database_GetLinked(int *index)
 /* Get the next person in the database*/
 {
+	AJWLib_Assert(database!=NULL);
+	
 	while ((++(*index))<database[0].element.file.numberofelements) {
 		if (database[*index].type==element_PERSON) {
 			return *index;
@@ -138,6 +148,8 @@ elementptr Database_GetLinked(int *index)
 elementptr Database_GetLinkedMarriages(int *index)
 /* Get the next marriage in the database*/
 {
+	AJWLib_Assert(database!=NULL);
+	
 	while ((++(*index))<database[0].element.file.numberofelements) {
 		if (database[*index].type==element_MARRIAGE) {
 			return *index;
@@ -490,7 +502,7 @@ void Database_UnlinkSelected(layout *layout)
 			case element_MARRIAGE:
 				/*Remove marriage if both spouses and the marriage are not the same selection*/
 				if (database[database[i].element.marriage.principal].selected!=database[i].selected || database[database[i].element.marriage.spouse].selected!=database[i].selected) {
-					Layout_RemoveMarriage(layout,i);
+/*					Layout_RemoveMarriage(layout,i);*/
 					Database_RemoveMarriage(i);
 					Modules_ChangedStructure();
 					break;
@@ -510,12 +522,12 @@ void Database_DeleteSelected(layout *layout)
 		if (database[i].selected) {
 			switch (database[i].type) {
 				case element_PERSON:
-					Layout_RemovePerson(layout,i);
+					Layout_RemoveElement(layout,i);
 					Database_FreeElement(i);
 					Modules_ChangedStructure();
 					break;
 				case element_MARRIAGE:
-					Layout_RemoveMarriage(layout,i);
+/*					Layout_RemoveMarriage(layout,i);*/
 					Database_FreeElement(i);
 					Modules_ChangedStructure();
 					break;
