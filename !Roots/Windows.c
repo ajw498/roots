@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.61 2000/02/29 23:52:38 uid1 Exp $
+	$Id: Windows.c,v 1.62 2000/03/04 23:52:33 uid1 Exp $
 
 */
 
@@ -1580,6 +1580,7 @@ void Windows_Init(void)
 	Desk_Icon_InitIncDecHandler(scalewin,scale_TEXT,scale_UP,scale_DOWN,Desk_FALSE,1,1,999,100);
 	Desk_Event_Claim(Desk_event_CLICK,scalewin,Desk_event_ANY,Windows_ScaleClick,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,scalewin,scale_CANCEL,Windows_Cancel,NULL);
+	AJWLib_Window_KeyHandler(scalewin,scale_OK,Windows_ScaleClick,scale_CANCEL,Windows_Cancel,NULL);
 	savewin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);

@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.10 2000/02/28 17:07:14 uid1 Exp $
+	$Id: Config.c,v 1.11 2000/03/04 23:52:29 uid1 Exp $
 
 */
 
@@ -21,6 +21,7 @@
 #include "AJWLib.Assert.h"
 #include "AJWLib.Error2.h"
 #include "AJWLib.File.h"
+#include "AJWLib.Window.h"
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Menu.h"
 
@@ -259,6 +260,7 @@ void Config_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,configwin,config_SAVE,Config_Save,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,configwin,config_SNAP,Config_SnapClick,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,configwin,config_AUTOINCREASE,Config_AutoIncreaseClick,NULL);
+	AJWLib_Window_KeyHandler(configwin,config_OK,Config_Ok,config_CANCEL,Config_Cancel,NULL);
 	Config_Load();
 }
 
