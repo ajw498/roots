@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.9  1999/10/12 14:26:32  AJW
+	Modified to use Config
+
 	Revision 1.8  1999/10/11 22:15:36  AJW
 	Modified to use Error2
 
@@ -70,6 +73,7 @@
 #include "Database.h"
 #include "Graphics.h"
 #include "GConfig.h"
+#include "Config.h"
 #include "Layout.h"
 
 /*	Macros  */
@@ -81,12 +85,6 @@
 
 #define EORCOLOUR 0xFFFFFF00
 #define EORCOLOURRED 0xFFFF0000
-
-#define SCROLLDISTANCE 50
-#define SCROLLBASEAMOUNT 0
-#define SCROLLMULTIPLIER 2
-
-#define SNAPDISTANCE 30
 
 #define mainmenu_FILE 0
 #define mainmenu_PERSON 1
@@ -522,25 +520,26 @@ void Graphics_GetOffset(dragdata *dragdata)
 {
 	int i,distance;
 	dragdata->oldoffset=0;
+	if (!Config_Snap()) return;
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
 		if (dragdata->windowdata->layout->person[i].y==dragdata->persony && !dragdata->windowdata->layout->person[i].selected) {
 			/*Look for right hand edge of person or marriage*/
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth());
 			if (!dragdata->marriage) distance-=Graphics_GapWidth();
-			if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+			if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			/*Look for second marriage on right*/
 			if (dragdata->marriage) {
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth()+Graphics_SecondMarriageGap());
-				if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			}
 			/*Look for left hand edge of person or marriage*/
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x);
 			if (!dragdata->marriage) distance+=Graphics_GapWidth()+Graphics_PersonWidth(); else distance+=Graphics_MarriageWidth();
-			if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+			if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			/*Look for second marriage on left*/
 			if (dragdata->marriage) {
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x-Graphics_MarriageWidth()-Graphics_SecondMarriageGap());
-				if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			}
 		}
 	}
@@ -549,16 +548,16 @@ void Graphics_GetOffset(dragdata *dragdata)
 			if (dragdata->windowdata->layout->marriage[i].y==dragdata->persony && !dragdata->windowdata->layout->marriage[i].selected) {
 				/*Look for right hand edge of marriage*/
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth());
-				if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 				/*Look for left hand edge of marriage*/
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->marriage[i].x-Graphics_PersonWidth());
-				if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			}
 		}
 	}
 	/*Look for siblings centered under marriage and marriages centered over siblings*/
 	distance=dragdata->oldmousex-dragdata->centered;
-	if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
+	if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 }
 
 void Graphics_DragFn(void *ref)
@@ -582,17 +581,17 @@ void Graphics_DragFn(void *ref)
 		Graphics_GetOffset(dragdata);
 		Graphics_PlotDragBox(dragdata);
 	}
-	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<SCROLLDISTANCE) {
+	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<Config_ScrollDistance()) {
 		Graphics_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_FALSE;
-		blk.openblock.scroll.x-=SCROLLBASEAMOUNT+(SCROLLMULTIPLIER*(SCROLLDISTANCE-(mouseblk.pos.x-blk.openblock.screenrect.min.x)));
+		blk.openblock.scroll.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
 		Desk_Wimp_OpenWindow(&blk.openblock);
 		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 		dragdata->oldmousex=mousex;
-	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<SCROLLDISTANCE) {
+	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<Config_ScrollDistance()) {
 		Graphics_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_FALSE;
-		blk.openblock.scroll.x+=SCROLLBASEAMOUNT+(SCROLLMULTIPLIER*(SCROLLDISTANCE-(blk.openblock.screenrect.max.x-mouseblk.pos.x)));
+		blk.openblock.scroll.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
 		Desk_Wimp_OpenWindow(&blk.openblock);
 		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 		dragdata->oldmousex=mousex;
