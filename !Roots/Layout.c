@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.35 2000/07/22 21:33:19 AJW Exp $
+	$Id: Layout.c,v 1.36 2000/08/06 12:28:08 AJW Exp $
 
 */
 
@@ -74,6 +74,17 @@ int Layout_NearestGeneration(int y)
 	int h=(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
 	neg=y<0 ? -1 : 1;
 	y*=neg;
+	y-=y%h;
+	y+=Graphics_GapHeightBelow()+Graphics_PersonHeight()/2;
+	return y*neg;
+}
+
+/*int Layout_NearestGeneration(int y)  **This is better, but not backwards compatible**
+{
+	int neg;
+	int h=(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
+	neg=y<0 ? -1 : 1;
+	y*=neg;
 	if (neg>0) {
 		if (y%h>Graphics_GapHeightAbove()+Graphics_PersonHeight()) y+=h;
 	} else {
@@ -81,7 +92,7 @@ int Layout_NearestGeneration(int y)
 	}
 	y-=y%h;
 	return y*neg;
-}
+}*/
 
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 {
