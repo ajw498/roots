@@ -1,18 +1,19 @@
-v1.11 ??-Jan-01
+v1.11 ??-Feb-01
 Added ability to stretch people to fit their name length
-Increased maximum length of text that a field can contain to 255 chars (or more if you hack the template file) 
+Increased maximum length of text that a field can contain to 255 chars
+Added support for GEDCOM CONT (continuation) and CONC (concatenation) tags
 
 v1.10 29-Nov-00
 Improved graphics styles - uses Lua as a scripting language
 A few keyboard shortcuts added
 If there is an invalid link in a GEDCOM file, it now mentions the name
-of the affected person if possible, and carries on loading the file
+ of the affected person if possible, and carries on loading the file
 Works when the FontFix module is loaded
 Marriages can be auto sized to fit the gap between the spouses
 Marriages can be a fixed width, but attached to the rightmost of the two spouses
 Children can now be more than one generation below their parents
 Altering the height of people in a graphics style no longer causes
-problems to existing trees
+ problems to existing trees
 Save as default added to file choices
 Changing the file choices now marks the file as modified
 Fixed bug that prevented loading trees with no people in
