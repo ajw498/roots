@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.28  2000/01/11 13:44:40  AJW
+	Removed EOR plots and matrix to Draw.c
+
 	Revision 1.27  2000/01/10 15:49:21  AJW
 	menuoverwindow is now valid even when mouse was not clicked over a person
 
@@ -209,14 +212,14 @@ typedef struct dragdata {
 extern layout *debuglayout;
 #endif
 
+extern graphics graphicsdata;
+
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
 static Desk_window_handle addparentswin,newviewwin,fileinfowin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
-os_trfm matrix; /*make static? needed in Draw.c*/
-extern graphics graphicsdata;
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
 static plottextfn Graphics_PlotText=NULL;
 /*Make menuoverperson static local var to be passed as a reference?*/
@@ -313,11 +316,7 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 			Graphics_PlotText(x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
 		}
 	}
-	if (selected) {
-		Desk_ColourTrans_SetGCOL(EORCOLOUR,0,3);
-		AJWLib_Draw_PlotRectangleFilled(x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),&matrix);
-
-	}
+	if (selected) Draw_EORRectangleFilled(x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
 void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
@@ -357,11 +356,7 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 			Graphics_PlotText(x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 		}
 	}
-	if (selected) {
-		Desk_ColourTrans_SetGCOL(EORCOLOUR,0,3);
-		AJWLib_Draw_PlotRectangleFilled(x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),&matrix);
-
-	}
+	if (selected) Draw_EORRectangleFilled(x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
 void Graphics_PlotChildren(int leftx,int rightx,int y)
@@ -521,10 +516,8 @@ void Graphics_PlotDragBox(dragdata *dragdata)
 	blk.rect.max.y=INFINITY;
 	Desk_Wimp_UpdateWindow(&blk,&more);
 	while (more) {
-		Desk_ColourTrans_SetGCOL(EORCOLOUR,0,3);
-		AJWLib_Draw_PlotRectangle(blk.rect.min.x-blk.scroll.x+dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,blk.rect.max.y-blk.scroll.y+dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,&matrix);
-		Desk_ColourTrans_SetGCOL(EORCOLOURRED,0,3);
-		AJWLib_Draw_PlotRectangle(blk.rect.min.x-blk.scroll.x+dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,blk.rect.max.y-blk.scroll.y+dragdata->persony,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,&matrix);
+		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x+dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,blk.rect.max.y-blk.scroll.y+dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,EORCOLOUR);
+		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x+dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,blk.rect.max.y-blk.scroll.y+dragdata->persony,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,EORCOLOURRED);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 }
@@ -1332,12 +1325,7 @@ void Graphics_Init(void)
 	numwindows=0;
 	for (i=0;i<MAXWINDOWS;i++) windows[i].handle=0;
 	Desk_Drag_Initialise(Desk_TRUE);
-	matrix.entries[0][0]=1<<24;
-	matrix.entries[0][1]=0;
-	matrix.entries[1][0]=0;
-	matrix.entries[1][1]=1<<24;
-	matrix.entries[2][0]=0;
-	matrix.entries[2][1]=0;
+	Draw_SetScaleFactor(1<<24);
 	newviewwin=Desk_Window_Create("NewView",Desk_template_TITLEMIN);
 	Desk_Icon_InitIncDecHandler(newviewwin,newview_GENERATIONS,newview_UP,newview_DOWN,Desk_FALSE,1,1,999,10);
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_NORMAL);
