@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.57 2000/02/28 17:21:10 uid1 Exp $
+	$Id: Windows.c,v 1.58 2000/02/28 20:20:51 uid1 Exp $
 
 */
 
@@ -128,6 +128,9 @@
 #define save_CANCEL 1
 #define save_FILENAME 2
 
+#define unsaved_DISCARD 2
+#define unsaved_CANCEL 3
+#define unsaved_SAVE 0
 
 typedef struct windowdata {
 	Desk_window_handle handle;
@@ -163,7 +166,7 @@ extern layout *debuglayout;
 
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
-static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin,scalewin;
+static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin,scalewin,unsavedwin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,newviewperson,menuoverperson;
 static windowdata *menuoverwindow;
@@ -1103,8 +1106,19 @@ layout *Windows_Save(FILE *file,int *index)
 	return NULL;
 }
 
+static void Windows_OpenSaveWindow(void)
+{
+	if (!strcmp(File_GetFilename(),AJWLib_Msgs_TempLookup("File.Tree:Untitled"))) {
+		AJWLib_Window_OpenTransient(savewin);
+		/*How do I close all windows once savebox has been dealt with?*/
+	} else {
+		File_SaveFile(NULL,NULL);
+		Windows_CloseAllWindows();
+	}
+}
+
 void Windows_CloseAllWindows(void)
-/*Tidy up after an error*/
+/*Tidy up quietly*/
 {
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
@@ -1114,6 +1128,7 @@ void Windows_CloseAllWindows(void)
 			windows[i].handle=NULL;
 		}
 	}
+	Desk_Error2_TryCatch(File_Remove();,)
 }
 
 static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
@@ -1127,14 +1142,12 @@ static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *win
 	switch (windowdata->type) {
 		case wintype_NORMAL:
 			if (found<=1) {
-				/*Warn - unsaved data*/
-				/*Close all other windows*/
-				for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle!=0) {
-					if (windows[i].layout!=NULL) Layout_Free(windows[i].layout);
-					Desk_Window_Delete(windows[i].handle);
-					windows[i].handle=0;
+				/*Warn if unsaved data*/
+				if (File_GetModified()) {
+					AJWLib_Window_OpenDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
+				} else {
+					Windows_CloseAllWindows();
 				}
-				File_Remove();
 			} else {
 				Desk_Window_Delete(windowdata->handle);
 				windowdata->handle=0;
@@ -1535,6 +1548,7 @@ void Windows_Init(void)
 	Desk_Icon_Shade(newviewwin,newview_DESCENDENTPERSON);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
+	unsavedwin=Desk_Window_Create("Unsaved",Desk_template_TITLEMIN);
 	scalewin=Desk_Window_Create("Scale",Desk_template_TITLEMIN);
 	Desk_Icon_InitIncDecHandler(scalewin,scale_TEXT,scale_UP,scale_DOWN,Desk_FALSE,1,1,999,100);
 	Desk_Event_Claim(Desk_event_CLICK,scalewin,Desk_event_ANY,Windows_ScaleClick,NULL);

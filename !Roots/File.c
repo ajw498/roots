@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.17 2000/02/28 17:07:18 uid1 Exp $
+	$Id: File.c,v 1.18 2000/02/28 20:20:49 uid1 Exp $
 
 */
 
@@ -53,6 +53,7 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	layout *normallayout=NULL,*layout=NULL;
 	int nextwindow=0;
 	Desk_UNUSED(ref);
+	if (filename==NULL) filename=currentfilename;
 	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"wb");,AJWLib_Error2_ReportMsgs("Error.Save:%s"); return Desk_TRUE;)
 	/*file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
@@ -183,6 +184,7 @@ void File_New(void)
 
 void File_Remove(void)
 {
+	modified=Desk_FALSE;
 	Database_Remove();
 	Graphics_RemoveStyle();
 }

@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.16 2000/02/28 17:53:43 uid1 Exp $
+	$Id: Main.c,v 1.17 2000/02/28 20:20:48 uid1 Exp $
 	
 */
 
@@ -47,12 +47,15 @@
 #define DIRPREFIX "Roots"
 #define TREEFILE 0x090
 
+#define quiticon_DISCARD 0
+#define quiticon_CANCEL 2
+
 #define iconbarmenu_INFO 0
 #define iconbarmenu_CHOICES 1
 #define iconbarmenu_QUIT 2
 
 
-static Desk_window_handle info;
+static Desk_window_handle infowin,quitwin;
 static Desk_menu_ptr iconbarmenu;
 static char *taskname=NULL,*errbad=NULL;
 
@@ -107,7 +110,7 @@ static void IconBarMenuClick(int entry, void *ref)
 			Config_Open();
 			break;
 		case iconbarmenu_QUIT:
-			Desk_Event_CloseDown();
+			if (File_GetModified()) AJWLib_Window_OpenDCS(quitwin,quiticon_DISCARD,quiticon_CANCEL,-1,NULL,NULL); else Desk_Event_CloseDown();
 			break;
 	}
 }
@@ -129,10 +132,11 @@ int main(int argc,char *argv[])
 		Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
 		Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
 		Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
-		info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
+		infowin=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
 		Desk_Template_LoadFile("Templates");
+		quitwin=Desk_Window_Create("Quit",Desk_template_TITLEMIN);
 		iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
-		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)info);
+		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)infowin);
 		AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
 		Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);
 		Desk_EventMsg_Claim(Desk_message_DATALOAD,Desk_event_ANY,ReceiveDrag,NULL);
