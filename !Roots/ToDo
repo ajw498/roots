@@ -186,3 +186,114 @@ Cheers.
 Bryn Harries
 brynmor@harries.worldonline.co.uk
 
+From faz@argonet.co.uk Tue Oct  9 11:25:13 2001
+Date: Mon,  8 Oct 2001 15:26:23 +0100
+From: Neil Fazakerley <faz@argonet.co.uk>
+To: ajw498@ecs.soton.ac.uk
+Subject: Thoughts on Roots
+
+> 1. Clicking on Save currently looses your data, via an error window. Perhaps
+> clicking on save could save using the current path name, as in some other
+> packages?
+
+I assume you mean the Save entry on the file menu? If so, then it should
+open the save dialogue window (It works on my machine). What is the
+error message? Does it happen on all files or just some?
+
+> 2. Clicking on the large-window/small-window icon closes a
+> newly-opened empty Roots window which then refuses to reopen, requiring a quit
+> and restart.
+
+What is happening is that if the window is initially opened at its
+maximum, when the toggle size icon is clicked, it moves back to its
+default position as specified in the template file. On my machine, this
+is near the top left corner of the screen. Presumably your screen is set
+at a lower resolution, and thus this position is off the top of the
+screen.
+As a temporary fix, if you drop the attached !Roots on top of your
+existing copy, it will change the default position of the window to the
+bottom left corner, which should always be visible.
+
+> 3. After creating a new style, some lines disappear in reduced scales with
+> anything other that 0 thickness lines. (Thickness 4 boxes hold ok though.)
+
+This is not a bug in Roots, it is a feature of the Draw module, which
+Roots uses to draw all the lines. The effect may also be observed in
+!Draw. A thickness of 0 is special in that it is always drawn 1 pixel
+wide.
+
+> Now for possible enhancements:
+> 
+> 2. The length of the title string is very limiting during multiple,
+> experimental trees. Allowing a longer title string and/or a decent length
+> explanatory subhead in smaller point size would help a lot.
+
+I am considering allowing arbitrary pieces of text or draw files to be
+placed on the tree, which should make this possible.
+
+> 3. Ability for a marriage's child descender drop to one, two or three rows
+> instead of the current one row down. Could be a configurable field in each
+> marriage entry? (Being able to use two or three rows for sibling's marriages in
+> a crowded generation is a useful width-saver. Currently, the sibling descender
+> drops instead, but this is of more limited usefulness.)
+
+I'll put this on the todo list.
+
+> 4. Some kind of directional extension marker (to left, right, up or down) to
+> indicate continuation on another sheet for big family trees like mine. Would
+> need a text field for a message. Could be just a floating box with an arrowed
+> side, top or bottom.
+
+The first enhancement mentioned above should allow this.
+
+> 5. Some kind of emergency way of editing small fields when using the style
+> editor. e.g. if you've entered a dot as a separator, it's virtually impossible
+> to reselect it if you've got its attributes wrong or if you simple want to
+> delete it. Perhaps an option to cycle through each field in turn?
+
+Good point. I think I might make it possible to drag a box which selects
+all fields within the box, which can then be deleted.
+
+> 6. An option to allow a hand-edited style to refresh Roots' internal data
+> afterwards so it is not overwritten later.
+
+I'm afraid this is not possible. When you hand-edit a style, you could
+make it do all kinds of things, which the style editor cannot represent.
+It is the intention that people who are able to edit the styles by hand
+can do so, while the less techie people can use the editor. As ever, it
+is a compromise between configurability/flexibility and an easy to use
+interface.
+I could add a check so that the editor can detect when a style has been
+hand-edited, and give a warning if you try to overwrite it.
+
+> I've noted these items down while I've been using Roots for some fairly meaty
+> genealogy, and generally it's coped well. There are bound to be other thoughts
+> that occur to me as I do more work. Let me know if you'd rather not hear all
+> this stuff, otherwise I'll pass them on as well.
+
+Bug reports and suggestions are always welcome.
+
+Thanks
+
+Alex
+
+One more thought occurs after putting together a particularly tentative tree
+from 1600s entries: traditionally, hand-draw trees show tentative links as
+dotted lines. I can see this wouldn't be possible for a whole line from
+marriage to child but would it be possible to have at least the child's
+ascender drawn dotted? It could be signalled by doing (say) a shift/adjust
+drag. The same would be useful for the paired marriage connecting lines -
+marriages often take a 'shotgun' form on tentative trees.
+
+I've taken the liberty of attaching the tree I'm working on at the moment, with
+its custom style designed to suit my needs. As you can see, it's already rather
+complex and I'm not even half way through the 1600s. Inevitably at this time of
+the Civil War and regular Plagues, register entries were patchy and many
+connections are speculative (hence the extra room allowed for text qualifiers).
+Dotted lines and long-drop marriages would help enormously with clarity and
+space. BTW, if you want to use the style or pass it on or use the tree as an
+example, that's fine by me. Maybe you should have a section for user styles on
+your web site?
+
+Cheers,
+-Neil.
