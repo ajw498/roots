@@ -63,6 +63,7 @@ Error.NoMem:Not enough free memory.
 Error.Prncpl:You are not marrying the principal person.
 Error.ConfigL:Error loading the choices file (%s)
 Error.ConfigS:Error saving the choices file (%s)
+Error.GraphS:Error importing the graphics style (%s)
 Error.Load:Unable to load file (%s)
 Error.DrawS:Unable to save drawfile (%s)
 Error.Save:Unable to save file (%s)

@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.25 2000/03/07 21:13:58 uid1 Exp $
+	$Id: Graphics.c,v 1.26 2000/05/13 20:32:10 uid1 Exp $
 
 */
 
@@ -53,11 +53,56 @@
 #include "File.h"
 
 
-#define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7.087))
+#define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7))
+#define Graphics_ConvertFromOS(x) ((int)(x/7))
 
 
 #define NUMPERSONFIELDS 15
 #define NUMMARRIAGEFIELDS 3
+
+#define PERSONWIDTH       "personwidth"
+#define PERSONHEIGHT      "personheight"
+#define GAPHEIGHTABOVE    "gapheightabove"
+#define GAPHEIGHTBELOW    "gapheightbelow"
+#define GAPWIDTH          "gapwidth"
+#define MARRIAGEWIDTH     "marriagewidth"
+#define SECONDMARRIAGEGAP "secondmarriagegap"
+#define WINDOWBORDER      "windowborder"
+#define GAPHEIGHTUNLINKED "gapheightunlinked"
+
+#define FILETITLE "filetitle"
+
+#define LINE         "line"
+#define CHILDLINE    "childline"
+#define SIBLINGLINE  "siblingline"
+#define BOX          "box"
+#define FILLEDBOX    "filledbox"
+#define TEXT         "text"
+#define FIELD        "field"
+#define CENTREDTEXT  "centredtext"
+#define CENTREDFIELD "centredfield"
+
+#define SURNAME        "surname"
+#define FORENAME       "forename"
+#define NAME           "name"
+#define MIDDLENAMES    "middlenames"
+#define FULLNAME       "fullname"
+#define TITLE          "title"
+#define TITLEDNAME     "titledname"
+#define TITLEDFULLNAME "titledfullname"
+#define SEX            "sex"
+#define DOB            "dob"
+#define DOD            "dod"
+#define BIRTHPLACE     "birthplace"
+#define USER1          "user1"
+#define USER2          "user2"
+#define USER3          "user3"
+
+#define PLACE   "place"
+#define DATE    "date"
+#define DIVORCE "divorce"
+
+
 
 typedef enum personfieldtype {
 	personfieldtype_UNKNOWN=0,
@@ -100,7 +145,7 @@ typedef struct lineboxproperties {
 	int y0;
 	int x1;
 	int y1;
-	int colour;
+	unsigned int colour;
 	int thickness;
 } lineboxproperties;
 
@@ -149,7 +194,7 @@ typedef struct graphics {
 	int windowborder;
 	int gapheightunlinked;
 	int siblinglinethickness;
-	int siblinglinecolour;
+	unsigned int siblinglinecolour;
 	int titleheight;
 	textproperties title;
 	int numpersonobjects;
@@ -171,24 +216,203 @@ static unsigned int Graphics_RGBToPalette(char *str)
 	return (((colour & 0x00FF0000)>>8) | ((colour & 0x0000FF00)<<8) | ((colour & 0x000000FF)<<24));
 }
 
+static char *Graphics_PaletteToRGB(unsigned int colour/*,char *buf*/)
+{
+	static char buf[256]; /*???*/
+	sprintf(buf,"%02X%02X%02X",(colour & 0x0000FF00)>>8,(colour & 0x00FF0000)>>16,(colour & 0xFF000000)>>24);
+	return buf;
+}
+
+static void Graphics_SaveDimensions(char *style)
+{
+	FILE *file=NULL;
+	char filename[256];
+	sprintf(filename,"%s.%s.Dimensions",GRAPHICSWRITE,style);
+	file=AJWLib_File_fopen(filename,"w");
+	fprintf(file,"%s,%d\n",PERSONWIDTH,Graphics_ConvertFromOS(graphicsdata.personwidth));
+	fprintf(file,"%s,%d\n",PERSONHEIGHT,Graphics_ConvertFromOS(graphicsdata.personheight));
+	fprintf(file,"%s,%d\n",GAPHEIGHTABOVE,Graphics_ConvertFromOS(graphicsdata.gapheightabove));
+	fprintf(file,"%s,%d\n",GAPHEIGHTBELOW,Graphics_ConvertFromOS(graphicsdata.gapheightbelow));
+	fprintf(file,"%s,%d\n",GAPWIDTH,Graphics_ConvertFromOS(graphicsdata.gapwidth));
+	fprintf(file,"%s,%d\n",MARRIAGEWIDTH,Graphics_ConvertFromOS(graphicsdata.marriagewidth));
+	fprintf(file,"%s,%d\n",SECONDMARRIAGEGAP,Graphics_ConvertFromOS(graphicsdata.secondmarriagegap));
+	fprintf(file,"%s,%d\n",WINDOWBORDER,Graphics_ConvertFromOS(graphicsdata.windowborder));
+	fprintf(file,"%s,%d\n",GAPHEIGHTUNLINKED,Graphics_ConvertFromOS(graphicsdata.gapheightunlinked));
+	AJWLib_File_fclose(file);
+}
+
+static void Graphics_SaveTitle(char *style)
+{
+	FILE *file=NULL;
+	char filename[256];
+	char buffer1[10],buffer2[10];
+	sprintf(filename,"%s.%s.Title",GRAPHICSWRITE,style);
+	file=AJWLib_File_fopen(filename,"w");
+	fprintf(file,"%s,%d,%d,%s,%s,%s\n",FILETITLE,Graphics_ConvertFromOS(graphicsdata.titleheight),graphicsdata.title.size,Graphics_PaletteToRGB(graphicsdata.title.colour/*,buffer1*/),Graphics_PaletteToRGB(graphicsdata.title.bgcolour/*,buffer2*/),graphicsdata.title.fontname);
+	AJWLib_File_fclose(file);
+}
+
+static void Graphics_SavePerson(char *style)
+{
+	FILE *file=NULL;
+	char filename[256];
+	int i;
+	sprintf(filename,"%s.%s.Person",GRAPHICSWRITE,style);
+	file=AJWLib_File_fopen(filename,"w");
+	for (i=0;i<graphicsdata.numpersonobjects;i++) {
+		switch (graphicsdata.person[i].type) {
+			case graphictype_LINE:
+				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",LINE,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
+				break;
+			case graphictype_CHILDLINE:
+				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",CHILDLINE,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
+				break;
+			case graphictype_RECTANGLE:
+				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",BOX,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
+				break;
+			case graphictype_FILLEDRECTANGLE:
+				fprintf(file,"%s,%d,%d,%d,%d,%s\n",FILLEDBOX,Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.person[i].details.linebox.y1),Graphics_PaletteToRGB(graphicsdata.person[i].details.linebox.colour));
+				break;
+			case graphictype_CENTREDTEXTLABEL:
+				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",CENTREDTEXT,Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.y),graphicsdata.person[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.bgcolour),graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.text);
+				break;
+			case graphictype_TEXTLABEL:
+				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",TEXT,Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.person[i].details.textlabel.properties.y),graphicsdata.person[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.person[i].details.textlabel.properties.bgcolour),graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.text);
+				break;
+			default:
+				AJWLib_Assert(0);
+		}
+	}
+	for (i=0;i<NUMPERSONFIELDS;i++) {
+		if (graphicsdata.personfields[i].plot) {
+			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) fprintf(file,"%s",CENTREDFIELD); else fprintf(file,"%s",FIELD);
+			fprintf(file,",%d,%d,%d,%s,%s,%s,",Graphics_ConvertFromOS(graphicsdata.personfields[i].textproperties.x),Graphics_ConvertFromOS(graphicsdata.personfields[i].textproperties.y),graphicsdata.personfields[i].textproperties.size,Graphics_PaletteToRGB(graphicsdata.personfields[i].textproperties.colour),Graphics_PaletteToRGB(graphicsdata.personfields[i].textproperties.bgcolour),graphicsdata.personfields[i].textproperties.fontname);
+			switch (i) {
+				case personfieldtype_SURNAME:
+					fprintf(file,"%s\n",SURNAME);
+					break;
+				case personfieldtype_FORENAME:
+					fprintf(file,"%s\n",FORENAME);
+					break;
+				case personfieldtype_NAME:
+					fprintf(file,"%s\n",NAME);
+					break;
+				case personfieldtype_MIDDLENAMES:
+					fprintf(file,"%s\n",MIDDLENAMES);
+					break;
+				case personfieldtype_FULLNAME:
+					fprintf(file,"%s\n",FULLNAME);
+					break;
+				case personfieldtype_TITLE:
+					fprintf(file,"%s\n",TITLE);
+					break;
+				case personfieldtype_TITLEDNAME:
+					fprintf(file,"%s\n",TITLEDNAME);
+					break;
+				case personfieldtype_TITLEDFULLNAME:
+					fprintf(file,"%s\n",TITLEDFULLNAME);
+					break;
+				case personfieldtype_SEX:
+					fprintf(file,"%s\n",SEX);
+					break;
+				case personfieldtype_DOB:
+					fprintf(file,"%s\n",DOB);
+					break;
+				case personfieldtype_DOD:
+					fprintf(file,"%s\n",DOD);
+					break;
+				case personfieldtype_BIRTHPLACE:
+					fprintf(file,"%s\n",BIRTHPLACE);
+					break;
+				case personfieldtype_USER1:
+					fprintf(file,"%s\n",USER1);
+					break;
+				case personfieldtype_USER2:
+					fprintf(file,"%s\n",USER2);
+					break;
+				case personfieldtype_USER3:
+					fprintf(file,"%s\n",USER3);
+					break;
+				default:
+					AJWLib_Assert(0);
+			}
+		}
+	}
+	AJWLib_File_fclose(file);
+}
+
+static void Graphics_SaveMarriage(char *style)
+{
+	FILE *file=NULL;
+	char filename[256];
+	int i;
+	sprintf(filename,"%s.%s.Marriage",GRAPHICSWRITE,style);
+	file=AJWLib_File_fopen(filename,"w");
+	fprintf(file,"%s,%d,%s\n",SIBLINGLINE,Graphics_ConvertFromOS(graphicsdata.siblinglinethickness),Graphics_PaletteToRGB(graphicsdata.siblinglinecolour));
+	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
+		switch (graphicsdata.marriage[i].type) {
+			case graphictype_LINE:
+				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",LINE,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
+				break;
+			case graphictype_CHILDLINE:
+				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",CHILDLINE,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
+				break;
+			case graphictype_RECTANGLE:
+				fprintf(file,"%s,%d,%d,%d,%d,%d,%s\n",BOX,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.thickness),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
+				break;
+			case graphictype_FILLEDRECTANGLE:
+				fprintf(file,"%s,%d,%d,%d,%d,%s\n",FILLEDBOX,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y0),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.x1),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.linebox.y1),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.linebox.colour));
+				break;
+			case graphictype_CENTREDTEXTLABEL:
+				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",CENTREDTEXT,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.y),graphicsdata.marriage[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.bgcolour),graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.text);
+				break;
+			case graphictype_TEXTLABEL:
+				fprintf(file,"%s,%d,%d,%d,%s,%s,%s,%s\n",TEXT,Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.x),Graphics_ConvertFromOS(graphicsdata.marriage[i].details.textlabel.properties.y),graphicsdata.marriage[i].details.textlabel.properties.size,Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.colour),Graphics_PaletteToRGB(graphicsdata.marriage[i].details.textlabel.properties.bgcolour),graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.text);
+				break;
+			default:
+				AJWLib_Assert(0);
+		}
+	}
+	for (i=0;i<NUMMARRIAGEFIELDS;i++) {
+		if (graphicsdata.marriagefields[i].plot) {
+			if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) fprintf(file,"%s",CENTREDFIELD); else fprintf(file,"%s",FIELD);
+			fprintf(file,",%d,%d,%d,%s,%s,%s,",Graphics_ConvertFromOS(graphicsdata.marriagefields[i].textproperties.x),Graphics_ConvertFromOS(graphicsdata.marriagefields[i].textproperties.y),graphicsdata.marriagefields[i].textproperties.size,Graphics_PaletteToRGB(graphicsdata.marriagefields[i].textproperties.colour),Graphics_PaletteToRGB(graphicsdata.marriagefields[i].textproperties.bgcolour),graphicsdata.marriagefields[i].textproperties.fontname);
+			switch (i) {
+				case marriagefieldtype_PLACE:
+					fprintf(file,"%s\n",PLACE);
+					break;
+				case marriagefieldtype_DATE:
+					fprintf(file,"%s\n",DATE);
+					break;
+				case marriagefieldtype_DIVORCE:
+					fprintf(file,"%s\n",DIVORCE);
+					break;
+				default:
+					AJWLib_Assert(0);
+			}
+		}
+	}
+	AJWLib_File_fclose(file);
+}
+
 static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 {
 	if (numvalues!=2) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
-	if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
+	if (!strcmp(values[0],PERSONWIDTH)) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],PERSONHEIGHT)) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],GAPHEIGHTABOVE)) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],GAPHEIGHTBELOW)) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],GAPWIDTH)) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],MARRIAGEWIDTH)) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],SECONDMARRIAGEGAP)) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],WINDOWBORDER)) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],GAPHEIGHTUNLINKED)) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
 	else Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
 }
 
 static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
 {
-	if (!strcmp(values[0],"filetitle")) {
+	if (!strcmp(values[0],FILETITLE)) {
 		if (numvalues!=6) {
 			Desk_Msgs_Report(1,"Error.SynT:Syntax error %d",linenum);
 		} else {
@@ -206,14 +430,14 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 	graphictype graphictype=graphictype_INVALID;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE;
-	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
-	else if (!strcmp(values[0],"box")) graphictype=graphictype_RECTANGLE;
-	else if (!strcmp(values[0],"filledbox")) graphictype=graphictype_FILLEDRECTANGLE;
-	else if (!strcmp(values[0],"text")) graphictype=graphictype_TEXTLABEL;
-	else if (!strcmp(values[0],"field")) graphictype=graphictype_FIELD;
-	else if (!strcmp(values[0],"centredtext")) graphictype=graphictype_CENTREDTEXTLABEL;
-	else if (!strcmp(values[0],"centredfield")) graphictype=graphictype_CENTREDFIELD;
+	if (!strcmp(values[0],LINE)) graphictype=graphictype_LINE;
+	else if (!strcmp(values[0],CHILDLINE)) graphictype=graphictype_CHILDLINE;
+	else if (!strcmp(values[0],BOX)) graphictype=graphictype_RECTANGLE;
+	else if (!strcmp(values[0],FILLEDBOX)) graphictype=graphictype_FILLEDRECTANGLE;
+	else if (!strcmp(values[0],TEXT)) graphictype=graphictype_TEXTLABEL;
+	else if (!strcmp(values[0],FIELD)) graphictype=graphictype_FIELD;
+	else if (!strcmp(values[0],CENTREDTEXT)) graphictype=graphictype_CENTREDTEXTLABEL;
+	else if (!strcmp(values[0],CENTREDFIELD)) graphictype=graphictype_CENTREDFIELD;
 	else Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 	switch (graphictype) {
 		case graphictype_LINE:
@@ -284,21 +508,21 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				personfieldtype field=personfieldtype_UNKNOWN;
 				int size;
 				AJWLib_Str_LowerCase(values[7]);
-				if (!strcmp(values[7],"surname")) field=personfieldtype_SURNAME;
-				else if (!strcmp(values[7],"forename")) field=personfieldtype_FORENAME;
-				else if (!strcmp(values[7],"name")) field=personfieldtype_NAME;
-				else if (!strcmp(values[7],"middlenames")) field=personfieldtype_MIDDLENAMES;
-				else if (!strcmp(values[7],"fullname")) field=personfieldtype_FULLNAME;
-				else if (!strcmp(values[7],"title")) field=personfieldtype_TITLE;
-				else if (!strcmp(values[7],"titledname")) field=personfieldtype_TITLEDNAME;
-				else if (!strcmp(values[7],"titledname")) field=personfieldtype_TITLEDFULLNAME;
-				else if (!strcmp(values[7],"sex")) field=personfieldtype_SEX;
-				else if (!strcmp(values[7],"dob")) field=personfieldtype_DOB;
-				else if (!strcmp(values[7],"dod")) field=personfieldtype_DOD;
-				else if (!strcmp(values[7],"birthplace")) field=personfieldtype_BIRTHPLACE;
-				else if (!strcmp(values[7],"user1")) field=personfieldtype_USER1;
-				else if (!strcmp(values[7],"user2")) field=personfieldtype_USER2;
-				else if (!strcmp(values[7],"user3")) field=personfieldtype_USER3;
+				if (!strcmp(values[7],SURNAME)) field=personfieldtype_SURNAME;
+				else if (!strcmp(values[7],FORENAME)) field=personfieldtype_FORENAME;
+				else if (!strcmp(values[7],NAME)) field=personfieldtype_NAME;
+				else if (!strcmp(values[7],MIDDLENAMES)) field=personfieldtype_MIDDLENAMES;
+				else if (!strcmp(values[7],FULLNAME)) field=personfieldtype_FULLNAME;
+				else if (!strcmp(values[7],TITLE)) field=personfieldtype_TITLE;
+				else if (!strcmp(values[7],TITLEDNAME)) field=personfieldtype_TITLEDNAME;
+				else if (!strcmp(values[7],TITLEDFULLNAME)) field=personfieldtype_TITLEDFULLNAME;
+				else if (!strcmp(values[7],SEX)) field=personfieldtype_SEX;
+				else if (!strcmp(values[7],DOB)) field=personfieldtype_DOB;
+				else if (!strcmp(values[7],DOD)) field=personfieldtype_DOD;
+				else if (!strcmp(values[7],BIRTHPLACE)) field=personfieldtype_BIRTHPLACE;
+				else if (!strcmp(values[7],USER1)) field=personfieldtype_USER1;
+				else if (!strcmp(values[7],USER2)) field=personfieldtype_USER2;
+				else if (!strcmp(values[7],USER3)) field=personfieldtype_USER3;
 				else {
 					Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 					break;
@@ -320,14 +544,14 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype=graphictype_INVALID;
-	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE;
-	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
-	else if (!strcmp(values[0],"siblingline")) graphictype=graphictype_SIBLINGLINE;
-	else if (!strcmp(values[0],"box")) graphictype=graphictype_RECTANGLE;
-	else if (!strcmp(values[0],"filledbox")) graphictype=graphictype_FILLEDRECTANGLE;
-	else if (!strcmp(values[0],"text")) graphictype=graphictype_TEXTLABEL;
-	else if (!strcmp(values[0],"field")) graphictype=graphictype_FIELD;
-	else if (!strcmp(values[0],"centredfield")) graphictype=graphictype_CENTREDFIELD;
+	if (!strcmp(values[0],LINE)) graphictype=graphictype_LINE;
+	else if (!strcmp(values[0],CHILDLINE)) graphictype=graphictype_CHILDLINE;
+	else if (!strcmp(values[0],SIBLINGLINE)) graphictype=graphictype_SIBLINGLINE;
+	else if (!strcmp(values[0],BOX)) graphictype=graphictype_RECTANGLE;
+	else if (!strcmp(values[0],FILLEDBOX)) graphictype=graphictype_FILLEDRECTANGLE;
+	else if (!strcmp(values[0],TEXT)) graphictype=graphictype_TEXTLABEL;
+	else if (!strcmp(values[0],FIELD)) graphictype=graphictype_FIELD;
+	else if (!strcmp(values[0],CENTREDFIELD)) graphictype=graphictype_CENTREDFIELD;
 	else Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 	switch (graphictype) {
 		case graphictype_SIBLINGLINE:
@@ -404,9 +628,9 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 				marriagefieldtype field=marriagefieldtype_UNKNOWN;
 				int size;
 				AJWLib_Str_LowerCase(values[7]);
-				if (!strcmp(values[7],"place")) field=marriagefieldtype_PLACE;
-				else if (!strcmp(values[7],"date")) field=marriagefieldtype_DATE;
-				else if (!strcmp(values[7],"divorce")) field=marriagefieldtype_DIVORCE;
+				if (!strcmp(values[7],PLACE)) field=marriagefieldtype_PLACE;
+				else if (!strcmp(values[7],DATE)) field=marriagefieldtype_DATE;
+				else if (!strcmp(values[7],DIVORCE)) field=marriagefieldtype_DIVORCE;
 				else {
 					Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 					break;
@@ -601,9 +825,24 @@ void Graphics_Load(FILE *file)
 	AJWLib_File_fread(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
 	AJWLib_File_fread(&size,sizeof(int),1,file);
 	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
-	sprintf(filename,"%s.%s",GRAPHICSREAD,currentstyle);
 	Graphics_ClaimFonts();
-	/*Import style? ie save style into graphic dir if doesn't already exist*/
+	Desk_Error2_Try {
+		if (Config_ImportGraphicsStyle()) {
+			sprintf(filename,"%s.%s",GRAPHICSREAD,currentstyle);
+			if (!Desk_File_IsDirectory(filename)) {
+				if (!Desk_File_IsDirectory(CONFIGDIR)) Desk_File_CreateDirectory(CONFIGDIR);
+				if (!Desk_File_IsDirectory(GRAPHICSWRITE)) Desk_File_CreateDirectory(GRAPHICSWRITE);
+				sprintf(filename,"%s.%s",GRAPHICSWRITE,currentstyle);
+				if (!Desk_File_IsDirectory(filename)) Desk_File_CreateDirectory(filename);
+				Graphics_SaveDimensions(currentstyle);
+				Graphics_SaveTitle(currentstyle);
+				Graphics_SavePerson(currentstyle);
+				Graphics_SaveMarriage(currentstyle);
+			}
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.GraphS:%s");
+	} Desk_Error2_EndCatch
 }
 
 void Graphics_Save(FILE *file)
