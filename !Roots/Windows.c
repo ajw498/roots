@@ -3,6 +3,10 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.33  2000/01/14 13:16:16  AJW
+	Moved Graphics_Redraw to GraphicsConfig
+	Renamed Graphics_* to Windows_*
+
 	Revision 1.32  2000/01/13 23:31:53  AJW
 	Moved handling of Info window here from Database.c
 
@@ -159,9 +163,6 @@
 #define MAXWINDOWS 10
 #define REDRAWOVERLAP 4
 
-#define EORCOLOUR 0xFFFFFF00
-#define EORCOLOURRED 0xFFFF0000
-
 #define mainmenu_FILE 0
 #define mainmenu_PERSON 1
 #define mainmenu_NEWVIEW 3
@@ -249,178 +250,25 @@ typedef struct dragdata {
 extern layout *debuglayout;
 #endif
 
-extern graphics graphicsdata;
-
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
 static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
-static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
-static plottextfn Graphics_PlotText=NULL;
 /*Make menuoverperson static local var to be passed as a reference?*/
 
-void Graphics_RedrawPerson(Desk_window_handle win,personlayout *person)
+void Windows_RedrawPerson(Desk_window_handle win,personlayout *person)
 {
 	Desk_Window_ForceRedraw(win,person->x-REDRAWOVERLAP,person->y-REDRAWOVERLAP,person->x+Graphics_PersonWidth()+REDRAWOVERLAP,person->y+Graphics_PersonHeight()+REDRAWOVERLAP);
 }
 
-void Graphics_RedrawMarriage(Desk_window_handle win,marriagelayout *marriage)
+void Windows_RedrawMarriage(Desk_window_handle win,marriagelayout *marriage)
 {
 	Desk_Window_ForceRedraw(win,marriage->x-REDRAWOVERLAP,marriage->y-REDRAWOVERLAP,marriage->x+Graphics_MarriageWidth()+REDRAWOVERLAP,marriage->y+Graphics_PersonHeight()+REDRAWOVERLAP);
 }
 
-void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
-{
-	int i;
-	for (i=0;i<graphicsdata.numpersonobjects;i++) {
-		int xcoord=0;
-		switch (graphicsdata.person[i].type) {
-			case graphictype_RECTANGLE:
-				Graphics_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-				break;
-			case graphictype_FILLEDRECTANGLE:
-				Graphics_PlotRectangleFilled(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-				break;
-			case graphictype_CHILDLINE:
-				if (!child) break;
-				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
-			case graphictype_LINE:
-				Graphics_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-				break;
-			case graphictype_CENTREDTEXTLABEL:
-/*Won't work for drawfile*/				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
-			case graphictype_TEXTLABEL:
-				Graphics_PlotText(x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
-				break;
-		}
-	}
-	for (i=0;i<NUMPERSONFIELDS;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			char fieldtext[256]=""; /*what is max field length?*/
-			int xcoord=0;
-			switch (i) {
-				case personfieldtype_SURNAME:
-					strcat(fieldtext,Database_GetPersonData(person)->surname);
-					break;
-				case personfieldtype_FORENAME:
-					strcat(fieldtext,Database_GetPersonData(person)->forename);
-					break;
-				case personfieldtype_MIDDLENAMES:
-					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
-					break;
-				case personfieldtype_TITLEDNAME:
-					strcat(fieldtext,Database_GetTitledName(person));
-					break;
-				case personfieldtype_NAME:
-					strcat(fieldtext,Database_GetName(person));
-					break;
-				case personfieldtype_TITLEDFULLNAME:
-					strcat(fieldtext,Database_GetTitledFullName(person));
-					break;
-				case personfieldtype_FULLNAME:
-					strcat(fieldtext,Database_GetFullName(person));
-					break;
-				case personfieldtype_TITLE:
-					strcat(fieldtext,Database_GetPersonData(person)->title);
-					break;
-/*				case personfieldtype_SEX:
-					strcat(fieldtext,Database_GetPersonData(person)->sex);
-					break;
-				case personfieldtype_DOB:
-					strcat(fieldtext,Database_GetPersonData(person)->dob);
-					break;
-				case personfieldtype_DOD:
-					strcat(fieldtext,Database_GetPersonData(person)->dod);
-					break;
-*/				case personfieldtype_BIRTHPLACE:
-					strcat(fieldtext,Database_GetPersonData(person)->placeofbirth);
-					break;
-				case personfieldtype_USER1:
-					strcat(fieldtext,Database_GetPersonData(person)->userdata[0]);
-					break;
-				case personfieldtype_USER2:
-					strcat(fieldtext,Database_GetPersonData(person)->userdata[1]);
-					break;
-				case personfieldtype_USER3:
-					strcat(fieldtext,Database_GetPersonData(person)->userdata[2]);
-					break;
-				default:
-					strcat(fieldtext,"Unimplemented");
-			}
-/*Doesn't work for drawfile*/			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
-			Graphics_PlotText(x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
-		}
-	}
-	if (selected) Draw_EORRectangleFilled(x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
-}
-
-void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
-{
-	int i;
-	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
-		switch (graphicsdata.marriage[i].type) {
-			case graphictype_RECTANGLE:
-				Graphics_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
-				break;
-			case graphictype_FILLEDRECTANGLE:
-				Graphics_PlotRectangleFilled(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
-				break;
-			case graphictype_CHILDLINE:
-				if (!childline) break;
-			case graphictype_LINE:
-				Graphics_PlotLine(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
-				break;
-			case graphictype_TEXTLABEL:
-				Graphics_PlotText(x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
-				break;
-		}
-	}
-	for (i=0;i<NUMMARRIAGEFIELDS;i++) {
-		if (graphicsdata.marriagefields[i].plot) {
-			char fieldtext[256]=""; /*what is max field length?*/
-			switch (i) {
-				case marriagefieldtype_PLACE:
-					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
-					break;
-/*				case marriagefieldtype_DATE:
-					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
-					break;
-*/				default:
-					strcat(fieldtext,"Unimplemented");
-			}
-			Graphics_PlotText(x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
-		}
-	}
-	if (selected) Draw_EORRectangleFilled(x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
-}
-
-void Graphics_PlotChildren(int leftx,int rightx,int y)
-{
-	Graphics_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
-}
-
-void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
-{
-	int i;
-	/*use the clip rect*/
-	Graphics_PlotLine=plotline;
-	Graphics_PlotRectangle=plotrect;
-	Graphics_PlotRectangleFilled=plotrectfilled;
-	Graphics_PlotText=plottext;
-	for (i=0;i<layout->numchildren;i++) {
-		Graphics_PlotChildren(originx+layout->children[i].leftx,originx+layout->children[i].rightx,originy+layout->children[i].y);
-	}
-	for (i=layout->nummarriages-1;i>=0;i--) {
-		Graphics_PlotMarriage(originx+layout->marriage[i].x,originy+layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
-	}
-	for (i=layout->numpeople-1;i>=0;i--) {
-		Graphics_PlotPerson(layout->person[i].person,originx+layout->person[i].x,originy+layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
-	}
-}
-
-static Desk_bool Graphics_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
+static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
@@ -446,7 +294,7 @@ static Desk_bool Graphics_RedrawWindow(Desk_event_pollblock *block,windowdata *w
 	return Desk_TRUE;
 }
 
-static Desk_bool Graphics_RedrawAddParents(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
@@ -459,7 +307,7 @@ static Desk_bool Graphics_RedrawAddParents(Desk_event_pollblock *block,void *ref
 	return Desk_TRUE;
 }
 
-Desk_bool Graphics_AddParentsClick(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_AddParentsClick(Desk_event_pollblock *block,void *ref)
 {
 	int x=-INFINITY,window=-1,i,y;
 	elementptr person;
@@ -494,24 +342,24 @@ Desk_bool Graphics_AddParentsClick(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
-void Graphics_UnselectAll(windowdata *windowdata)
+void Windows_UnselectAll(windowdata *windowdata)
 {
 	int i;
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (windowdata->layout->person[i].selected) {
 			windowdata->layout->person[i].selected=Desk_FALSE;
-			Graphics_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
+			Windows_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
 		}
 	}
 	for (i=0;i<windowdata->layout->nummarriages;i++) {
 		if (windowdata->layout->marriage[i].selected) {
 			windowdata->layout->marriage[i].selected=Desk_FALSE;
-			Graphics_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
+			Windows_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
 		}
 	}
 }
 
-void Graphics_AddSelected(layout *layout,int amount)
+void Windows_AddSelected(layout *layout,int amount)
 {
 	int i;
 	for (i=0;i<layout->numpeople;i++) {
@@ -523,26 +371,26 @@ void Graphics_AddSelected(layout *layout,int amount)
 	Modules_ChangedLayout();
 }
 
-void Graphics_ResizeWindow(windowdata *windowdata)
+void Windows_ResizeWindow(windowdata *windowdata)
 {
 	Desk_wimp_rect box;
 	box=Layout_FindExtent(windowdata->layout,Desk_FALSE);
 	Desk_Window_SetExtent(windowdata->handle,box.min.x-Graphics_WindowBorder(),box.min.y-Graphics_WindowBorder(),box.max.x+Graphics_WindowBorder(),box.max.y+Graphics_WindowBorder());
 }
 
-void Graphics_ChangedLayout(void)
+void Windows_ChangedLayout(void)
 {
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
 			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
-			Graphics_ResizeWindow(&(windows[i]));
+			Windows_ResizeWindow(&(windows[i]));
 			/*Make this more efficient*/
 		}
 	}
 }
 
-void Graphics_PlotDragBox(dragdata *dragdata)
+void Windows_PlotDragBox(dragdata *dragdata)
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
@@ -559,7 +407,7 @@ void Graphics_PlotDragBox(dragdata *dragdata)
 	}
 }
 
-void Graphics_DragEnd(void *ref)
+void Windows_DragEnd(void *ref)
 {
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
@@ -590,12 +438,12 @@ void Graphics_DragEnd(void *ref)
 	if (dragdata->windowdata->type==wintype_NORMAL) {
 		int mousex;
 		/*act as if drag had ended on same win as started on*/
-		if (dragdata->plotted) Graphics_PlotDragBox(dragdata);
+		if (dragdata->plotted) Windows_PlotDragBox(dragdata);
 		Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
 		mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-		Graphics_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex);
+		Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex);
 		Layout_LayoutLines(dragdata->windowdata->layout);
-		Graphics_ResizeWindow(dragdata->windowdata);
+		Windows_ResizeWindow(dragdata->windowdata);
 		Desk_Window_ForceRedraw(dragdata->windowdata->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
 	} else if (dragdata->windowdata->type==wintype_UNLINKED) {
 		if (windows[window].type==wintype_NORMAL) {
@@ -663,7 +511,7 @@ void Graphics_DragEnd(void *ref)
 	}
 }
 
-void Graphics_SelectDragEnd(void *ref)
+void Windows_SelectDragEnd(void *ref)
 {
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
@@ -677,7 +525,7 @@ void Graphics_SelectDragEnd(void *ref)
 		if (mousex>dragdata->windowdata->layout->person[i].x && dragdata->oldmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() || mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->oldmousex>dragdata->windowdata->layout->person[i].x) {
 			if (mousey>dragdata->windowdata->layout->person[i].y && dragdata->oldmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->person[i].y) {
 				dragdata->windowdata->layout->person[i].selected=(Desk_bool)!dragdata->windowdata->layout->person[i].selected;
-				Graphics_RedrawPerson(dragdata->windowdata->handle,dragdata->windowdata->layout->person+i);
+				Windows_RedrawPerson(dragdata->windowdata->handle,dragdata->windowdata->layout->person+i);
 			}
 		}
 	}
@@ -685,13 +533,13 @@ void Graphics_SelectDragEnd(void *ref)
 		if (mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->oldmousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() || mousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() && dragdata->oldmousex>dragdata->windowdata->layout->marriage[i].x) {
 			if (mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->oldmousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->marriage[i].y) {
 				dragdata->windowdata->layout->marriage[i].selected=(Desk_bool)!dragdata->windowdata->layout->marriage[i].selected;
-				Graphics_RedrawMarriage(dragdata->windowdata->handle,dragdata->windowdata->layout->marriage+i);
+				Windows_RedrawMarriage(dragdata->windowdata->handle,dragdata->windowdata->layout->marriage+i);
 			}
 		}
 	}
 }
 
-void Graphics_GetOffset(dragdata *dragdata)
+void Windows_GetOffset(dragdata *dragdata)
 {
 	int i,distance;
 	dragdata->oldoffset=0;
@@ -735,7 +583,7 @@ void Graphics_GetOffset(dragdata *dragdata)
 	if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 }
 
-void Graphics_DragFn(void *ref)
+void Windows_DragFn(void *ref)
 {
 	dragdata *dragdata=ref;
 	Desk_mouse_block mouseblk;
@@ -743,28 +591,28 @@ void Graphics_DragFn(void *ref)
 	int mousex;
 	if (dragdata->windowdata->type!=wintype_NORMAL) return;
 	if (!dragdata->plotted) {
-		Graphics_GetOffset(dragdata);
-		Graphics_PlotDragBox(dragdata);
+		Windows_GetOffset(dragdata);
+		Windows_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_TRUE;
 	}
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Wimp_GetWindowState(dragdata->windowdata->handle,&blk);
 	mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 	if (mousex!=dragdata->oldmousex) {
-		Graphics_PlotDragBox(dragdata);
+		Windows_PlotDragBox(dragdata);
 		dragdata->oldmousex=mousex;
-		Graphics_GetOffset(dragdata);
-		Graphics_PlotDragBox(dragdata);
+		Windows_GetOffset(dragdata);
+		Windows_PlotDragBox(dragdata);
 	}
 	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<Config_ScrollDistance()) {
-		Graphics_PlotDragBox(dragdata);
+		Windows_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_FALSE;
 		blk.openblock.scroll.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
 		Desk_Wimp_OpenWindow(&blk.openblock);
 		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 		dragdata->oldmousex=mousex;
 	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<Config_ScrollDistance()) {
-		Graphics_PlotDragBox(dragdata);
+		Windows_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_FALSE;
 		blk.openblock.scroll.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
 		Desk_Wimp_OpenWindow(&blk.openblock);
@@ -773,7 +621,7 @@ void Graphics_DragFn(void *ref)
 	}
 }
 
-void Graphics_StartDragNormal(elementptr person,int x,int y,windowdata *windowdata,Desk_bool marriage)
+void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdata,Desk_bool marriage)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -845,10 +693,10 @@ void Graphics_StartDragNormal(elementptr person,int x,int y,windowdata *windowda
 		}
 	}
 	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(Graphics_DragFn,Graphics_DragEnd,&dragdata);
+	Desk_Drag_SetHandlers(Windows_DragFn,Windows_DragEnd,&dragdata);
 }
 
-void Graphics_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowdata)
+void Windows_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowdata)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -878,10 +726,10 @@ void Graphics_StartDragUnlinked(elementptr person,int x,int y,windowdata *window
 	dragdata.oldoffset=0;
 	dragdata.plotted=Desk_FALSE;
 	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(NULL,Graphics_DragEnd,&dragdata);
+	Desk_Drag_SetHandlers(NULL,Windows_DragEnd,&dragdata);
 }
 
-void Graphics_StartDragSelect(windowdata *windowdata)
+void Windows_StartDragSelect(windowdata *windowdata)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -906,10 +754,10 @@ void Graphics_StartDragSelect(windowdata *windowdata)
 	dragdata.oldmousex=mousex;
 	dragdata.oldmousey=mousey;
 	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(NULL,Graphics_SelectDragEnd,&dragdata);
+	Desk_Drag_SetHandlers(NULL,Windows_SelectDragEnd,&dragdata);
 }
 
-Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
 	int mousex,mousey,i;
@@ -930,16 +778,16 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 				if (block->data.mouse.button.data.clickselect) {
 					if (windowdata->type==wintype_NORMAL) {
 						if (!windowdata->layout->person[i].selected) {
-							Graphics_UnselectAll(windowdata);
+							Windows_UnselectAll(windowdata);
 							windowdata->layout->person[i].selected=Desk_TRUE;
-							Graphics_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
+							Windows_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
 						}
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.clickadjust) {
 					if (windowdata->type==wintype_NORMAL) {
 						windowdata->layout->person[i].selected=(Desk_bool)!windowdata->layout->person[i].selected;
-						Graphics_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
+						Windows_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.menu) {
@@ -979,15 +827,15 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 				} else if (block->data.mouse.button.data.adjust) {
 					if (windowdata->type==wintype_DESCENDENTS || windowdata->type==wintype_ANCESTORS) {
 						windowdata->person=windowdata->layout->person[i].person;
-						Graphics_Relayout(); /*Rather inefficient*/
+						Windows_Relayout(); /*Rather inefficient*/
 					}
 					return Desk_TRUE;
 				} else if (block->data.mouse.button.data.dragselect) {
 					if (windowdata->type==wintype_NORMAL) {
-						Graphics_StartDragNormal(windowdata->layout->person[i].person,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata,Desk_FALSE);
+						Windows_StartDragNormal(windowdata->layout->person[i].person,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata,Desk_FALSE);
 						return Desk_TRUE;
 					} else if (windowdata->type==wintype_UNLINKED) {
-						Graphics_StartDragUnlinked(windowdata->layout->person[i].person,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata);
+						Windows_StartDragUnlinked(windowdata->layout->person[i].person,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata);
 						return Desk_TRUE;
 					}
 				}
@@ -1022,21 +870,21 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 				} else if (block->data.mouse.button.data.clickselect) {
 					if (windowdata->type==wintype_NORMAL) {
 						if (!windowdata->layout->marriage[i].selected) {
-							Graphics_UnselectAll(windowdata);
+							Windows_UnselectAll(windowdata);
 							windowdata->layout->marriage[i].selected=Desk_TRUE;
-							Graphics_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
+							Windows_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
 						}
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.clickadjust) {
 					if (windowdata->type==wintype_NORMAL) {
 						windowdata->layout->marriage[i].selected=(Desk_bool)!windowdata->layout->marriage[i].selected;
-						Graphics_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
+						Windows_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.dragselect) {
 					if (windowdata->type==wintype_NORMAL) {
-						Graphics_StartDragNormal(windowdata->layout->marriage[i].marriage,windowdata->layout->marriage[i].x,windowdata->layout->marriage[i].y,windowdata,Desk_TRUE);
+						Windows_StartDragNormal(windowdata->layout->marriage[i].marriage,windowdata->layout->marriage[i].x,windowdata->layout->marriage[i].y,windowdata,Desk_TRUE);
 						return Desk_TRUE;
 					}
 				}
@@ -1045,21 +893,21 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 	}
 	if (windowdata->type==wintype_NORMAL) {
 		if (block->data.mouse.button.data.clickselect) {
-			Graphics_UnselectAll(windowdata);
+			Windows_UnselectAll(windowdata);
 			return Desk_TRUE;
 		} else if (block->data.mouse.button.data.dragselect) {
-			Graphics_UnselectAll(windowdata);
-			Graphics_StartDragSelect(windowdata);
+			Windows_UnselectAll(windowdata);
+			Windows_StartDragSelect(windowdata);
 			return Desk_TRUE;
 		} else if (block->data.mouse.button.data.dragadjust) {
-			Graphics_StartDragSelect(windowdata);
+			Windows_StartDragSelect(windowdata);
 			return Desk_TRUE;
 		}
 	}
 	return Desk_FALSE;
 }
 
-void Graphics_Relayout(void)
+void Windows_Relayout(void)
 {
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
@@ -1083,13 +931,13 @@ void Graphics_Relayout(void)
 				default:
 					AJWLib_Assert(0);
 			}
-			Graphics_ResizeWindow(&windows[i]);
+			Windows_ResizeWindow(&windows[i]);
 			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
 		}
 	}
 }
 
-int Graphics_GetSize(void)
+int Windows_GetSize(void)
 {
 	int i,size=0;
 	for (i=0;i<MAXWINDOWS;i++)
@@ -1097,7 +945,7 @@ int Graphics_GetSize(void)
 	return size;
 }
 
-void Graphics_Save(FILE *file)
+void Windows_Save(FILE *file)
 {
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
@@ -1113,7 +961,7 @@ void Graphics_Save(FILE *file)
 	}
 }
 
-Desk_bool Graphics_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
+Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
 	int i,found=0;
 	for (i=0;i<MAXWINDOWS;i++)
@@ -1146,7 +994,7 @@ Desk_bool Graphics_CloseWindow(Desk_event_pollblock *block,windowdata *windowdat
 	return Desk_TRUE;
 }
 
-void Graphics_OpenWindow(wintype type,elementptr person,int generations)
+void Windows_OpenWindow(wintype type,elementptr person,int generations)
 {
 	int newwindow;
 	char str[256]="";
@@ -1170,7 +1018,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
 #if DEBUG
-			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_RedrawWindow,&windows[newwindow]);
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
 			if (layoutnormal==NULL) windows[newwindow].layout=Layout_LayoutNormal(); else windows[newwindow].layout=layoutnormal;
@@ -1188,7 +1036,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 #if DEBUG
-			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_RedrawWindow,&windows[newwindow]);
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
 			windows[newwindow].layout=Layout_LayoutAncestors(person,generations);
@@ -1201,14 +1049,14 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 		default:
 			windows[newwindow].layout=NULL;
 	}
-	Graphics_ResizeWindow(&windows[newwindow]);
+	Windows_ResizeWindow(&windows[newwindow]);
 	/*Register handlers for this window*/
-	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
-	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_RedrawWindow,&windows[newwindow]);
-	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_CloseWindow,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Windows_MouseClick,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
 }
 
-void Graphics_MainMenuClick(int entry,void *ref)
+void Windows_MainMenuClick(int entry,void *ref)
 {
 	char buffer[10]="";
 	switch (entry) {
@@ -1245,7 +1093,7 @@ void Graphics_MainMenuClick(int entry,void *ref)
 	}
 }
 
-Desk_bool Graphics_NewViewCancel(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_NewViewCancel(Desk_event_pollblock *block,void *ref)
 {
 	if (block->data.mouse.button.data.select) {
 		Desk_Window_Hide(newviewwin);
@@ -1254,7 +1102,7 @@ Desk_bool Graphics_NewViewCancel(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-Desk_bool Graphics_NewViewOk(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 {
 	wintype wintype;
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
@@ -1275,18 +1123,18 @@ Desk_bool Graphics_NewViewOk(Desk_event_pollblock *block,void *ref)
 			wintype=wintype_CLOSERELATIVES;
 			break;
 	}
-	Graphics_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)));
+	Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)));
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(newviewwin);
 	return Desk_TRUE;
 }
 
-Desk_bool Graphics_SaveDraw(char *filename,void *ref)
+Desk_bool Windows_SaveDraw(char *filename,void *ref)
 {
 	Drawfile_Save(filename,menuoverwindow->layout);
 	return Desk_TRUE;
 }
 
-void Graphics_PersonMenuClick(int entry,void *ref)
+void Windows_PersonMenuClick(int entry,void *ref)
 {
 	elementptr mother,marriage,mothermarriage;
 	switch (entry) {
@@ -1327,7 +1175,7 @@ void Graphics_PersonMenuClick(int entry,void *ref)
 	}
 }
 
-void Graphics_SelectMenuClick(int entry,void *ref)
+void Windows_SelectMenuClick(int entry,void *ref)
 {
 	switch (entry) {
 		case selectmenu_DESCENDENTS:
@@ -1349,7 +1197,7 @@ void Graphics_SelectMenuClick(int entry,void *ref)
 	}
 }
 
-Desk_bool Graphics_NewViewClick(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 {
 	switch (block->data.mouse.icon) {
 		case newview_UNLINKED:
@@ -1375,7 +1223,7 @@ Desk_bool Graphics_NewViewClick(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-void Graphics_Init(void)
+void Windows_Init(void)
 {
 	int i;
 	numwindows=0;
@@ -1388,18 +1236,18 @@ void Graphics_Init(void)
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_UNLINKED);
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_ANCESTOR);
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_DESCENDENT);
-	Desk_Event_Claim(Desk_event_CLICK,newviewwin,Desk_event_ANY,Graphics_NewViewClick,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_OK,Graphics_NewViewOk,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_CANCEL,Graphics_NewViewCancel,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,newviewwin,Desk_event_ANY,Windows_NewViewClick,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_OK,Windows_NewViewOk,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_CANCEL,Windows_NewViewCancel,NULL);
 	addparentswin=Desk_Window_Create("AddParents",Desk_template_TITLEMIN);
 	fileinfowin=Desk_Window_Create("FileInfo",Desk_template_TITLEMIN);
-	Desk_Event_Claim(Desk_event_REDRAW,addparentswin,Desk_event_ANY,Graphics_RedrawAddParents,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,addparentswin,addparents_SECONDMARRIAGE,Graphics_AddParentsClick,NULL);
+	Desk_Event_Claim(Desk_event_REDRAW,addparentswin,Desk_event_ANY,Windows_RedrawAddParents,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,addparentswin,addparents_SECONDMARRIAGE,Windows_AddParentsClick,NULL);
 	exportmenu=AJWLib_Menu_CreateFromMsgs("Title.Export:","Menu.Export:",NULL,NULL);
 	filemenu=AJWLib_Menu_CreateFromMsgs("Title.File:","Menu.File:",NULL,NULL);
-	personmenu=AJWLib_Menu_CreateFromMsgs("Title.Person:","Menu.Person:",Graphics_PersonMenuClick,NULL);
-	mainmenu=AJWLib_Menu_CreateFromMsgs("Title.Main:","Menu.Main:",Graphics_MainMenuClick,NULL);
-	selectmenu=AJWLib_Menu_CreateFromMsgs("Title.Select:","Menu.Select:",Graphics_SelectMenuClick,NULL);
+	personmenu=AJWLib_Menu_CreateFromMsgs("Title.Person:","Menu.Person:",Windows_PersonMenuClick,NULL);
+	mainmenu=AJWLib_Menu_CreateFromMsgs("Title.Main:","Menu.Main:",Windows_MainMenuClick,NULL);
+	selectmenu=AJWLib_Menu_CreateFromMsgs("Title.Select:","Menu.Select:",Windows_SelectMenuClick,NULL);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_PERSON,personmenu);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_FILE,filemenu);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);
@@ -1416,6 +1264,6 @@ void Graphics_Init(void)
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);
 	savedrawwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
 	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);
-	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Graphics_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
+	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
 }
 
