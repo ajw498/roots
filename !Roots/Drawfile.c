@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.18 2000/07/26 20:55:04 AJW Exp $
+	$Id: Drawfile.c,v 1.19 2000/09/25 18:44:10 AJW Exp $
 
 */
 
@@ -123,20 +123,20 @@ void Drawfile_PlotLine(int scale,int originx,int originy,int minx,int miny,int m
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=2; /*Path object*/
 	object[1]=sizeofpath;
-	object[2]=originx+minx<<8; /*Boundingbox*/
-	object[3]=originy+miny<<8;
-	object[4]=originx+maxx<<8;
-	object[5]=originy+maxy<<8;
+	object[2]=originx+(minx<<8); /*Boundingbox*/
+	object[3]=originy+(miny<<8);
+	object[4]=originx+(maxx<<8);
+	object[5]=originy+(maxy<<8);
 	object[6]=-1; /*Fill colour*/
 	object[7]=colour;
 	object[8]=linethickness;
 	object[9]=0; /*? Path style*/
 	object[10]=2; /*Move*/
-	object[11]=originx+minx<<8;
-	object[12]=originy+miny<<8;
+	object[11]=originx+(minx<<8);
+	object[12]=originy+(miny<<8);
 	object[13]=8; /*Line*/
-	object[14]=originx+maxx<<8;
-	object[15]=originy+maxy<<8;
+	object[14]=originx+(maxx<<8);
+	object[15]=originy+(maxy<<8);
 	object[16]=0; /*End path*/
 }
 
@@ -237,8 +237,8 @@ static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int 
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=1; /*Text object*/
 	object[1]=sizeofpath;
-	object[2]=originx+x<<8; /*Boundingbox*/
-	object[3]=originy+y<<8;
+	object[2]=originx+(x<<8); /*Boundingbox*/
+	object[3]=originy+(y<<8);
 	object[4]=(originx+x+bbox->x)<<8;
 	object[5]=(originy+y+bbox->y)<<8;
 	object[6]=fgcolour; /*unsigned???*/
@@ -246,8 +246,8 @@ static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int 
 	object[8]=fontnumber;
 	object[9]=size*640; /*X size*/
 	object[10]=size*640; /*Y size*/
-	object[11]=originx+x<<8;
-	object[12]=originy+y<<8;
+	object[11]=originx+(x<<8);
+	object[12]=originy+(y<<8);
 	strcpy(((char *)object)+52,text);
 }
 

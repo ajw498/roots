@@ -3,7 +3,7 @@
 
 #ifndef SHAREWARE_STANDALONE
 
-#define UNREGISTEREDMAXPEOPLE 15
+#define UNREGISTEREDMAXPEOPLE 25
 
 char *Shareware_GetUser(void);
 void Shareware_CheckRegistered(void);

@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.42 2000/09/22 13:10:54 AJW Exp $
+	$Id: Database.c,v 1.43 2000/09/25 18:44:08 AJW Exp $
 
 */
 
@@ -418,6 +418,8 @@ elementtype Database_AnyoneSelected(void)
 					case element_MARRIAGE:
 						selected=element_SELECTION;
 						return selected;
+					default:
+						break;
 				}
 			}
 		}
@@ -492,7 +494,9 @@ void Database_UnlinkSelected(layout *layout)
 					Database_RemoveMarriage(i);
 					Modules_ChangedStructure();
 					break;
-			}
+				}
+			default:
+				break;
 		}
 	}
 }
@@ -514,6 +518,8 @@ void Database_DeleteSelected(layout *layout)
 					Layout_RemoveMarriage(layout,i);
 					Database_FreeElement(i);
 					Modules_ChangedStructure();
+					break;
+				default:
 					break;
 			}
 		}
@@ -790,7 +796,7 @@ static void Database_EditPerson(elementptr person)
 		case sex_FEMALE:
 			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.F:");
 			break;
-		case sex_UNKNOWN:
+		default:
 			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.U:");
 			break;
 	}
@@ -920,6 +926,8 @@ void Database_Edit(elementptr person)
 			break;
 		case element_MARRIAGE:
 			Database_EditMarriage(person);
+			break;
+		default:
 			break;
 	}
 }
@@ -1115,6 +1123,8 @@ void Database_SaveGEDCOM(FILE *file,Desk_bool plainGEDCOM)
 						fprintf(file,"%s\n",database[i].element.marriage.data.user[j]);
 					}
 				}
+				break;
+			default:
 				break;
 		}
 	}

@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.44 2000/09/22 10:06:05 AJW Exp $
+	$Id: Graphics.c,v 1.45 2000/09/25 18:44:13 AJW Exp $
 
 */
 
@@ -357,6 +357,8 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				}
 			}
 			break;
+		default:
+			break;
 	}
 }
 
@@ -471,6 +473,8 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 					graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.size=size;
 				}
 			}
+			break;
+		default:
 			break;
 	}
 }
@@ -905,6 +909,8 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 				case graphictype_TEXTLABEL:
 					Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
 					break;
+				default:
+					break;
 			}
 		}
 	}
@@ -968,6 +974,8 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 				xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.text)/2;
 			case graphictype_TEXTLABEL:
 				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
+				break;
+			default:
 				break;
 		}
 	}
