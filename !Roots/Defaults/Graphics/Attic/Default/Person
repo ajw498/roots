@@ -31,6 +31,8 @@
 # Name  - forname and surname
 # Middlename
 # Fullname  - forname, middlenames then surname
+# InitialedMiddleName - forename, initial, surname
+# InitialedName - initial, initial, surname
 # Sex
 # Or any of the field descriptions from file choices, with all spaces removed
 # eg the description  Date Of Birth  would be a field name of  dateofbirth

@@ -42,8 +42,7 @@
 FilledBox,0,0,40,15,F5F5F5
 Box,0,0,40,15,0,000000
 ChildLine,20,15,20,25,0,000000
-CentredField,20,3,12,000000,FFFFFF,Trinity.Medium,DateOfBirth
-M_CentredField,20,9,12,0000FF,FFFFFF,Trinity.Medium,FullName
-F_CentredField,20,9,12,FF0000,FFFFFF,Trinity.Medium,FullName
-U_CentredField,20,9,12,00FF00,FFFFFF,Trinity.Medium,FullName
+U_CentredField,20,7,12,00FF00,FFFFFF,Trinity.Medium,InitialedMiddleName
+M_CentredField,20,7,12,0000FF,FFFFFF,Trinity.Medium,InitialedMiddleName
+F_CentredField,20,7,12,FF0000,FFFFFF,Trinity.Medium,InitialedMiddleName
 
