@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.61 2001/06/24 22:30:28 AJW Exp $
+	$Id: Database.c,v 1.62 2001/07/02 19:55:34 AJW Exp $
 
 */
 
@@ -278,6 +278,11 @@ char *Database_GetField(elementptr element,char *fieldname)
 			if (Desk_stricmp(fieldname,"name")==0) {
 				strcpy(name,database[element].element.person.data.forename);
 				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
+				return name;
+			}
+			if (Desk_stricmp(fieldname,"forenames")==0) {
+				strcpy(name,database[element].element.person.data.forename);
+				if (database[element].element.person.data.middlenames[0]) strcat(name," "),strcat(name,database[element].element.person.data.middlenames);
 				return name;
 			}
 			if (Desk_stricmp(fieldname,"fullname")==0) {
