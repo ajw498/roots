@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.44 2000/10/14 20:04:16 AJW Exp $
+	$Id: TreeLayout.c,v 1.45 2000/10/14 23:28:25 AJW Exp $
 
 */
 
@@ -31,21 +31,24 @@
 
 #define LARGENUMBERINCREMENT 10000
 
-typedef struct {
-	int minx;
-	int maxx;
-} line;
+#define elementptr_CHILDLINE -1
+#define elementptr_MARRIAGE -1
+#define elementptr_TITLE -1
 
-typedef enum direction {
+/*typedef enum direction {
 	direction_RTOL,
 	direction_BOTH,
 	direction_LTOR,
 	direction_NONE
-} direction;
+} direction;*/
 
 typedef void (*callfn)(layout *layout,elementptr person,int);
 
-static line *spaces;
+static struct {
+	int minx;
+	int maxx;
+} *spaces;
+
 static int mingeneration,maxgeneration;
 /*static int numgenerations,addamount,firstplot,largenumber;*/
 /*static Desk_bool selectmarriages;*/
@@ -69,7 +72,7 @@ static void Layout_ExtendGeneration(int generation)
 {
 	int i;
 	if (generation<mingeneration) {
-		AJWLib_Flex_MidExtend((flex_ptr)&spaces,0,sizeof(line)*(mingeneration-generation));
+		AJWLib_Flex_MidExtend((flex_ptr)&spaces,0,sizeof(*spaces)*(mingeneration-generation));
 		for (i=0;i<mingeneration-generation;i++) {
 			spaces[i].minx=0;
 			spaces[i].maxx=0;
@@ -77,7 +80,7 @@ static void Layout_ExtendGeneration(int generation)
 		mingeneration=generation;
 	}
 	if (generation>maxgeneration) {
-		AJWLib_Flex_Extend((flex_ptr)&spaces,sizeof(line)*(generation-mingeneration+1));
+		AJWLib_Flex_Extend((flex_ptr)&spaces,sizeof(*spaces)*(generation-mingeneration+1));
 		for (i=maxgeneration-mingeneration+1;i<generation-mingeneration+1;i++) {
 			spaces[i].minx=0;
 			spaces[i].maxx=0;
@@ -111,11 +114,7 @@ static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 			if (marriagepos<leftpos) leftpos=marriagepos;
 			if (marriagepos>rightpos) rightpos=marriagepos;
 			/*Create the line*/
-			AJWLib_Flex_Extend((flex_ptr)&(layout->children),sizeof(childlinelayout)*(layout->numchildren+1));
-			layout->children[layout->numchildren].rightx=rightpos;
-			layout->children[layout->numchildren].leftx=leftpos;
-			layout->children[layout->numchildren].y=y;
-			layout->numchildren++;
+			Layout_AddTransient(layout,elementptr_CHILDLINE,leftpos,y,rightpos-leftpos,0,0,0);
 		}
 	}
 }
@@ -408,7 +407,7 @@ void Layout_LayoutLines(layout *layout)
 {
 	int i;
 	AJWLib_Assert(layout!=NULL);
-	layout->numchildren=0;
+	Layout_RemoveTransients(layout);
 	for (i=0;i<layout->numpeople;i++) Layout_PlotChildLine(layout,layout->person[i].element,layout->person[i].y);
 }
 
@@ -459,7 +458,7 @@ layout *Layout_LayoutNormal(void)
 	AJWLib_Assert(spaces==NULL);
 	layout=Layout_New();
     Desk_Error2_Try {
-		AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
+		AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(*spaces));
 		spaces[0].minx=0;
 		spaces[0].maxx=0;
 		mingeneration=0;

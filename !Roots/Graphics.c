@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.49 2000/10/13 19:25:47 AJW Exp $
+	$Id: Graphics.c,v 1.50 2000/10/14 23:28:19 AJW Exp $
 
 */
 
@@ -1020,12 +1020,12 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 			}
 		}
 	}
-	for (i=0;i<layout->numchildren;i++) {
-		if ((originx+((layout->children[i].leftx-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
-			if ((originx+((layout->children[i].rightx+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
-				if ((originy+((layout->children[i].y+Graphics_PersonHeight())*scale)/100)<cliprect->max.y) {
-					if ((originy+((layout->children[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
+	for (i=0;i<layout->numtransients;i++) {
+		if ((originx+((layout->transients[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
+			if ((originx+((layout->transients[i].x+layout->transients[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
+				if ((originy+((layout->transients[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
+					if ((originy+((layout->transients[i].y+layout->transients[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
+						Graphics_PlotChildren(scale,originx,originy,layout->transients[i].x,layout->transients[i].x+layout->transients[i].width,layout->transients[i].y);
 					}
 				}
 			}

@@ -18,6 +18,14 @@ typedef enum elementtype {
 
 #endif
 
+typedef struct flags {
+	unsigned int editable   : 1;
+	unsigned int moveable   : 1;
+	unsigned int linkable   : 1;
+	unsigned int snaptogrid : 1;
+	unsigned int selectable : 1;
+} flags;
+
 typedef struct elementlayout {
 	int x;
 	int y;
@@ -26,14 +34,7 @@ typedef struct elementlayout {
 	elementptr element;
 	int width;
 	int height;
-	struct {
-		unsigned int editable   : 1;
-		unsigned int moveable   : 1;
-		unsigned int linkable   : 1;
-		unsigned int snaptogrid : 1;
-		unsigned int selectable : 1;
-		unsigned int transient  : 1;
-	} flags;
+	flags flags;
 } elementlayout;
 
 typedef struct childlinelayout {
@@ -53,8 +54,11 @@ typedef struct layout {
 	int numpeople;
 	elementlayout *marriage;
 	int nummarriages;
-	childlinelayout *children;
-	int numchildren;
+	elementlayout *transients;
+	int numtransients;
+	int gridx;
+	int gridy;
+	flags flags;
 } layout;
 
 typedef struct mouseclickdata {
@@ -71,6 +75,7 @@ layout *Layout_New(void);
 void Layout_Free(layout *layout);
 Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid);
+void Layout_AddTransient(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid);
 void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y,int width,int height,int xgrid,int ygrid);
 int Layout_FindXCoord(layout *layout,elementptr person);
 int Layout_FindYCoord(layout *layout,elementptr person);
@@ -86,6 +91,7 @@ void Layout_DeSelectAll(void);
 Desk_bool Layout_GetSelect(elementptr person);
 elementtype Layout_AnyoneSelected(void);
 void Layout_Init(void);
+void Layout_RemoveTransients(layout *layout);
 
 #endif
 
