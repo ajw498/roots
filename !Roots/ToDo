@@ -29,3 +29,98 @@ BUG: if you select two people who are married, but not their marriage (in separa
 Ctrl-X in writeable icon seems to mess things up - does it replace 0 terminator with CR?
 
 Load up a tree in default style, Remove all free memory, change to dropshadow style. Roots quits silently (is lua doing this?)
+
+
+
+On 27 October 1999, Tim [Powys-Lybbe] emailed the Ancestry+ mail list you were running
+at the time, as follows:
+
+> Let's start:
+> 
+> 1. Core data entry facilities:
+>    (a) People:
+>        Must allow entry of forename, last name, date of birth, date of
+>        death.
+>        Must have options to allow other fields to be added to each
+>        person, as decided by user, e.g.: education, occupation,
+>        addresses, general notes, baptism, etc.
+>        These option fields will either be dated, e.g. baptism, or
+>        undated.  If dated, there may be multiple entries, as in
+>        education.
+>    (b) Marriages:
+>        Must allow entry of date and place and and end-date with status, for
+>        separation or divorce.
+>        Again allow optional other fields, as for people.
+> 
+> 2. Sources of data:
+>    (a) Start with a list of sources, as entered by the user.
+>    (b) Every field must have a source entry attached to it; may be blank
+>        of course.
+>    (c) For people and marriages, there needs to be a General Source, that
+>        covers all entries.
+> 
+> 3. Photos: Linked to people and to marriages.
+> 
+> 4. GEDCOM:  Must be able to handle GEDCOM 4.0 and 5.5 both for input
+>    and output.
+> 
+> 5. Flags: These are essential for efficient selection for reporting.
+>    (a) The user must be able to decide what flags to store for each
+>        person and for each marriage.  These must be amendable and addable
+>        and subtractable at any time.
+>    (b) Probably each flag needs only be bivalent (Yes/No), though
+>        Polyvalent might be useful, eg for clergymen, the values could be
+>        curate / vicar / rector / canon / dean / bishop / archbishop, etc.
+> 
+> 6. Direct lines and relationships.  There must be sub-routines to
+>    start with a person and write in to all lines whether each is a
+>    direct ancestor and their relationship if any.
+>    Direct line needs to be treated subsequently as a flag for reporting
+>    purposes.
+> 
+> 7. Reporting: (reports, not charts)
+>    To output a specifiable set of data for each person or
+>    marriage reported.
+>    To have facilities to select the people by ascent or descent and then
+>    also by flag settings.
+>    Do Ahentafel (sp?) reports.
+> 
+> 8. Charting: do ancestor, descendants charts starting from any person
+>    Show a specifiable amount of data for each person and marriage.
+>    Handle the objects on the charts as separate objects with "elastic
+>    band" links to parents or children.
+>    Optionally do hourglass charts, combining ancestors and descendants
+>    of a given person.
+> 
+Thoughts to add to my previous list:
+
+1. Extract data on people and marriages in TAB and CSV formats. The
+   purpose of this is to use the superior reporting, data handling and
+   presentation of spreadsheets, Tablemate and wordprocessors.
+
+   The extraction should be by use of any set of criteria on the fields
+   and flags of the data.
+
+   The extraction should be of any set of fields and flags.
+
+2. Somehow do the charting in Draw.  But any family trees must be more
+   than a set of lines and boxes.  They must be linked, so that if you
+   move a box (person), the lines move and extend or contract with the
+   box.  The data in the boxes should move with the boxes; that data should
+   be editable.
+
+   And, even, it must be possible to move generations (rows of boxes)
+   together - and to move branches, sets of descendants, together - around
+   the chart.
+
+   Finally one should be able to insert other objects, e.g pictures,
+   anywhere on the chart, possibly linked to, and optionally in, the boxes
+   and moving with them.  Perhaps pictures could be held in the database
+   and automatically inserted at tree-drawing time.
+
+Many people select a genealogy program for its chart drawing facilities,
+they like to have something to show the relatives.  A solely
+data-processing program is not enough.  But the chart-drawing is perhaps
+the hardest bit to program as the slow development of Alex Waugh's Roots
+program shows.
+
