@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.23 2000/09/01 14:17:59 AJW Exp $
+	$Id: Main.c,v 1.24 2000/09/13 21:15:47 AJW Exp $
 	
 */
 
@@ -39,15 +39,14 @@
 #include <stdio.h>
 #include <signal.h>
 
+#include "Main.h"
 #include "Modules.h"
 #include "Windows.h"
 #include "File.h"
 #include "config.h"
 
 
-#define VERSION "0.91 (1-Sep-00)"
 #define DIRPREFIX "Roots"
-#define TREEFILE 0x090
 
 #define quiticon_DISCARD 0
 #define quiticon_CANCEL 2
@@ -71,7 +70,7 @@ static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 	if (Database_GetSize()) {
 		Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
 	} else {
-		File_LoadFile(block->data.message.data.dataload.filename);
+		File_LoadGEDCOM(block->data.message.data.dataload.filename);
 	}
 	return Desk_TRUE;
 }
@@ -82,7 +81,7 @@ static Desk_bool ReceiveDataOpen(Desk_event_pollblock *block, void *ref)
 	/*Ignore if we already have a file loaded*/
 	if (Database_GetSize()) return Desk_FALSE;
 	/*Ignore if it isn't a treefile*/
-	if (block->data.message.data.dataopen.filetype!=TREEFILE) return Desk_FALSE;
+	if (block->data.message.data.dataopen.filetype!=ROOTS_FILETYPE) return Desk_FALSE;
 	/*Return message to say we'll load the file*/
 	block->data.message.header.action=Desk_message_DATAOPEN;
 	block->data.message.header.yourref=block->data.message.header.myref;
@@ -123,6 +122,7 @@ int main(int argc,char *argv[])
 	MemCheck_RegisterArgs(argc,argv);
 	MemCheck_InterceptSCLStringFunctions();
 	MemCheck_SetStoreMallocFunctions(1);
+	MemCheck_SetAutoOutputBlocksInfo(0);
 	Desk_Error2_Init_JumpSig();
 	signal(SIGABRT,SIG_DFL);
 	Desk_Error2_Try {
@@ -141,7 +141,7 @@ int main(int argc,char *argv[])
 		Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
 		Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
 		Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
-		infowin=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
+		infowin=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999,2000",ROOTS_VERSION);
 		Desk_Template_LoadFile("Templates");
 		quitwin=Desk_Window_Create("Quit",Desk_template_TITLEMIN);
 		AJWLib_Window_RegisterDCS(quitwin,quiticon_DISCARD,quiticon_CANCEL,-1,NULL,NULL);

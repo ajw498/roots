@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.37 2000/09/11 11:08:18 AJW Exp $
+	$Id: TreeLayout.c,v 1.38 2000/09/13 21:15:45 AJW Exp $
 
 */
 
@@ -52,6 +52,7 @@ Desk_bool halt;
 #endif
 static int numgenerations,addamount,firstplot,largenumber;
 static Desk_bool selectmarriages;
+static layout *gedcomlayout=NULL;
 
 static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn);
 static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int generation,callfn fn);
@@ -68,7 +69,7 @@ void Layout_LayoutTitle(layout *layout)
 	layout->title.y=bbox.max.y+Graphics_TitleHeight()/2;
 }
 
-int Layout_NearestGeneration(int y)
+/*int Layout_NearestGeneration(int y)
 {
 	int neg;
 	int h=(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
@@ -77,9 +78,9 @@ int Layout_NearestGeneration(int y)
 	y-=y%h;
 	y+=Graphics_GapHeightBelow()+Graphics_PersonHeight()/2;
 	return y*neg;
-}
+} */
 
-/*int Layout_NearestGeneration(int y)  **This is better, but not backwards compatible**
+int Layout_NearestGeneration(int y)  /**This is better, but not backwards compatible**/
 {
 	int neg;
 	int h=(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
@@ -92,7 +93,7 @@ int Layout_NearestGeneration(int y)
 	}
 	y-=y%h;
 	return y*neg;
-}*/
+}
 
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 {
@@ -784,6 +785,77 @@ void Layout_SaveGEDCOM(layout *layout,FILE *file)
 		fprintf(file,"2 _X %d\n",layout->marriage[i].x);
 		fprintf(file,"2 _Y %d\n",layout->marriage[i].y);
 	}
+}
+
+layout *Layout_GetGEDCOMLayout(void)
+{
+	return gedcomlayout;
+}
+
+void Layout_GEDCOMNewPerson(elementptr person)
+/* Add a new person to the GEDCOM layout*/
+{
+	if (gedcomlayout==NULL) {
+		gedcomlayout=Desk_DeskMem_Malloc(sizeof(struct layout));
+		gedcomlayout->numpeople=0;
+		gedcomlayout->nummarriages=0;
+		gedcomlayout->numchildren=0;
+		AJWLib_Flex_Alloc((flex_ptr)&(gedcomlayout->person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(gedcomlayout->marriage),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(gedcomlayout->children),1);
+	}
+	AJWLib_Flex_Extend((flex_ptr)&(gedcomlayout->person),(gedcomlayout->numpeople+1)*sizeof(personlayout));
+	gedcomlayout->person[gedcomlayout->numpeople].person=person;
+	gedcomlayout->person[gedcomlayout->numpeople].x=0;
+	gedcomlayout->person[gedcomlayout->numpeople].y=0;
+	gedcomlayout->numpeople++;
+}
+
+void Layout_GEDCOMNewPersonX(int pos)
+/* Add the x coord to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].x=pos;
+}
+
+void Layout_GEDCOMNewPersonY(int pos)
+/* Add the y coord to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].y=Layout_NearestGeneration(pos);
+}
+
+void Layout_GEDCOMNewMarriage(elementptr marriage)
+/* Add a new marriage to the GEDCOM layout*/
+{
+	if (gedcomlayout==NULL) {
+		gedcomlayout=Desk_DeskMem_Malloc(sizeof(struct layout));
+		gedcomlayout->numpeople=0;
+		gedcomlayout->nummarriages=0;
+		gedcomlayout->numchildren=0;
+		AJWLib_Flex_Alloc((flex_ptr)&(gedcomlayout->person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(gedcomlayout->marriage),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(gedcomlayout->children),1);
+	}
+	AJWLib_Flex_Extend((flex_ptr)&(gedcomlayout->marriage),(gedcomlayout->nummarriages+1)*sizeof(marriagelayout));
+	gedcomlayout->marriage[gedcomlayout->nummarriages].marriage=marriage;
+	gedcomlayout->marriage[gedcomlayout->nummarriages].x=0;
+	gedcomlayout->marriage[gedcomlayout->nummarriages].x=0;
+	gedcomlayout->nummarriages++;
+}
+
+void Layout_GEDCOMNewMarriageX(int pos)
+/* Add the x coord to a new marriage to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->marriage[gedcomlayout->nummarriages-1].x=pos;
+}
+
+void Layout_GEDCOMNewMarriageY(int pos)
+/* Add the y coord to a new marriage to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->marriage[gedcomlayout->nummarriages-1].y=Layout_NearestGeneration(pos);
 }
 
 layout *Layout_Load(FILE *file)

@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.37 2000/09/11 11:08:15 AJW Exp $
+	$Id: Graphics.c,v 1.38 2000/09/13 21:15:42 AJW Exp $
 
 */
 
@@ -666,6 +666,111 @@ static void Graphics_ParseStyle(void)
 	Graphics_ParseFile(&titlefile,Graphics_StoreTitleDetails);
 	Graphics_ClaimFonts();
 }
+void Graphics_LoadPersonFileLine(char *line) {
+	/* Add the line to the personfile block, allocating as nessacery*/
+	int offset;
+
+	AJWLib_Assert(line!=NULL);
+	if (personfile==NULL) {
+		AJWLib_Flex_Alloc((flex_ptr)&personfile,strlen(line)+2);
+		offset=0;
+	} else {
+		offset=AJWLib_Flex_Size((flex_ptr)&personfile);
+		AJWLib_Flex_Extend((flex_ptr)&personfile,offset+strlen(line)+1);
+		/* Overwrite existing '\0'*/
+		offset--;
+	}
+	strcpy(personfile+offset,line);
+	personfile[offset+strlen(line)]='\n';
+	personfile[offset+strlen(line)+1]='\0';
+}
+
+void Graphics_LoadMarriageFileLine(char *line) {
+	/* Add the line to the marriagefile block, allocating as nessacery*/
+	int offset;
+
+	AJWLib_Assert(line!=NULL);
+	if (marriagefile==NULL) {
+		AJWLib_Flex_Alloc((flex_ptr)&marriagefile,strlen(line)+2);
+		offset=0;
+	} else {
+		offset=AJWLib_Flex_Size((flex_ptr)&marriagefile);
+		AJWLib_Flex_Extend((flex_ptr)&marriagefile,offset+strlen(line)+1);
+		/* Overwrite existing '\0'*/
+		offset--;
+	}
+	strcpy(marriagefile+offset,line);
+	marriagefile[offset+strlen(line)]='\n';
+	marriagefile[offset+strlen(line)+1]='\0';
+}
+
+void Graphics_LoadDimensionsFileLine(char *line) {
+	/* Add the line to the dimensionsfile block, allocating as nessacery*/
+	int offset;
+
+	AJWLib_Assert(line!=NULL);
+	if (dimensionsfile==NULL) {
+		AJWLib_Flex_Alloc((flex_ptr)&dimensionsfile,strlen(line)+2);
+		offset=0;
+	} else {
+		offset=AJWLib_Flex_Size((flex_ptr)&dimensionsfile);
+		AJWLib_Flex_Extend((flex_ptr)&dimensionsfile,offset+strlen(line)+1);
+		/* Overwrite existing '\0'*/
+		offset--;
+	}
+	strcpy(dimensionsfile+offset,line);
+	dimensionsfile[offset+strlen(line)]='\n';
+	dimensionsfile[offset+strlen(line)+1]='\0';
+}
+
+void Graphics_LoadTitleFileLine(char *line) {
+	/* Add the line to the titlefile block, allocating as nessacery*/
+	int offset;
+
+	AJWLib_Assert(line!=NULL);
+	if (titlefile==NULL) {
+		AJWLib_Flex_Alloc((flex_ptr)&titlefile,strlen(line)+2);
+		offset=0;
+	} else {
+		offset=AJWLib_Flex_Size((flex_ptr)&titlefile);
+		AJWLib_Flex_Extend((flex_ptr)&titlefile,offset+strlen(line)+1);
+		/* Overwrite existing '\0'*/
+		offset--;
+	}
+	strcpy(titlefile+offset,line);
+	titlefile[offset+strlen(line)]='\n';
+	titlefile[offset+strlen(line)+1]='\0';
+}
+
+void Graphics_SetGraphicsStyle(char *style) {
+	/* Set the name of the current graphics style, then import it if needed and parse it*/
+	char filename[256];
+
+	AJWLib_Assert(style!=NULL);
+	strcpy(currentstyle,style);
+
+	Graphics_ParseStyle();
+
+	Desk_Error2_Try {
+		if (Config_ImportGraphicsStyle()) {
+			sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,currentstyle);
+			if (!Desk_File_IsDirectory(filename)) {
+				sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
+				if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
+				Desk_File_SaveMemory(filename,personfile,strlen(personfile));
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
+				Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
+				Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
+				Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
+			}
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.GraphS:%s");
+	} Desk_Error2_EndCatch
+}
 
 void Graphics_Load(FILE *file)
 {
@@ -760,40 +865,40 @@ void Graphics_SaveGEDCOM(FILE *file)
 	AJWLib_Assert(titlefile!=NULL);
 
 	fprintf(file,"0 @G1@ _GRAPHICS\n");
-	fprintf(file,"1 _PERSONFILE\n2 ");
+	fprintf(file,"1 _PERSONFILE\n2 _LINE ");
 	for (i=0;personfile[i]!='\0';i++) {
 		if (personfile[i]=='\n') {
-			fprintf(file,"\n2 ");
+			fprintf(file,"\n2 _LINE ");
 		} else {
 			fputc(personfile[i],file);
 		}
 	}
 	fputc('\n',file);
 
-	fprintf(file,"1 _MARRIAGEFILE\n2 ");
+	fprintf(file,"1 _MARRIAGEFILE\n2 _LINE ");
 	for (i=0;marriagefile[i]!='\0';i++) {
 		if (marriagefile[i]=='\n') {
-			fprintf(file,"\n2 ");
+			fprintf(file,"\n2 _LINE ");
 		} else {
 			fputc(marriagefile[i],file);
 		}
 	}
 	fputc('\n',file);
 
-	fprintf(file,"1 _TITLEFILE\n2 ");
+	fprintf(file,"1 _TITLEFILE\n2 _LINE ");
 	for (i=0;titlefile[i]!='\0';i++) {
 		if (titlefile[i]=='\n') {
-			fprintf(file,"\n2 ");
+			fprintf(file,"\n2 _LINE ");
 		} else {
 			fputc(titlefile[i],file);
 		}
 	}
 	fputc('\n',file);
 
-	fprintf(file,"1 _DIMENSIONSFILE\n2 ");
+	fprintf(file,"1 _DIMENSIONSFILE\n2 _LINE ");
 	for (i=0;dimensionsfile[i]!='\0';i++) {
 		if (dimensionsfile[i]=='\n') {
-			fprintf(file,"\n2 ");
+			fprintf(file,"\n2 _LINE ");
 		} else {
 			fputc(dimensionsfile[i],file);
 		}

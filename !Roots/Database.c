@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.36 2000/09/11 11:08:12 AJW Exp $
+	$Id: Database.c,v 1.37 2000/09/13 21:15:37 AJW Exp $
 
 */
 
@@ -74,6 +74,151 @@ static databaseelement *database=NULL;
 static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin,edittitlewin;
 static Desk_menu_ptr sexmenu;
+
+void Database_SetTitle(char *title) {
+	strcpy(database[0].element.file.filetitle,title);
+}
+
+void Database_SetNextNewPerson(int personnumber) {
+	database[0].element.file.newpersonnumber=personnumber;
+}
+
+void Database_SetForename(elementptr person,char *name) {
+	strcpy(database[person].element.person.data.forename,name);
+}
+
+void Database_SetMiddleNames(elementptr person,char *name) {
+	strcpy(database[person].element.person.data.middlenames,name);
+}
+
+void Database_SetSurname(elementptr person,char *name) {
+	strcpy(database[person].element.person.data.surname,name);
+}
+
+void Database_SetSex(elementptr person,char sexchar) {
+	database[person].element.person.data.sex=(sextype)sexchar;
+}
+
+void Database_SetPlaceOfBirth(elementptr person,char *place) {
+	strcpy(database[person].element.person.data.placeofbirth,place);
+}
+
+void Database_SetDOB(elementptr person,char *date) {
+	strcpy(database[person].element.person.data.dob,date);
+}
+
+void Database_SetDOD(elementptr person,char *date) {
+	strcpy(database[person].element.person.data.dod,date);
+}
+
+void Database_SetUser(int num,elementptr person,char *str) {
+	strcpy(database[person].element.person.data.userdata[num],str);
+}
+
+void Database_SetMarriage(elementptr person,elementptr marriage) {
+	database[person].element.person.marriage=marriage;
+}
+
+void Database_SetParentsMarriage(elementptr person,elementptr marriage) {
+	database[person].element.person.parentsmarriage=marriage;
+}
+
+void Database_SetPrincipal(elementptr marriage,elementptr person) {
+	database[marriage].element.marriage.principal=person;
+}
+
+void Database_SetSpouse(elementptr marriage,elementptr person) {
+	database[marriage].element.marriage.spouse=person;
+}
+
+void Database_SetChild(elementptr marriage,elementptr person) {
+/*	database[marriage].element.marriage.leftchild=person;*/
+}
+
+void Database_SetNextMarriage(elementptr marriage,elementptr nextmarriage) {
+	database[marriage].element.marriage.next=nextmarriage;
+}
+
+void Database_SetPreviousMarriage(elementptr marriage,elementptr previousmarriage) {
+	database[marriage].element.marriage.previous=previousmarriage;
+}
+
+void Database_SetMarriageDate(elementptr marriage,char *date) {
+	strcpy(database[marriage].element.marriage.data.date,date);
+}
+
+void Database_SetMarriagePlace(elementptr marriage,char *place) {
+	strcpy(database[marriage].element.marriage.data.place,place);
+}
+
+void Database_SetDivorceDate(elementptr marriage,char *date) {
+	strcpy(database[marriage].element.marriage.data.divorce,date);
+}
+
+static void Database_CheckElement(elementptr person,elementptr not,elementtype type)
+/* Check that the given elementptr is a valid person, and is not the same as not*/
+{
+	if (person==not) AJWLib_Error2_HandleMsgs("Error.Dizzy:");
+	if (person<0 || person>=database[0].element.file.numberofelements) AJWLib_Error2_HandleMsgs("Error.Elvis:");
+	if (person) if (database[person].type!=type) AJWLib_Error2_HandleMsgs("Error.Alien:");
+}
+
+void Database_CheckConsistency(void)
+/* Check for invalid links between people*/
+{
+	int i;
+	
+	AJWLib_Assert(database!=NULL);
+	for (i=1;i<database[0].element.file.numberofelements;i++) {
+		switch (database[i].type) {
+			case element_PERSON:
+				Database_CheckElement(database[i].element.person.marriage,i,element_MARRIAGE);
+				Database_CheckElement(database[i].element.person.parentsmarriage,i,element_MARRIAGE);
+				Database_CheckElement(database[i].element.person.siblingsltor,i,element_PERSON);
+				Database_CheckElement(database[i].element.person.siblingsltor,i,element_PERSON);
+				break;
+			case element_MARRIAGE:
+				Database_CheckElement(database[i].element.marriage.next,i,element_MARRIAGE);
+				Database_CheckElement(database[i].element.marriage.previous,i,element_MARRIAGE);
+				Database_CheckElement(database[i].element.marriage.principal,i,element_PERSON);
+				Database_CheckElement(database[i].element.marriage.spouse,i,element_PERSON);
+				Database_CheckElement(database[i].element.marriage.leftchild,i,element_PERSON);
+				Database_CheckElement(database[i].element.marriage.rightchild,i,element_PERSON);
+				break;
+			case element_FREE:
+				Database_CheckElement(database[i].element.freeelement.next,i,element_FREE);
+				break;
+			case element_FILE:
+				Database_CheckElement(database[i].element.file.freeelement,-1,element_FREE);
+				break;
+			default:
+				AJWLib_Assert(0);
+		}
+	}
+}
+
+void Database_LinkAllChildren(void)
+/* Link all children to their siblings and parents marriages*/
+{
+	int i;
+	elementptr marriage,rightchild;
+
+	AJWLib_Assert(database!=NULL);
+	for (i=1;i<database[0].element.file.numberofelements;i++) {
+		if (database[i].type==element_PERSON) {
+			if ((marriage=database[i].element.person.parentsmarriage)!=none) {
+				/* Set the marriage to point to the left and right most siblings*/
+				if (database[marriage].element.marriage.leftchild==none) database[marriage].element.marriage.leftchild=i;
+				rightchild=database[marriage].element.marriage.rightchild;
+				database[marriage].element.marriage.rightchild=i;
+				/* Add new child to right hand end of siblings chain*/
+				if (rightchild!=none) database[rightchild].element.person.siblingsltor=i;
+				database[i].element.person.siblingsrtol=rightchild;
+				database[i].element.person.siblingsltor=none;
+			}
+		}
+	}
+}
 
 static void Database_FreeElement(elementptr element)
 {
@@ -647,6 +792,7 @@ elementptr Database_Add(void)
 	AJWLib_Assert(database!=NULL);
 	newperson=Database_GetFreeElement(); /*Ok if an error is thrown*/
 	database[newperson].type=element_PERSON;
+	database[newperson].selected=Desk_FALSE;
 	database[newperson].element.person.parentsmarriage=none;
 	database[newperson].element.person.siblingsrtol=none;
 	database[newperson].element.person.siblingsltor=none;
@@ -664,6 +810,26 @@ elementptr Database_Add(void)
 	strcpy(database[newperson].element.person.data.userdata[2],"");
 	Modules_ChangedStructure();
 	return newperson;
+}
+
+elementptr Database_AddMarriage(void)
+{
+	elementptr newmarriage;
+	AJWLib_Assert(database!=NULL);
+	newmarriage=Database_GetFreeElement(); /*Ok if an error is thrown*/
+	database[newmarriage].type=element_MARRIAGE;
+	database[newmarriage].selected=Desk_FALSE;
+	database[newmarriage].element.marriage.next=none;
+	database[newmarriage].element.marriage.previous=none;
+	database[newmarriage].element.marriage.leftchild=none;
+	database[newmarriage].element.marriage.rightchild=none;
+	database[newmarriage].element.marriage.principal=none;
+	database[newmarriage].element.marriage.spouse=none;
+	strcpy(database[newmarriage].element.marriage.data.place,"");
+	strcpy(database[newmarriage].element.marriage.data.date,"");
+	strcpy(database[newmarriage].element.marriage.data.divorce,"");
+	Modules_ChangedStructure();
+	return newmarriage;
 }
 
 static void Database_SexMenuClick(int entry,void *ref)
@@ -722,16 +888,8 @@ void Database_SaveGEDCOM(FILE *file)
 	int i;
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(file!=NULL);
-	for (i=0;i<database[0].element.file.numberofelements;i++) {
+	for (i=1;i<database[0].element.file.numberofelements;i++) {
 		switch (database[i].type) {
-			case element_FILE:
-				fprintf(file,"0 @F1@ _FILEINFO\n");
-				fprintf(file,"1 _TITLE %s\n",database[i].element.file.filetitle);
-				fprintf(file,"1 _NEXTNEWPERSON %d\n",database[i].element.file.newpersonnumber);
-				fprintf(file,"1 _USER1 %s\n",database[i].element.file.userdesc[0]);
-				fprintf(file,"1 _USER2 %s\n",database[i].element.file.userdesc[1]);
-				fprintf(file,"1 _USER3 %s\n",database[i].element.file.userdesc[2]);
-				break;
 			case element_PERSON:
 				fprintf(file,"0 @%d@ INDI\n",i);
 				fprintf(file,"1 NAME %s %s/%s/\n",database[i].element.person.data.forename,database[i].element.person.data.middlenames,database[i].element.person.data.surname);
@@ -770,6 +928,8 @@ void Database_SaveGEDCOM(FILE *file)
 				fprintf(file,"0 @%d@ FAM\n",i);
 				fprintf(file,"1 HUSB @%d@\n",database[i].element.marriage.principal);
 				fprintf(file,"1 WIFE @%d@\n",database[i].element.marriage.spouse);
+				if (database[i].element.marriage.next) fprintf(file,"1 _LINKN @%d@\n",database[i].element.marriage.next);
+				if (database[i].element.marriage.previous) fprintf(file,"1 _LINKP @%d@\n",database[i].element.marriage.previous);
 				child=database[i].element.marriage.leftchild;
 				while (child) {
 					fprintf(file,"1 CHIL @%d@\n",child);
@@ -782,6 +942,12 @@ void Database_SaveGEDCOM(FILE *file)
 				break;
 		}
 	}
+	fprintf(file,"0 @F1@ _FILEINFO\n");
+	fprintf(file,"1 _TITLE %s\n",database[0].element.file.filetitle);
+	fprintf(file,"1 _NEXTNEWPERSON %d\n",database[0].element.file.newpersonnumber);
+	fprintf(file,"1 _USER1 %s\n",database[0].element.file.userdesc[0]);
+	fprintf(file,"1 _USER2 %s\n",database[0].element.file.userdesc[1]);
+	fprintf(file,"1 _USER3 %s\n",database[0].element.file.userdesc[2]);
 }
 
 char *Database_GetUserDesc(int num)

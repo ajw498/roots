@@ -18,6 +18,8 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref);
 
 void File_LoadFile(char *filename);
 
+void File_LoadGEDCOM(char *filename);
+
 void File_New(void);
 
 void File_Remove(void);
