@@ -26,6 +26,8 @@ void Windows_ChangedLayout(void);
 
 void Windows_ForceRedraw(void);
 
+Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref);
+
 void Windows_CloseNewView(void);
 
 Desk_bool Windows_BringToFront(void);

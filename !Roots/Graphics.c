@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.30 2000/06/10 22:38:45 AJW Exp $
+	$Id: Graphics.c,v 1.31 2000/06/17 18:45:34 AJW Exp $
 
 */
 
@@ -52,9 +52,6 @@
 #include "Draw.h"
 #include "File.h"
 
-
-#define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7))
-#define Graphics_ConvertFromOS(x) ((int)(x/7))
 
 #define SWI_PDriver_DeclareFont 0x80155
 
@@ -575,27 +572,28 @@ void Graphics_DeclareFonts(void)
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.title.fontname,0));
+	Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.title.font));
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.person[i].details.textlabel.properties.fontname,0));
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.person[i].details.textlabel.properties.font));
 		}
 	}
 	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
 		if (graphicsdata.personfields[i].plot) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.personfields[i].textproperties.fontname,0));
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.personfields[i].textproperties.font));
 		}
 	}
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.marriage[i].details.textlabel.properties.fontname,0));
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.marriage[i].details.textlabel.properties.font));
 		}
 	}
 	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
 		if (graphicsdata.marriagefields[i].plot) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,graphicsdata.marriagefields[i].textproperties.fontname,0));
+			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.marriagefields[i].textproperties.font));
 		}
 	}
+	Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,0));
 }
 
 static void Graphics_ClaimFonts(void)
@@ -990,9 +988,11 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 	Graphics_PlotRectangleFilled=plotrectfilled;
 	Graphics_PlotText=plottext;
 	if (layout->title.x!=INFINITY || layout->title.y!=INFINITY) {
-		Desk_wimp_point *coords;
-		coords=AJWLib_Font_GetWidthAndHeight(graphicsdata.title.font->handle,Database_GetTitle());
-		Graphics_PlotText(scale,originx,originy,layout->title.x-coords->x/2,layout->title.y-coords->y/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+		if (Config_Title()) {
+			Desk_wimp_point *coords;
+			coords=AJWLib_Font_GetWidthAndHeight(graphicsdata.title.font->handle,Database_GetTitle());
+			Graphics_PlotText(scale,originx,originy,layout->title.x-coords->x/2,layout->title.y-coords->y/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+		}
 	}
 	for (i=0;i<layout->numchildren;i++) {
 		Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);

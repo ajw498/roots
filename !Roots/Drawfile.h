@@ -9,4 +9,10 @@ void Drawfile_PlotRectangleFilled(const int scale,const int originx,const int or
 
 void Drawfile_Save(const char *filename,layout *layout);
 
+void Drawfile_Free(void);
+
+void Drawfile_Print(layout *layout);
+
+void Drawfile_Redraw(const int scale,const int originx,const int originy,const Desk_wimp_rect *cliprect);
+
 #endif
