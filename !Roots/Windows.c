@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.90 2000/10/14 16:32:12 AJW Exp $
+	$Id: Windows.c,v 1.91 2000/10/14 20:04:18 AJW Exp $
 
 */
 
@@ -151,6 +151,7 @@ typedef struct savedata {
 
 Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref);
 Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata);
+void Layout_ResizeWindow(windowdata *windowdata);
 
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
@@ -190,7 +191,7 @@ void Windows_ChangedLayout(void)
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
 			Desk_Window_ForceWholeRedraw(windows[i].handle);
-			Windows_ResizeWindow(&(windows[i]));
+			Layout_ResizeWindow(&(windows[i]));
 			/*Make this more efficient*/
 		}
 	}
@@ -314,7 +315,7 @@ void Windows_Relayout(void)
 			} Desk_Error2_Catch {
 				AJWLib_Error2_Report("%s");
 			} Desk_Error2_EndCatch
-			Windows_ResizeWindow(&windows[i]);
+			Layout_ResizeWindow(&windows[i]);
 			Desk_Window_ForceWholeRedraw(windows[i].handle);
 		}
 	}
@@ -494,7 +495,7 @@ void Windows_LayoutNormal(layout *layout,Desk_bool opencentred)
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle && windows[i].type==wintype_NORMAL && windows[i].layout==NULL) {
 			windows[i].layout=layout;
-			Windows_ResizeWindow(&windows[i]);
+			Layout_ResizeWindow(&windows[i]);
 			if (opencentred) Windows_OpenWindowCentered(&windows[i],NULL);
 		}
 	}
@@ -547,7 +548,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			windows[newwindow].layout=NULL;
 			AJWLib_Assert(0);
 	}
-	if (type!=wintype_NORMAL || layoutnormal!=NULL) Windows_ResizeWindow(&windows[newwindow]);
+	if (type!=wintype_NORMAL || layoutnormal!=NULL) Layout_ResizeWindow(&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Layout_MouseClick,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Layout_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
@@ -598,7 +599,7 @@ static void Windows_MainMenuClick(int entry,void *ref)
 		case mainmenu_ADDPERSON:
 			newperson=Database_Add();
 			Desk_Error2_Try {
-				Layout_AddPerson(mousedata.window->layout,newperson,mousedata.pos.x,Layout_NearestGeneration(mousedata.pos.y));
+				Layout_AddPerson(mousedata.window->layout,newperson,mousedata.pos.x,Layout_NearestGeneration(mousedata.pos.y),Graphics_PersonWidth(),Graphics_PersonHeight(),0,0);
 			} Desk_Error2_Catch {
 				Database_Delete(newperson);
 				AJWLib_Error2_Report("%s");
@@ -830,7 +831,7 @@ static Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 			scale=Desk_Icon_GetInteger(scalewin,scale_TEXT);
 			if (scale<1) scale=1;
 			mousedata.window->scale=scale;
-			Windows_ResizeWindow(mousedata.window);
+			Layout_ResizeWindow(mousedata.window);
 			Desk_Window_ForceWholeRedraw(mousedata.window->handle);
 			if (block->data.mouse.button.data.select) Desk_Window_Hide(scalewin);
 			break;

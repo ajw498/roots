@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.44 2000/10/14 16:32:08 AJW Exp $
+	$Id: Layout.c,v 1.45 2000/10/14 20:04:12 AJW Exp $
 
 */
 
@@ -26,6 +26,8 @@
 #include "Layout.h"
 #include "File.h"
 #include "Config.h"
+
+static layout *gedcomlayout=NULL;
 
 void Layout_Select(elementptr person)
 {
@@ -67,26 +69,34 @@ int Layout_NearestGeneration(int y)
 	return y*neg;
 }
 
-void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
+void Layout_AddPerson(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid)
 {
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
 	AJWLib_Flex_Extend((flex_ptr)&(layout->person),sizeof(elementlayout)*(layout->numpeople+1));
 	layout->person[layout->numpeople].x=x;
 	layout->person[layout->numpeople].y=y;
+	layout->person[layout->numpeople].xgrid=xgrid;
+	layout->person[layout->numpeople].ygrid=ygrid;
+	layout->person[layout->numpeople].width=width;
+	layout->person[layout->numpeople].height=height;
 	layout->person[layout->numpeople].element=person;
 	layout->numpeople++;
 	Layout_DeSelect(person);
 	Modules_ChangedLayout();
 }
 
-void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
+void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y,int width,int height,int xgrid,int ygrid)
 {
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(marriage!=none);
 	AJWLib_Flex_Extend((flex_ptr)&(layout->marriage),sizeof(elementlayout)*(layout->nummarriages+1));
 	layout->marriage[layout->nummarriages].x=x;
 	layout->marriage[layout->nummarriages].y=y;
+	layout->marriage[layout->nummarriages].xgrid=xgrid;
+	layout->marriage[layout->nummarriages].ygrid=ygrid;
+	layout->marriage[layout->nummarriages].width=width;
+	layout->marriage[layout->nummarriages].height=height;
 	layout->marriage[layout->nummarriages].element=marriage;
 	Layout_DeSelect(marriage);
 	layout->nummarriages++;
@@ -113,6 +123,30 @@ int Layout_FindYCoord(layout *layout,elementptr person)
 	AJWLib_Assert(person!=none);
 
 	for (i=0;i<layout->numpeople;i++) if (layout->person[i].element==person) return layout->person[i].y;
+	AJWLib_AssertWarning(0);
+	return 0;
+}
+
+int Layout_FindXGridCoord(layout *layout,elementptr person)
+{
+	int i;
+
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(person!=none);
+
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].element==person) return layout->person[i].xgrid;
+	AJWLib_AssertWarning(0);
+	return 0;
+}
+
+int Layout_FindYGridCoord(layout *layout,elementptr person)
+{
+	int i;
+
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(person!=none);
+
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].element==person) return layout->person[i].ygrid;
 	AJWLib_AssertWarning(0);
 	return 0;
 }
@@ -180,27 +214,25 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 		for (i=0;i<layout->numpeople;i++) {
 			if (Layout_GetSelect(layout->person[i].element) || !selection) {
 				if (layout->person[i].x<box.min.x) box.min.x=layout->person[i].x;
-				if (layout->person[i].x+Graphics_PersonWidth()>box.max.x) box.max.x=layout->person[i].x+Graphics_PersonWidth();
+				if (layout->person[i].x+layout->person[i].width>box.max.x) box.max.x=layout->person[i].x+layout->person[i].width;
 				if (layout->person[i].y<box.min.y) box.min.y=layout->person[i].y;
-				if (layout->person[i].y>box.max.y) box.max.y=layout->person[i].y;
+				if (layout->person[i].y+layout->person[i].height>box.max.y) box.max.y=layout->person[i].y+layout->person[i].height;
 			}
 		}
 		for (i=0;i<layout->nummarriages;i++) {
 			if (Layout_GetSelect(layout->marriage[i].element) || !selection) {
 				if (layout->marriage[i].x<box.min.x) box.min.x=layout->marriage[i].x;
-				if (layout->marriage[i].x+Graphics_MarriageWidth()>box.max.x) box.max.x=layout->marriage[i].x+Graphics_MarriageWidth();
+				if (layout->marriage[i].x+layout->marriage[i].width>box.max.x) box.max.x=layout->marriage[i].x+layout->marriage[i].width;
 				if (layout->marriage[i].y<box.min.y) box.min.y=layout->marriage[i].y;
-				if (layout->marriage[i].y>box.max.y) box.max.y=layout->marriage[i].y;
+				if (layout->marriage[i].y+layout->marriage[i].height>box.max.y) box.max.y=layout->marriage[i].y+layout->marriage[i].height;
 			}
 		}
 	}
 	if (box.min.x==INFINITY) {
 		box.min.x=0;
 		box.min.y=0;
-		box.max.x=Graphics_PersonWidth();
-		box.max.y=Graphics_PersonHeight();
-	} else {
-		box.max.y+=Graphics_PersonHeight();
+		box.max.x=400;
+		box.max.y=200;
 	}
 	return box;
 }
@@ -229,11 +261,13 @@ void Layout_Free(layout *layout)
 	AJWLib_Flex_Free((flex_ptr)&(layout->children));
 	Desk_DeskMem_Free(layout);
 }
+
+
 /*
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.44 2000/10/14 16:32:08 AJW Exp $
+	$Id: Layout.c,v 1.45 2000/10/14 20:04:12 AJW Exp $
 
 */
 
@@ -294,6 +328,12 @@ void Layout_Free(layout *layout)
 #include "File.h"
 #include "Print.h"
 
+#define REDRAWOVERLAP 4
+
+#define SWI_OS_SpriteOp 0x2E
+#define SWI_Wimp_SpriteOp 0x400E9
+#define SWI_Wimp_DragBox 0x400D0
+
 typedef enum dragtype {
 	drag_MOVE,
 	drag_UNLINK,
@@ -306,12 +346,6 @@ typedef enum ptrtype {
 	ptr_NOLINK,
 	ptr_UNLINK
 } ptrtype;
-
-#define REDRAWOVERLAP 4
-
-#define SWI_OS_SpriteOp 0x2E
-#define SWI_Wimp_SpriteOp 0x400E9
-#define SWI_Wimp_DragBox 0x400D0
 
 typedef struct dragdata {
 	elementptr person;
@@ -339,14 +373,9 @@ static void Layout_SetPointerShape(char *name,int num)
 	}
 }
 
-static void Layout_RedrawPerson(windowdata *windowdata,elementlayout *person)
+static void Layout_RedrawElement(windowdata *windowdata,elementlayout *person)
 {
-	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*person->x)/100-REDRAWOVERLAP,(windowdata->scale*person->y)/100-REDRAWOVERLAP,(windowdata->scale*(person->x+Graphics_PersonWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(person->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
-}
-
-static void Layout_RedrawMarriage(windowdata *windowdata,elementlayout *marriage)
-{
-	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*marriage->x)/100-REDRAWOVERLAP,(windowdata->scale*marriage->y)/100-REDRAWOVERLAP,(windowdata->scale*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
+	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*person->x)/100-REDRAWOVERLAP,(windowdata->scale*person->y)/100-REDRAWOVERLAP,(windowdata->scale*(person->x+person->width))/100+REDRAWOVERLAP,(windowdata->scale*(person->y+person->height))/100+REDRAWOVERLAP);
 }
 
 Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
@@ -369,13 +398,13 @@ void Windows_UnselectAll(windowdata *windowdata)
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (Layout_GetSelect(windowdata->layout->person[i].element)) {
 			Layout_DeSelect(windowdata->layout->person[i].element);
-			Layout_RedrawPerson(windowdata,windowdata->layout->person+i);
+			Layout_RedrawElement(windowdata,windowdata->layout->person+i);
 		}
 	}
 	for (i=0;i<windowdata->layout->nummarriages;i++) {
 		if (Layout_GetSelect(windowdata->layout->marriage[i].element)) {
 			Layout_DeSelect(windowdata->layout->marriage[i].element);
-			Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+i);
+			Layout_RedrawElement(windowdata,windowdata->layout->marriage+i);
 		}
 	}
 }
@@ -398,7 +427,7 @@ static void Windows_AddSelected(layout *layout,int amountx,int amounty)
 	Modules_ChangedLayout();
 }
 
-void Windows_ResizeWindow(windowdata *windowdata)
+void Layout_ResizeWindow(windowdata *windowdata)
 {
 	Desk_wimp_rect box;
 	Desk_window_info infoblk;
@@ -408,11 +437,11 @@ void Windows_ResizeWindow(windowdata *windowdata)
 	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
 	outlineblk.window=windowdata->handle;
 	if (infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x==infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x) {
-		/*We are currently open at maximum x extend*/
+		/*We are currently open at maximum x extent*/
 		maxxextent=Desk_TRUE;
 	}
 	if (infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y==infoblk.block.screenrect.max.y-infoblk.block.screenrect.min.y) {
-		/*We are currently open at maximum y extend*/
+		/*We are currently open at maximum y extent*/
 		maxyextent=Desk_TRUE;
 	}
 	/*Set window extent to fit layout size*/
@@ -467,7 +496,7 @@ void Windows_ResizeWindow(windowdata *windowdata)
 	}
 }
 
-static void Windows_PlotDragBox(dragdata *dragdata)
+static void Layout_PlotDragBox(dragdata *dragdata)
 {
 	/*Plot or remove a drag box*/
 	Desk_window_redrawblock blk;
@@ -485,7 +514,7 @@ static void Windows_PlotDragBox(dragdata *dragdata)
 	}
 }
 
-static void Windows_DragEnd(void *ref)
+static void Layout_DragEnd(void *ref)
 {
 	/*User has finished a drag*/
 	Desk_mouse_block mouseblk;
@@ -495,11 +524,11 @@ static void Windows_DragEnd(void *ref)
 	Layout_SetPointerShape("ptr_DEFAULT",1);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Icon_SetCaret(mouseblk.window,-1);
-	if (dragdata->windowdata->type==wintype_NORMAL) {
+	if (1/*dragdata->windowdata->type==wintype_NORMAL*/) {
 		/*We are moving people/marriages*/
 		int mousex,mousey;
 		/*Act as if drag had ended on same win as started on*/
-		if (dragdata->plotted) Windows_PlotDragBox(dragdata);
+		if (dragdata->plotted) Layout_PlotDragBox(dragdata);
 		/*Find mouse position relative to window origin and independant of current scale*/
 		Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
 		mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
@@ -510,12 +539,12 @@ static void Windows_DragEnd(void *ref)
 		Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex,mousey-dragdata->origmousey);
 		Layout_LayoutLines(dragdata->windowdata->layout);
 		Layout_LayoutTitle(dragdata->windowdata->layout);
-		Windows_ResizeWindow(dragdata->windowdata);
+		Layout_ResizeWindow(dragdata->windowdata);
 		Desk_Window_ForceWholeRedraw(dragdata->windowdata->handle);
 	}
 }
 
-static void Windows_SelectDragEnd(void *ref)
+static void Layout_SelectDragEnd(void *ref)
 /*A select drag box has ended, so select everything enclosed by it*/
 {
 	Desk_mouse_block mouseblk;
@@ -527,26 +556,26 @@ static void Windows_SelectDragEnd(void *ref)
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
 	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale;
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
-		if ((mousex>dragdata->windowdata->layout->person[i].x && dragdata->origmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth()) || (mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->origmousex>dragdata->windowdata->layout->person[i].x)) {
-			if ((mousey>dragdata->windowdata->layout->person[i].y && dragdata->origmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight()) || (mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->origmousey>dragdata->windowdata->layout->person[i].y)) {
+		if ((mousex>dragdata->windowdata->layout->person[i].x && dragdata->origmousex<dragdata->windowdata->layout->person[i].x+dragdata->windowdata->layout->person[i].width) || (mousex<dragdata->windowdata->layout->person[i].x+dragdata->windowdata->layout->person[i].width && dragdata->origmousex>dragdata->windowdata->layout->person[i].x)) {
+			if ((mousey>dragdata->windowdata->layout->person[i].y && dragdata->origmousey<dragdata->windowdata->layout->person[i].y+dragdata->windowdata->layout->person[i].height) || (mousey<dragdata->windowdata->layout->person[i].y+dragdata->windowdata->layout->person[i].height && dragdata->origmousey>dragdata->windowdata->layout->person[i].y)) {
 				if (Layout_GetSelect(dragdata->windowdata->layout->person[i].element)) {
 					Layout_DeSelect(dragdata->windowdata->layout->person[i].element);
 				} else {
 					Layout_Select(dragdata->windowdata->layout->person[i].element);
 				}
-				Layout_RedrawPerson(dragdata->windowdata,dragdata->windowdata->layout->person+i);
+				Layout_RedrawElement(dragdata->windowdata,dragdata->windowdata->layout->person+i);
 			}
 		}
 	}
 	for (i=0;i<dragdata->windowdata->layout->nummarriages;i++) {
-		if ((mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->origmousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth()) || (mousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() && dragdata->origmousex>dragdata->windowdata->layout->marriage[i].x)) {
-			if ((mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->origmousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight()) || (mousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() && dragdata->origmousey>dragdata->windowdata->layout->marriage[i].y)) {
+		if ((mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->origmousex<dragdata->windowdata->layout->marriage[i].x+dragdata->windowdata->layout->marriage[i].width) || (mousex<dragdata->windowdata->layout->marriage[i].x+dragdata->windowdata->layout->marriage[i].width && dragdata->origmousex>dragdata->windowdata->layout->marriage[i].x)) {
+			if ((mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->origmousey<dragdata->windowdata->layout->marriage[i].y+dragdata->windowdata->layout->marriage[i].height) || (mousey<dragdata->windowdata->layout->marriage[i].y+dragdata->windowdata->layout->marriage[i].height && dragdata->origmousey>dragdata->windowdata->layout->marriage[i].y)) {
 				if (Layout_GetSelect(dragdata->windowdata->layout->marriage[i].element)) {
 					Layout_DeSelect(dragdata->windowdata->layout->marriage[i].element);
 				} else {
 					Layout_Select(dragdata->windowdata->layout->marriage[i].element);
 				}
-				Layout_RedrawMarriage(dragdata->windowdata,dragdata->windowdata->layout->marriage+i);
+				Layout_RedrawElement(dragdata->windowdata,dragdata->windowdata->layout->marriage+i);
 			}
 		}
 	}
@@ -612,7 +641,7 @@ static void Windows_LinkDragEnd(void *ref)
 				startx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->person);
 				finishx=Layout_FindXCoord(dragdata->windowdata->layout,person);
 				if (startx<finishx) marriagex=startx+Graphics_PersonWidth(); else marriagex=startx-Graphics_MarriageWidth();
-				Layout_AddMarriage(dragdata->windowdata->layout,marriage,marriagex,dragdata->origmousey);
+				Layout_AddMarriage(dragdata->windowdata->layout,marriage,marriagex,dragdata->origmousey,Graphics_MarriageWidth(),Graphics_PersonHeight(),0,0);
 				Windows_UnselectAll(dragdata->windowdata);
 			} Desk_Error2_Catch {
 				Database_RemoveMarriage(marriage);
@@ -627,7 +656,7 @@ static void Windows_LinkDragEnd(void *ref)
 	}
 }
 
-static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bool plotbox)
+static void Layout_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bool plotbox)
 /* Auto scroll the window when dragging, increaing the window size if asked*/
 {
 	Desk_mouse_block mouseblk;
@@ -644,7 +673,7 @@ static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bo
 	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<Config_ScrollDistance()) {
 		/*We are near left edge of window*/
 		if (plotbox) {
-			Windows_PlotDragBox(dragdata);
+			Layout_PlotDragBox(dragdata);
 			dragdata->plotted=Desk_FALSE;
 		}
 		if (increasesize && infoblk.block.scroll.x<=infoblk.block.workarearect.min.x) {
@@ -662,7 +691,7 @@ static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bo
 	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<Config_ScrollDistance()) {
 		/*We are near right edge of window*/
 		if (plotbox) {
-			Windows_PlotDragBox(dragdata);
+			Layout_PlotDragBox(dragdata);
 			dragdata->plotted=Desk_FALSE;
 		}
 		if (increasesize && infoblk.block.scroll.x-infoblk.block.workarearect.min.x+(infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x)>=infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x) {
@@ -680,7 +709,7 @@ static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bo
 	} else if (mouseblk.pos.y-blk.openblock.screenrect.min.y<Config_ScrollDistance()) {
 		/*We are near bottom edge of window*/
 		if (plotbox) {
-			Windows_PlotDragBox(dragdata);
+			Layout_PlotDragBox(dragdata);
 			dragdata->plotted=Desk_FALSE;
 		}
 		if (increasesize && -(infoblk.block.scroll.y-infoblk.block.workarearect.max.y-(infoblk.block.screenrect.max.y-infoblk.block.screenrect.min.y))>=infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y) {
@@ -698,7 +727,7 @@ static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bo
 	} else if (blk.openblock.screenrect.max.y-mouseblk.pos.y<Config_ScrollDistance()) {
 		/*We are near top edge of window*/
 		if (plotbox) {
-			Windows_PlotDragBox(dragdata);
+			Layout_PlotDragBox(dragdata);
 			dragdata->plotted=Desk_FALSE;
 		}
 		if (increasesize && infoblk.block.scroll.y>=infoblk.block.workarearect.max.y) {
@@ -716,14 +745,14 @@ static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bo
 	}
 }
 
-static void Windows_LinkDragFn(void *ref)
+static void Layout_LinkDragFn(void *ref)
 /*A link drag is in progress, so set pointer shape*/
 {
 	dragdata *dragdata=ref;
 	elementptr person,marriage;
 
-	Windows_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
-	Windows_LinkValid(ref,&person,&marriage);
+	Layout_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
+	Windows_LinkValid(dragdata,&person,&marriage);
 	if (person || marriage) {
 		if (dragdata->ptr!=ptr_LINK) Layout_SetPointerShape("ptr_link",2);
 		dragdata->ptr=ptr_LINK;
@@ -733,12 +762,12 @@ static void Windows_LinkDragFn(void *ref)
 	}
 }
 
-static void Windows_SelectDragFn(void *ref)
+static void Layout_SelectDragFn(void *ref)
 /*A select drag is in progress, so scroll if needed*/
 {
 	dragdata *dragdata=ref;
 
-	Windows_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
+	Layout_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
 }
 
 static void Windows_GetOffset(dragdata *dragdata)
@@ -785,7 +814,7 @@ static void Windows_GetOffset(dragdata *dragdata)
 	if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 }
 
-static void Windows_DragFn(void *ref)
+static void Layout_DragFn(void *ref)
 {
 	/*Called every null poll when dragging*/
 	dragdata *dragdata=ref;
@@ -798,7 +827,7 @@ static void Windows_DragFn(void *ref)
 	if (!dragdata->plotted) {
 		/*Plot drag box if not already plotted*/
 		Windows_GetOffset(dragdata);
-		Windows_PlotDragBox(dragdata);
+		Layout_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_TRUE;
 	}
 	Desk_Wimp_GetPointerInfo(&mouseblk);
@@ -815,23 +844,24 @@ static void Windows_DragFn(void *ref)
 	}
 	if (mousex!=dragdata->oldmousex || Layout_NearestGeneration(mousey)!=dragdata->oldmousey) {
 		/*Unplot drag box if it has moved*/
-		Windows_PlotDragBox(dragdata);
+		Layout_PlotDragBox(dragdata);
 		dragdata->oldmousex=mousex;
 		dragdata->oldmousey=Layout_NearestGeneration(mousey);
 		Windows_GetOffset(dragdata);
 		/*Replot it in new position*/
-		Windows_PlotDragBox(dragdata);
+		Layout_PlotDragBox(dragdata);
 	}
-	Windows_AutoScroll(dragdata,Desk_TRUE,Desk_TRUE);
+	Layout_AutoScroll(dragdata,Desk_TRUE,Desk_TRUE);
 }
 
-static void Windows_StartDragNormal(elementptr person,int x,windowdata *windowdata,Desk_bool marriage)
+static void Layout_StartDragNormal(elementptr person,int x,windowdata *windowdata,Desk_bool marriage)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
 	Desk_convert_block blk;
 	Desk_mouse_block mouseblk;
 	int mousex,mousey;
+
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
@@ -898,10 +928,10 @@ static void Windows_StartDragNormal(elementptr person,int x,windowdata *windowda
 		}
 	}
 	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(Windows_DragFn,Windows_DragEnd,&dragdata);
+	Desk_Drag_SetHandlers(Layout_DragFn,Layout_DragEnd,&dragdata);
 }
 
-static void Windows_StartDragSelect(windowdata *windowdata)
+static void Layout_StartDragSelect(windowdata *windowdata)
 /* Start a dragbox*/
 {
 	static dragdata dragdata;
@@ -930,16 +960,17 @@ static void Windows_StartDragSelect(windowdata *windowdata)
 	dragdata.oldmousex=mousex;
 	dragdata.oldmousey=mousey;
 	Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Wimp_DragBox,NULL,&dragblk,0x4B534154,0x3)); /*using RO4 features if present*/
-	Desk_Drag_SetHandlers(Windows_SelectDragFn,Windows_SelectDragEnd,&dragdata);
+	Desk_Drag_SetHandlers(Layout_SelectDragFn,Layout_SelectDragEnd,&dragdata);
 }
 
-static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
+static void Layout_StartDragLink(windowdata *windowdata,elementptr person)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
 	Desk_convert_block blk;
 	Desk_mouse_block mouseblk;
 	int mousex,mousey,i;
+
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
@@ -964,18 +995,18 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	Windows_UnselectAll(windowdata);
 	Layout_Select(person);
 	for (i=0;i<windowdata->layout->numpeople;i++) {
-		if (windowdata->layout->person[i].element==person) Layout_RedrawPerson(windowdata,windowdata->layout->person+i);
+		if (windowdata->layout->person[i].element==person) Layout_RedrawElement(windowdata,windowdata->layout->person+i);
 	}
 	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(Windows_LinkDragFn,Windows_LinkDragEnd,&dragdata);
+	Desk_Drag_SetHandlers(Layout_LinkDragFn,Windows_LinkDragEnd,&dragdata);
 }
 
-static Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref)
+static Desk_bool Layout_MenusDeleted(Desk_event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
 	Desk_UNUSED(block);
 	if (windowdata->handle) Windows_UnselectAll(windowdata);
-	Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted);
+	Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Layout_MenusDeleted);
 	return Desk_TRUE;
 }
 
@@ -998,8 +1029,8 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 	mousedata.pos.y=mousey;
 	/*See if we clicked on a person*/
 	for (i=windowdata->layout->numpeople-1;i>=0;i--) {
-		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
-			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+Graphics_PersonHeight()) {
+		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+windowdata->layout->person[i].width) {
+			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+windowdata->layout->person[i].height) {
 				mousedata.type=element_PERSON;
 				layoutptr=i;
 				mousedata.element=windowdata->layout->person[i].element;
@@ -1010,8 +1041,8 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 	/*See if we clicked on a marriage*/
 	/*Marriages take priority over people, as they are generally smaller*/
 	for (i=windowdata->layout->nummarriages-1;i>=0;i--) {
-		if (mousex>=windowdata->layout->marriage[i].x && mousex<=windowdata->layout->marriage[i].x+Graphics_MarriageWidth()) {
-			if (mousey>=windowdata->layout->marriage[i].y && mousey<=windowdata->layout->marriage[i].y+Graphics_PersonHeight()) {
+		if (mousex>=windowdata->layout->marriage[i].x && mousex<=windowdata->layout->marriage[i].x+windowdata->layout->marriage[i].width) {
+			if (mousey>=windowdata->layout->marriage[i].y && mousey<=windowdata->layout->marriage[i].y+windowdata->layout->marriage[i].height) {
 				mousedata.type=element_MARRIAGE;
 				layoutptr=i;
 				mousedata.element=windowdata->layout->marriage[i].element;
@@ -1048,15 +1079,15 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 						switch (mousedata.type) {
 							case element_PERSON:
 								Layout_Select(mousedata.element);
-								Layout_RedrawPerson(windowdata,windowdata->layout->person+layoutptr);
+								Layout_RedrawElement(windowdata,windowdata->layout->person+layoutptr);
 								selected=element_PERSON;
-								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
+								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Layout_MenusDeleted,windowdata);
 								break;
 							case element_MARRIAGE:
 								Layout_Select(mousedata.element);
-								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+layoutptr);
+								Layout_RedrawElement(windowdata,windowdata->layout->marriage+layoutptr);
 								selected=element_MARRIAGE;
-								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
+								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Layout_MenusDeleted,windowdata);
 								break;
 							default:
 								break;
@@ -1070,14 +1101,14 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 							if (!Layout_GetSelect(windowdata->layout->person[layoutptr].element)) {
 								Windows_UnselectAll(windowdata);
 								Layout_Select(windowdata->layout->person[layoutptr].element);
-								Layout_RedrawPerson(windowdata,windowdata->layout->person+layoutptr);
+								Layout_RedrawElement(windowdata,windowdata->layout->person+layoutptr);
 							}
 							break;
 						case element_MARRIAGE:
 							if (!Layout_GetSelect(windowdata->layout->marriage[layoutptr].element)) {
 								Windows_UnselectAll(windowdata);
 								Layout_Select(windowdata->layout->marriage[layoutptr].element);
-								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+layoutptr);
+								Layout_RedrawElement(windowdata,windowdata->layout->marriage+layoutptr);
 							}
 							break;
 						default:
@@ -1092,7 +1123,7 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 							} else {
 								Layout_Select(windowdata->layout->person[layoutptr].element);
 							}
-							Layout_RedrawPerson(windowdata,windowdata->layout->person+layoutptr);
+							Layout_RedrawElement(windowdata,windowdata->layout->person+layoutptr);
 							break;
 						case element_MARRIAGE:
 							if (Layout_GetSelect(windowdata->layout->marriage[layoutptr].element)) {
@@ -1100,7 +1131,7 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 							} else {
 								Layout_Select(windowdata->layout->marriage[layoutptr].element);
 							}
-							Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+layoutptr);
+							Layout_RedrawElement(windowdata,windowdata->layout->marriage+layoutptr);
 							break;
 						default:
 							break;
@@ -1110,32 +1141,111 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 					switch (mousedata.type) {
 						case element_PERSON:
 							if (Desk_Kbd_KeyDown(Desk_inkey_SHIFT)) {
-								Windows_StartDragLink(windowdata,mousedata.element);
+								Layout_StartDragLink(windowdata,mousedata.element);
 							} else {
-								Windows_StartDragNormal(windowdata->layout->person[layoutptr].element,windowdata->layout->person[layoutptr].x,windowdata,Desk_FALSE);
+								Layout_StartDragNormal(windowdata->layout->person[layoutptr].element,windowdata->layout->person[layoutptr].x,windowdata,Desk_FALSE);
 							}
 							break;
 						case element_MARRIAGE:
-							Windows_StartDragNormal(windowdata->layout->marriage[layoutptr].element,windowdata->layout->marriage[layoutptr].x,windowdata,Desk_TRUE);
+							Layout_StartDragNormal(windowdata->layout->marriage[layoutptr].element,windowdata->layout->marriage[layoutptr].x,windowdata,Desk_TRUE);
 							break;
 						default:
 							Windows_UnselectAll(windowdata);
-							Windows_StartDragSelect(windowdata);
+							Layout_StartDragSelect(windowdata);
 					}
 					break;
 				case Desk_button_DRAGADJUST:
 					switch (mousedata.type) {
 						case element_PERSON:
-							Windows_StartDragLink(windowdata,mousedata.element);
+							Layout_StartDragLink(windowdata,mousedata.element);
 							break;
 						default:
-							Windows_StartDragSelect(windowdata);
+							Layout_StartDragSelect(windowdata);
 					}
 			}
 		default:
 			break;
 	}
 	return Desk_TRUE;
+}
+
+void Layout_SaveGEDCOM(layout *layout,FILE *file)
+/*Save a GEDCOM layout to the given file ptr*/
+{
+	int i;
+	
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(file!=NULL);
+
+	fprintf(file,"0 @L1@ _LAYOUT\n");
+	for (i=0;i<layout->numpeople;i++) {
+		fprintf(file,"1 _PERSON @%d@\n",layout->person[i].element);
+		fprintf(file,"2 _X %d\n",layout->person[i].x);
+		fprintf(file,"2 _Y %d\n",layout->person[i].y);
+	}
+	for (i=0;i<layout->nummarriages;i++) {
+		fprintf(file,"1 _MARRIAGE @%d@\n",layout->marriage[i].element);
+		fprintf(file,"2 _X %d\n",layout->marriage[i].x);
+		fprintf(file,"2 _Y %d\n",layout->marriage[i].y);
+	}
+}
+
+layout *Layout_GetGEDCOMLayout(void)
+/* Return the GEDCOM layout used while loading, then reset it ready for the next load*/
+{
+	layout *returnvalue=gedcomlayout;
+	gedcomlayout=NULL;
+	return returnvalue;
+}
+
+void Layout_GEDCOMNewPerson(elementptr person)
+/* Add a new person to the GEDCOM layout*/
+{
+	if (gedcomlayout==NULL) gedcomlayout=Layout_New();
+	AJWLib_Flex_Extend((flex_ptr)&(gedcomlayout->person),(gedcomlayout->numpeople+1)*sizeof(elementlayout));
+	gedcomlayout->person[gedcomlayout->numpeople].element=person;
+	gedcomlayout->person[gedcomlayout->numpeople].x=0;
+	gedcomlayout->person[gedcomlayout->numpeople].y=0;
+	gedcomlayout->numpeople++;
+}
+
+void Layout_GEDCOMNewPersonX(int pos)
+/* Add the x coord to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].x=pos;
+}
+
+void Layout_GEDCOMNewPersonY(int pos)
+/* Add the y coord to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].y=Layout_NearestGeneration(pos);
+}
+
+void Layout_GEDCOMNewMarriage(elementptr marriage)
+/* Add a new marriage to the GEDCOM layout*/
+{
+	if (gedcomlayout==NULL) gedcomlayout=Layout_New();
+	AJWLib_Flex_Extend((flex_ptr)&(gedcomlayout->marriage),(gedcomlayout->nummarriages+1)*sizeof(elementlayout));
+	gedcomlayout->marriage[gedcomlayout->nummarriages].element=marriage;
+	gedcomlayout->marriage[gedcomlayout->nummarriages].x=0;
+	gedcomlayout->marriage[gedcomlayout->nummarriages].x=0;
+	gedcomlayout->nummarriages++;
+}
+
+void Layout_GEDCOMNewMarriageX(int pos)
+/* Add the x coord to a new marriage to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->marriage[gedcomlayout->nummarriages-1].x=pos;
+}
+
+void Layout_GEDCOMNewMarriageY(int pos)
+/* Add the y coord to a new marriage to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->marriage[gedcomlayout->nummarriages-1].y=Layout_NearestGeneration(pos);
 }
 
 void Layout_Init(void)

@@ -62,7 +62,6 @@ typedef struct mouseclickdata {
 	elementptr element;
 	Desk_wimp_point pos;
 	elementtype type;
-/*	int layoutptr;*/
 } mouseclickdata;
 
 extern mouseclickdata mousedata;
@@ -71,10 +70,12 @@ int Layout_NearestGeneration(int y);
 layout *Layout_New(void);
 void Layout_Free(layout *layout);
 Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
-void Layout_AddPerson(layout *layout,elementptr person,int x,int y);
-void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y);
+void Layout_AddPerson(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid);
+void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y,int width,int height,int xgrid,int ygrid);
 int Layout_FindXCoord(layout *layout,elementptr person);
 int Layout_FindYCoord(layout *layout,elementptr person);
+int Layout_FindXGridCoord(layout *layout,elementptr person);
+int Layout_FindYGridCoord(layout *layout,elementptr person);
 int Layout_FindMarriageXCoord(layout *layout,elementptr marriage);
 int Layout_FindMarriageYCoord(layout *layout,elementptr marriage);
 void Layout_RemovePerson(layout *layout,elementptr person);
