@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.21 2000/05/13 20:32:09 uid1 Exp $
+	$Id: File.c,v 1.22 2000/05/13 22:48:01 AJW Exp $
 
 */
 
@@ -30,7 +30,7 @@
 #include "File.h"
 
 #define FILEID "Root"
-#define FILEVERSION 100
+#define FILEVERSION 200
 
 #define SWI_Territory_ConvertStandardDateAndTime 0x4304C
 
