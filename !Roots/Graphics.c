@@ -3,9 +3,13 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.12  2000/02/12 22:25:37  uid1
+	Renamed Graphics directory to Graphic to avoid CVS problems with Graphics.c .h
+	Altered Makefile to work with Reuben Thomas' make
+
 	Revision 1.11  2000/01/14 13:50:10  AJW
 	Renamed Graphics.h to Windos.h etc
-
+	
 	Revision 1.10  2000/01/14 13:14:55  AJW
 	Changed to Graphics_
 	Added Graphics_Redraw etc.
@@ -86,7 +90,7 @@
 #include "Draw.h"
 
 
-#define GRAPHICSDIR "<Roots$Dir>.Graphics"
+#define GRAPHICSDIR "<Roots$Dir>.Graphic"
 
 static graphics graphicsdata;
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
