@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Draw.c,v $
+	Revision 1.3  2000/01/11 13:44:19  AJW
+	Fixed EORRectangleFilled
+
 	Revision 1.2  2000/01/11 13:32:30  AJW
 	Added Draw_SetScaleFactor
 	Added lots of consts
@@ -58,7 +61,7 @@ void Draw_PlotText(const int x,const int y,const int handle,const char *font,con
 {
 	Desk_Font_SetFont(handle);
 	Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,bgcolour,fgcolour,14);
-	Desk_Font_Paint(text,Desk_font_plot_OSCOORS,x,y); /*Use transformation matrix*/
+	Desk_Font_Paint((char *)text,Desk_font_plot_OSCOORS,x,y); /*Use transformation matrix*/
 }
 
 void Draw_EORRectangle(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
@@ -70,6 +73,6 @@ void Draw_EORRectangle(const int x,const int y,const int width,const int height,
 void Draw_EORRectangleFilled(const int x,const int y,const int width,const int height,const unsigned int colour)
 {
 	Desk_ColourTrans_SetGCOL(colour,0,3);
-	AJWLib_Draw_PlotRectangle(x,y,width,height,0,&matrix);
+	AJWLib_Draw_PlotRectangleFilled(x,y,width,height,&matrix);
 }
 
