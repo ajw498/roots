@@ -5,6 +5,8 @@
 #include "LayoutStruct.h"
 
 
+Desk_bool Database_ElementValid(elementptr person);
+Desk_bool Database_Married(elementptr person1,elementptr person2);
 char *Database_GetField(elementptr element,char *fieldname);
 elementptr Database_Link(layout *layout,elementptr start,elementptr end);
 Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end);

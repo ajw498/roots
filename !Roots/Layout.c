@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.53 2000/11/12 16:13:25 AJW Exp $
+	$Id: Layout.c,v 1.54 2000/11/12 19:58:43 AJW Exp $
 
 */
 
@@ -252,11 +252,10 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 		}
 	}
 	if (box.min.x==INFINITY) {
-		int FIXME; /*Wrong default sizes*/
 		box.min.x=0;
 		box.min.y=0;
-		box.max.x=400;
-		box.max.y=200;
+		box.max.x=0;
+		box.max.y=0;
 	}
 	return box;
 }
@@ -317,7 +316,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.53 2000/11/12 16:13:25 AJW Exp $
+	$Id: Layout.c,v 1.54 2000/11/12 19:58:43 AJW Exp $
 
 */
 
@@ -379,6 +378,8 @@ void Layout_Free(layout *layout)
 #include "Print.h"
 
 #define REDRAWOVERLAP 4
+#define MINWINDOW_SIZE_X 500
+#define MINWINDOW_SIZE_Y 256
 
 #define SWI_OS_SpriteOp 0x2E
 #define SWI_Wimp_SpriteOp 0x400E9
@@ -479,7 +480,16 @@ void Layout_ResizeWindow(windowdata *windowdata)
 	Desk_window_info infoblk;
 	Desk_window_outline outlineblk;
 	Desk_bool maxxextent=Desk_FALSE,maxyextent=Desk_FALSE;
+	int size;
+	
 	box=Layout_FindExtent(windowdata->layout,Desk_FALSE);
+	size=MINWINDOW_SIZE_X-(box.max.x-box.min.x);
+	if (size>0) {
+		box.min.x-=size/2;
+		box.max.x+=size/2;
+	}
+	size=MINWINDOW_SIZE_Y-(box.max.y-box.min.y);
+	if (size>0) box.min.y-=size;
 	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
 	outlineblk.window=windowdata->handle;
 	if (infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x==infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x) {
@@ -560,6 +570,13 @@ static void Layout_PlotDragBox(dragdata *dragdata)
 	}
 }
 
+static void Layout_RemoveAllInvalidElements(layout *layout)
+{
+	int i;
+
+	for (i=0;i<layout->numpeople;i++) if (!Database_ElementValid(layout->person[i].element)) Layout_RemoveElement(layout,layout->person[i].element);
+}
+
 static void Layout_MoveDragEnd(void *ref)
 /*User has finished a move drag*/
 {
@@ -579,6 +596,7 @@ static void Layout_MoveDragEnd(void *ref)
 	mousey=Layout_NearestGeneration(((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale);
 	/*Check to see if we are unlinking people*/
 	if (mousey!=dragdata->origmousey) Database_UnlinkSelected(dragdata->windowdata->layout);
+	Layout_RemoveAllInvalidElements(dragdata->windowdata->layout);
 	/*Move all people/marriages that were selected*/
 	Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex,mousey-dragdata->origmousey);
 	Layout_LayoutLines(dragdata->windowdata->layout);
@@ -828,36 +846,40 @@ static void Windows_GetOffset(dragdata *dragdata)
 		if (dragdata->windowdata->layout->person[i].y==dragdata->oldmousey && !Layout_GetSelect(dragdata->windowdata->layout->person[i].element)) {
 			/*Look for right hand edge of person or marriage*/
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+dragdata->windowdata->layout->person[i].width);
-			/*if (!dragdata->marriage)*/ distance-=Graphics_GapWidth();
+			if (Database_GetElementType(dragdata->person)==element_PERSON) {
+				if (Database_GetElementType(dragdata->windowdata->layout->person[i].element)==element_PERSON) {
+					if (Database_Married(dragdata->person,dragdata->windowdata->layout->person[i].element)) distance-=Graphics_MarriageWidth(); else distance-=Graphics_GapWidth();
+				}
+			} else {
+				if (Database_GetElementType(dragdata->windowdata->layout->person[i].element)==element_MARRIAGE) distance=INFINITY;
+			}
 			if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			/*Look for second marriage on right*/
-/*			if (dragdata->marriage) {
-				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth()+Graphics_SecondMarriageGap());
+			if (Database_GetElementType(dragdata->person)==element_MARRIAGE && Database_GetElementType(dragdata->windowdata->layout->person[i].element)==element_PERSON) {
+				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+dragdata->windowdata->layout->person[i].width+Graphics_SecondMarriageGap());
 				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
-			}*/
+			}
 			/*Look for left hand edge of person or marriage*/
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x);
-			/*if (!dragdata->marriage)*/ distance+=Graphics_GapWidth()+dragdata->windowdata->layout->person[i].width; /*else distance+=Graphics_MarriageWidth();*/
+			if (Database_GetElementType(dragdata->windowdata->layout->person[i].element)==element_PERSON) {
+				if (Database_GetElementType(dragdata->person)==element_PERSON) {
+					distance+=dragdata->windowdata->layout->person[i].width;
+					if (Database_Married(dragdata->person,dragdata->windowdata->layout->person[i].element)) distance+=Graphics_MarriageWidth(); else distance+=Graphics_GapWidth();
+				} else {
+					distance+=Graphics_MarriageWidth();
+				}
+			} else {
+				if (Database_GetElementType(dragdata->person)==element_PERSON) distance+=dragdata->personwidth; else distance=INFINITY;
+			}
 			if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			/*Look for second marriage on left*/
-/*			if (dragdata->marriage) {
+			if (Database_GetElementType(dragdata->person)==element_MARRIAGE && Database_GetElementType(dragdata->windowdata->layout->person[i].element)==element_PERSON) {
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x-Graphics_MarriageWidth()-Graphics_SecondMarriageGap());
-				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
-			}*/
-		}
-	}
-/*	if (!dragdata->marriage) {*/
-		for (i=0;i<dragdata->windowdata->layout->numtransients;i++) {
-			if (dragdata->windowdata->layout->transients[i].y==dragdata->oldmousey && !Layout_GetSelect(dragdata->windowdata->layout->transients[i].element)) {
-				/*Look for right hand edge of marriage*/
-				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->transients[i].x+Graphics_MarriageWidth());
-				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
-				/*Look for left hand edge of marriage*/
-				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->transients[i].x-Graphics_PersonWidth());
 				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			}
 		}
-/*	}*/
+	}
+
 	/*Look for siblings centered under marriage and marriages centered over siblings*/
 	distance=dragdata->oldmousex-dragdata->centered;
 	if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
