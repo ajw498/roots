@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Modules.c,v $
+	Revision 1.3  1999/10/27 16:04:58  AJW
+	Added Modules_ChangedLayout
+
 	Revision 1.2  1999/10/10 20:54:23  AJW
 	Modified to use Desk
 
@@ -14,45 +17,18 @@
 
 /*	Includes  */
 
-#include "Desk.Window.h"
-#include "Desk.Error2.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.GFX.h"
-#include "Desk.ColourTran.h"
-
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Handler.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.DrawFile.h"
-
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
+#include "Desk.Core.h"
 
 #include "Modules.h"
 #include "Database.h"
 #include "Graphics.h"
 #include "GConfig.h"
 
-static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE;
+static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayout=Desk_FALSE;
 
-Desk_bool Modules_Init(void)
+void Modules_Init(void)
 {
-	Database_Init(); /*errors*/
+	Database_Init();
 	Graphics_Init();
 	Graphics_Init2();
 
@@ -63,7 +39,7 @@ Desk_bool Modules_Init(void)
 	Database_Add();
 	Database_Add();
 	Database_Add();
-	Database_Add();
+/*	Database_Add();
 	Database_Add();
 	Database_Add();
 	Database_Add();
@@ -96,14 +72,18 @@ Desk_bool Modules_Init(void)
 	Database_Marry(5,6);
 	Database_AddChild(28,10);
 	Database_AddChild(28,11);
-/*	Database_AddParents(6,12,13);
+*//*	Database_AddParents(6,12,13);
 *//*	Database_AddParents(12,14,15);
 *//*	Database_AddChild(29,7);
 	Database_Marry(7,8);
 	Database_AddChild(31,9);
 *//*	Database_FudgeLinked(5);*/
-    Database_Marry(1,7);
-	return Desk_TRUE;
+/*    Database_Marry(1,7);
+    Database_Marry(16,15);
+    Database_AddChild(30,14);
+    Database_Marry(14,13);
+    Database_FudgeLinked(13);
+*/
 }
 
 void Modules_ChangedStructure(void)
@@ -111,12 +91,18 @@ void Modules_ChangedStructure(void)
 	changedstructure=Desk_TRUE;
 }
 
+void Modules_ChangedLayout(void)
+{
+	changedlayout=Desk_TRUE;
+}
+
 void Modules_ReflectChanges(void)
 {
 	if (changedstructure) Graphics_Relayout();
-	changedstructure=Desk_FALSE;
 	/*if (changeddata) Graphics_ForceRedraw();*/
+	changedstructure=Desk_FALSE;
 	changeddata=Desk_FALSE;
+	changedlayout=Desk_FALSE;
 }
 
 void Modules_ChangedData(elementptr person)
