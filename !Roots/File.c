@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.20 2000/03/07 21:13:57 uid1 Exp $
+	$Id: File.c,v 1.21 2000/05/13 20:32:09 uid1 Exp $
 
 */
 
@@ -102,8 +102,8 @@ void File_LoadFile(char *filename)
 			int size;
 			tag tag;
 			long int pos=ftell(file);
-			AJWLib_File_fread(&tag,sizeof(tag),1,file);
-			AJWLib_File_fread(&size,sizeof(int),1,file);
+			fread(&tag,sizeof(tag),1,file);
+			fread(&size,sizeof(int),1,file);
 			if (feof(file)) break;
 			switch (tag) {
 				case tag_WINDOW:
