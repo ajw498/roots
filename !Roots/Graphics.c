@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.32 2000/06/22 19:07:27 AJW Exp $
+	$Id: Graphics.c,v 1.33 2000/06/22 21:33:59 AJW Exp $
 
 */
 
@@ -832,7 +832,7 @@ char *Graphics_GetCurrentStyle(void)
 	return currentstyle;
 }
 
-void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
+static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool selected)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -848,8 +848,7 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 				Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_CHILDLINE:
-				if (!child) break;
-				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
+				if (!Database_GetMother(person)) break;
 			case graphictype_LINE:
 				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
@@ -920,7 +919,7 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
-static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
+static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool selected)
 {
 	int i,xcoord=0;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -935,7 +934,7 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 				Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_CHILDLINE:
-				if (!childline) break;
+				if (!Database_GetLeftChild(marriage)) break;
 			case graphictype_LINE:
 				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
@@ -998,10 +997,10 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 		Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
 	}
 	for (i=0;i<layout->nummarriages;i++) {
-		Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
+		Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
 	}
 	for (i=0;i<layout->numpeople;i++) {
-		Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,layout->person[i].child,plotselection ? Database_GetSelect(layout->person[i].person) : Desk_FALSE);
+		Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,plotselection ? Database_GetSelect(layout->person[i].person) : Desk_FALSE);
 	}
 }
 

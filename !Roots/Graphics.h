@@ -33,15 +33,11 @@ int Graphics_TitleHeight(void);
 
 void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext);
 
-void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool child,Desk_bool selected);
-
 int Graphics_GetSize(void);
 
 void Graphics_Load(FILE *file);
 
 void Graphics_Save(FILE *file);
-
-void Graphics_DeclareFonts(void);
 
 void Graphics_RemoveStyle(void);
 
