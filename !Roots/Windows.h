@@ -37,7 +37,6 @@ typedef struct windowdata {
 extern Desk_window_handle fieldconfigwin;
 
 void Windows_Init(void);
-void Windows_Edit(void);
 void Windows_ChangedLayout(void);
 void Windows_ForceRedraw(void);
 Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref);

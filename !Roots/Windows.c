@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.91 2000/10/14 20:04:18 AJW Exp $
+	$Id: Windows.c,v 1.92 2000/10/14 23:28:26 AJW Exp $
 
 */
 
@@ -213,6 +213,7 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 	char dirname[256];
 	int i=0;
 
+	Desk_UNUSED(windowdata);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_ADDPERSON);
 	AJWLib_Menu_Shade(personmenu,personmenu_EDIT);
 	AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
@@ -734,7 +735,7 @@ static void Windows_PersonMenuClick(int entry,void *ref)
 	}
 }
 
-static void Windows_SelectMenuClick(int entry,void *ref)
+/*static void Windows_SelectMenuClick(int entry,void *ref)
 {
 	Desk_UNUSED(ref);
 	switch (entry) {
@@ -755,7 +756,7 @@ static void Windows_SelectMenuClick(int entry,void *ref)
 			Desk_Window_ForceWholeRedraw(mousedata.window->handle);
 			break;
 	}
-}
+}*/
 
 static Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 {

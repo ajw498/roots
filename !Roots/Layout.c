@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.45 2000/10/14 20:04:12 AJW Exp $
+	$Id: Layout.c,v 1.46 2000/10/14 23:28:21 AJW Exp $
 
 */
 
@@ -84,6 +84,29 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y,int width,int
 	layout->numpeople++;
 	Layout_DeSelect(person);
 	Modules_ChangedLayout();
+}
+
+void Layout_AddTransient(layout *layout,elementptr element,int x,int y,int width,int height,int xgrid,int ygrid)
+{
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(element!=none);
+	AJWLib_Flex_Extend((flex_ptr)&(layout->transients),sizeof(elementlayout)*(layout->numtransients+1));
+	layout->transients[layout->numtransients].x=x;
+	layout->transients[layout->numtransients].y=y;
+	layout->transients[layout->numtransients].xgrid=xgrid;
+	layout->transients[layout->numtransients].ygrid=ygrid;
+	layout->transients[layout->numtransients].width=width;
+	layout->transients[layout->numtransients].height=height;
+	layout->transients[layout->numtransients].element=element;
+	layout->numtransients++;
+	/*Layout_DeSelect(element);*/
+	/*Modules_ChangedLayout(); would cause an infinite loop?*/
+}
+
+void Layout_RemoveTransients(layout *layout)
+{
+	AJWLib_Assert(layout!=NULL);
+	layout->numtransients=0;
 }
 
 void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y,int width,int height,int xgrid,int ygrid)
@@ -245,10 +268,10 @@ layout *Layout_New(void)
 	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
 	layout->numpeople=0;
 	layout->nummarriages=0;
-	layout->numchildren=0;
+	layout->numtransients=0;
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->transients),1);
 	return layout;
 }
 
@@ -258,7 +281,7 @@ void Layout_Free(layout *layout)
 	if (layout==NULL) return;
 	AJWLib_Flex_Free((flex_ptr)&(layout->person));
 	AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
-	AJWLib_Flex_Free((flex_ptr)&(layout->children));
+	AJWLib_Flex_Free((flex_ptr)&(layout->transients));
 	Desk_DeskMem_Free(layout);
 }
 
@@ -267,7 +290,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.45 2000/10/14 20:04:12 AJW Exp $
+	$Id: Layout.c,v 1.46 2000/10/14 23:28:21 AJW Exp $
 
 */
 
