@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.4  1999/10/12 14:32:05  AJW
+	Modified to use Config
+
 	Revision 1.3  1999/10/11 20:55:56  AJW
 	Modified to use Error2
 
@@ -54,6 +57,7 @@
 #include "Database.h"
 #include "Graphics.h"
 #include "GConfig.h"
+#include "Config.h"
 #include "Layout.h"
 
 #define GRAPHICSDIR "<FT$Dir>.Graphics"
@@ -294,7 +298,7 @@ void Graphics_ReadFile(char *filename,void (*decodefn)(char *values[],int numval
 	FILE *file;
 	char fullfilename[256];
 	int ch=0,line=0;
-	sprintf(fullfilename,"%s.%s",GRAPHICSDIR,filename);
+	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,Config_GraphicsStyle(),filename);
 	file=AJWLib_fopen(fullfilename,"r");
 	while (ch!=EOF) {
 		char str[256];
