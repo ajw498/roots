@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.44 2000/10/05 14:46:35 AJW Exp $
+	$Id: Database.c,v 1.45 2000/10/13 19:25:43 AJW Exp $
 
 */
 
@@ -377,21 +377,21 @@ static void Database_FreeElement(elementptr element)
 	database[element].selected=Desk_FALSE;
 }
 
-void Database_Select(elementptr person)
+void Database_SetFlag(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(person!=none);
 	database[person].selected=Desk_TRUE;
 }
 
-void Database_DeSelect(elementptr person)
+void Database_UnsetFlag(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(person!=none);
 	database[person].selected=Desk_FALSE;
 }
 
-void Database_DeSelectAll(void)
+void Database_UnsetAllFlags(void)
 {
 	int i;
 	AJWLib_Assert(database!=NULL);
@@ -402,7 +402,7 @@ void Database_DeSelectAll(void)
 	}
 }
 
-elementtype Database_AnyoneSelected(void)
+elementtype Database_AnyoneFlagged(void)
 {
 	int i;
 	elementtype selected=element_NONE;
@@ -427,7 +427,7 @@ elementtype Database_AnyoneSelected(void)
 	return selected;
 }
 
-Desk_bool Database_GetSelect(elementptr person)
+Desk_bool Database_GetFlag(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(person!=none);

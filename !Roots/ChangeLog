@@ -1,6 +1,7 @@
 v1.02 11-Oct-00
 Changing the file choices now marks the file as modified
 Fixed bug that prevented loading trees with no people in
+Changed line thickness in graphics styles to give finer control
 
 v1.01 5-Oct-00
 Fixed error if you tried to print without loading a printer driver

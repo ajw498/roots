@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.33 2000/10/11 16:18:29 AJW Exp $
+	$Id: File.c,v 1.34 2000/10/13 19:25:46 AJW Exp $
 
 */
 
@@ -33,6 +33,7 @@
 #include "Windows.h"
 #include "Config.h"
 #include "Layout.h"
+#include "TreeLayout.h"
 #include "File.h"
 
 #define MAXLINELEN 256
