@@ -11,5 +11,5 @@ Set Alias$@RunType_197 Run <Roots$Dir>.!Run %%*0
 RMEnsure DrawFile RMLoad System:Modules.DrawFile
 RMEnsure DrawFile Error Roots needs the DrawFile module
 
-WimpSlot -Min 240k -Max 240k
+WimpSlot -Min 288k -Max 288k
 Run <Roots$Dir>.!RunImage %*0
