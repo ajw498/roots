@@ -13,4 +13,6 @@ void Draw_EORRectangle(int scale,int originx,int originy,int x,int y,int width,i
 
 void Draw_EORRectangleFilled(int scale,int originx,int originy,int x,int y,int width,int height,unsigned int colour);
 
+void Draw_PlotDrawfile(int scale,int originx,int originy,int x,int y,drawfile_diagram *drawfile,int size,Desk_wimp_box *cliprect);
+
 #endif

@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.37 2001/06/24 22:30:33 AJW Exp $
+	$Id: Main.c,v 1.38 2002/08/01 14:56:58 ajw Exp $
 	
 */
 
@@ -70,18 +70,24 @@ static char *taskname=NULL,*errbad=NULL;
 static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 {
 	Desk_UNUSED(ref);
-	if (block->data.message.data.dataload.size<100 && Desk_stricmp(Desk_Str_LeafName(block->data.message.data.dataload.filename),"User")==0) {
-		/* It must be a user details file, so copy it then load it*/
-		char name[256];
-
-		sprintf(name,"%s.User",choiceswrite);
-		Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,block->data.message.data.dataload.filename,name,0x03));
-		Desk_Icon_SetText(proginfowin,proginfo_LICENCE,Shareware_GetUser());
-	} else {
-		if (Database_Loaded()) {
-			Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
+	if (block->data.message.data.dataload.window == Desk_window_ICONBAR) {
+		if (block->data.message.data.dataload.filetype!=ROOTS_FILETYPE && block->data.message.data.dataload.size<100 && Desk_stricmp(Desk_Str_LeafName(block->data.message.data.dataload.filename),"User")==0) {
+			/* It must be a user details file, so copy it then load it*/
+			char name[256];
+	
+			sprintf(name,"%s.User",choiceswrite);
+			Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,block->data.message.data.dataload.filename,name,0x03));
+			Desk_Icon_SetText(proginfowin,proginfo_LICENCE,Shareware_GetUser());
 		} else {
-			File_LoadGEDCOM(block->data.message.data.dataload.filename,block->data.message.data.dataload.filetype==ROOTS_FILETYPE ? Desk_FALSE : Desk_TRUE);
+			if (Database_Loaded()) {
+				Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
+			} else {
+				File_LoadGEDCOM(block->data.message.data.dataload.filename,block->data.message.data.dataload.filetype==ROOTS_FILETYPE ? Desk_FALSE : Desk_TRUE);
+			}
+		}
+	} else {
+		if (block->data.message.data.dataload.filetype==Desk_filetype_DRAWFILE) {
+			Windows_AddDrawfile(block->data.message.data.dataload.window,&(block->data.message.data.dataload.pos),block->data.message.data.dataload.filename);
 		}
 	}
 	return Desk_TRUE;

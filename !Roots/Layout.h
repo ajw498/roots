@@ -11,7 +11,7 @@
 extern mouseclickdata mousedata;
 
 void Windows_UnselectAll(windowdata *windowdata);
-
+void Layout_AddDrawfile(layout *layout, int x, int y, char *filename);
 void Layout_ChangeMarriageTypes(layout *layout,Desk_bool separate);
 void Layout_DeleteSelected(layout *layout);
 void Layout_UnlinkSelected(layout *layout);

@@ -2,19 +2,19 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.70 2001/02/04 16:42:55 AJW Exp $
+	$Id: Layout.c,v 1.71 2002/08/01 14:56:58 ajw Exp $
 
 */
 
-#include "Desk.Core.h"
-#include "Desk.Error2.h"
-#include "Desk.Window.h"
-#include "Desk.Event.h"
-#include "Desk.DeskMem.h"
+#include "Desk/Core.h"
+#include "Desk/Error2.h"
+#include "Desk/Window.h"
+#include "Desk/Event.h"
+#include "Desk/DeskMem.h"
 
-#include "AJWLib.Flex.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Assert.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Assert.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,6 +26,7 @@
 #include "Layout.h"
 #include "File.h"
 #include "Config.h"
+
 
 static layout *gedcomlayout=NULL;
 
@@ -148,6 +149,25 @@ void Layout_AddElement(layout *layout,elementptr person,int x,int y,int width,in
 	layout->person[layout->numpeople].flags=flags;
 	layout->numpeople++;
 /*	Layout_DeSelect(person);*/
+	Modules_ChangedLayout();
+}
+
+static void Layout_AddPicture(layout *layout,drawfileholder *picture,int x,int y,int minx,int miny,int width,int height,int xgrid,int ygrid,flags flags)
+{
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(picture!=none);
+	AJWLib_Flex_Extend((flex_ptr)&(layout->picture),sizeof(picturelayout)*(layout->numpictures+1));
+	layout->picture[layout->numpictures].x=x;
+	layout->picture[layout->numpictures].y=y;
+	layout->picture[layout->numpictures].minx=minx;
+	layout->picture[layout->numpictures].miny=miny;
+	layout->picture[layout->numpictures].xgrid=xgrid;
+	layout->picture[layout->numpictures].ygrid=ygrid;
+	layout->picture[layout->numpictures].width=width;
+	layout->picture[layout->numpictures].height=height;
+	layout->picture[layout->numpictures].picture = picture;
+	layout->picture[layout->numpictures].flags=flags;
+	layout->numpictures++;
 	Modules_ChangedLayout();
 }
 
@@ -323,6 +343,14 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 	box.max.x=-INFINITY;
 	box.max.y=-INFINITY;
 	if (layout) {
+		for (i=0;i<layout->numpictures;i++) {
+/*			if (Layout_GetSelect(layout->person[i].element) || !selection)*/ { int FIXME_NOW;
+				if (layout->picture[i].x+layout->picture[i].minx<box.min.x) box.min.x=layout->picture[i].x+layout->picture[i].minx;
+				if (layout->picture[i].x+layout->picture[i].minx+layout->picture[i].width>box.max.x) box.max.x=layout->picture[i].x+layout->picture[i].minx+layout->picture[i].width;
+				if (layout->picture[i].y+layout->picture[i].miny<box.min.y) box.min.y=layout->picture[i].y+layout->picture[i].miny;
+				if (layout->picture[i].y+layout->picture[i].miny+layout->picture[i].height>box.max.y) box.max.y=layout->picture[i].y+layout->picture[i].miny+layout->picture[i].height;
+			}
+		}
 		for (i=0;i<layout->numpeople;i++) {
 			if (Layout_GetSelect(layout->person[i].element) || !selection) {
 				if (layout->person[i].x<box.min.x) box.min.x=layout->person[i].x;
@@ -354,6 +382,17 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 	int i;
 
 	AJWLib_Assert(layout!=NULL);
+	for (i=0;i<layout->numpictures;i++) {
+		if ((originx+((layout->picture[i].x+layout->picture[i].minx-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
+			if ((originx+((layout->picture[i].x+layout->picture[i].minx+layout->picture[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
+				if ((originy+((layout->picture[i].y+layout->picture[i].miny-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
+					if ((originy+((layout->picture[i].y+layout->picture[i].miny+layout->picture[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
+						if (Graphics_PlotDrawfile != NULL) Graphics_PlotDrawfile(scale,originx,originy,layout->picture[i].x,layout->picture[i].y,layout->picture[i].picture->drawfile,AJWLib_Flex_Size((flex_ptr)&(layout->picture[i].picture->drawfile)),cliprect);
+					}
+				}
+			}
+		}
+	}
 	for (i=0;i<layout->numtransients;i++) {
 		if ((originx+((layout->transients[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
 			if ((originx+((layout->transients[i].x+layout->transients[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
@@ -386,17 +425,27 @@ layout *Layout_New(void)
 	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
 	layout->numpeople=0;
 	layout->numtransients=0;
+	layout->numpictures=0;
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->transients),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->picture),1);
 	return layout;
 }
 
 void Layout_Free(layout *layout)
 {
+	int i;
+
 	AJWLib_AssertWarning(layout!=NULL);
 	if (layout==NULL) return;
+
+	for (i = 0; i < layout->numpictures; i++) {
+		AJWLib_Flex_Free((flex_ptr)&(layout->picture[i].picture->drawfile));
+		Desk_DeskMem_Free(layout->picture[i].picture);
+	}
 	AJWLib_Flex_Free((flex_ptr)&(layout->person));
 	AJWLib_Flex_Free((flex_ptr)&(layout->transients));
+	AJWLib_Flex_Free((flex_ptr)&(layout->picture));
 	Desk_DeskMem_Free(layout);
 }
 
@@ -405,49 +454,49 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.70 2001/02/04 16:42:55 AJW Exp $
+	$Id: Layout.c,v 1.71 2002/08/01 14:56:58 ajw Exp $
 
 */
 
-#include "Desk.Window.h"
-#include "Desk.Error.h"
-#include "Desk.Error2.h"
-#include "Desk.SWI.h"
-#include "Desk.WimpSWIs.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.Drag.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.Screen.h"
-#include "Desk.GFX.h"
-#include "Desk.Save.h"
-#include "Desk.Kbd.h"
-#include "Desk.Str.h"
-#include "Desk.Font2.h"
-#include "Desk.ColourTran.h"
+#include "Desk/Window.h"
+#include "Desk/Error.h"
+#include "Desk/Error2.h"
+#include "Desk/SWI.h"
+#include "Desk/WimpSWIs.h"
+#include "Desk/Event.h"
+#include "Desk/EventMsg.h"
+#include "Desk/Handler.h"
+#include "Desk/Hourglass.h"
+#include "Desk/Icon.h"
+#include "Desk/Menu.h"
+#include "Desk/Msgs.h"
+#include "Desk/Drag.h"
+#include "Desk/Resource.h"
+#include "Desk/Screen.h"
+#include "Desk/Template.h"
+#include "Desk/File.h"
+#include "Desk/Filing.h"
+#include "Desk/Sprite.h"
+#include "Desk/Screen.h"
+#include "Desk/GFX.h"
+#include "Desk/Save.h"
+#include "Desk/Kbd.h"
+#include "Desk/Str.h"
+#include "Desk/Font2.h"
+#include "Desk/ColourTran.h"
 
-#include "AJWLib.Error2.h"
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Assert.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Icon.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.Font.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Str.h"
-#include "AJWLib.Draw.h"
-#include "AJWLib.DrawFile.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Assert.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Icon.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/Font.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Str.h"
+#include "AJWLib/Draw.h"
+#include "AJWLib/DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -524,7 +573,7 @@ Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-		Graphics_SetFunctions(Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
+		Graphics_SetFunctions(Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText,Draw_PlotDrawfile);
 		Layout_Redraw(windowdata->layout,windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,&(blk.cliprect),Desk_TRUE);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
@@ -655,6 +704,23 @@ static void Layout_PlotDragBox(dragdata *dragdata)
 		Draw_EORRectangle(dragdata->windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,dragdata->oldmousey,dragdata->personwidth,dragdata->personheight,0,EORCOLOURRED);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
+}
+
+void Layout_AddDrawfile(layout *layout, int x, int y, char *filename)
+{
+	drawfileholder *picture;
+	flags flags;
+
+	picture = Desk_DeskMem_Malloc(sizeof(struct drawfileholder));
+	AJWLib_Flex_Alloc((flex_ptr)&(picture->drawfile), Desk_File_GetLength(filename));
+	Desk_File_LoadTo(filename, picture->drawfile, NULL);
+
+	flags.editable = 0;
+	flags.moveable = 1;
+	flags.linkable = 0;
+	flags.snaptogrid = 0;
+	flags.selectable = 1;
+	Layout_AddPicture(layout, picture, x - (picture->drawfile->bbox.min.x >> 8), y - (picture->drawfile->bbox.min.y >> 8), picture->drawfile->bbox.min.x >> 8, picture->drawfile->bbox.min.y >> 8, (picture->drawfile->bbox.max.x - picture->drawfile->bbox.min.x) >> 8, (picture->drawfile->bbox.max.y - picture->drawfile->bbox.min.y) >> 8, 0, 0, flags);
 }
 
 static void Layout_MoveDragEnd(void *ref)

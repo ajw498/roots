@@ -1,6 +1,7 @@
 #ifndef LAYOUTSTRUCT_H
 #define LAYOUTSTRUCT_H
 
+#include "AJWLib/Drawfile.h"
 #include "DatabaseStruct.h"
 
 typedef struct flags {
@@ -22,11 +23,31 @@ typedef struct elementlayout {
 	flags flags;
 } elementlayout;
 
+
+typedef struct drawfileholder {
+	drawfile_diagram *drawfile;
+} drawfileholder;
+
+typedef struct picturelayout {
+	int x;
+	int y;
+	int minx;
+	int miny;
+	int xgrid;
+	int ygrid;
+	drawfileholder *picture;
+	int width;
+	int height;
+	flags flags;
+} picturelayout;
+
 typedef struct layout {
 	elementlayout *person;
 	int numpeople;
 	elementlayout *transients;
 	int numtransients;
+	picturelayout *picture;
+	int numpictures;
 	int gridx;
 	int gridy;
 	flags flags;

@@ -34,5 +34,6 @@ void Windows_SetGenerations(int val);
 void Windows_SetScale(int val);
 void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y);
 void Windows_GraphicsStylesMenu(Desk_menu_ptr *menuptr,char *dirname);
+void Windows_AddDrawfile(Desk_window_handle window, Desk_wimp_point *pos, char *filename);
 
 #endif
