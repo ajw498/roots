@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.102 2000/11/27 20:03:18 AJW Exp $
+	$Id: Windows.c,v 1.103 2000/11/27 20:39:21 AJW Exp $
 
 */
 
@@ -87,6 +87,7 @@
 
 #define personmenu_EDIT 0
 #define personmenu_DELETE 1
+#define personmenu_UNLINK 2
 
 #define selectmenu_DESCENDENTS 0
 #define selectmenu_ANCESTORS 1
@@ -233,6 +234,7 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 	AJWLib_Menu_Shade(mainmenu,mainmenu_ADDPERSON);
 	AJWLib_Menu_Shade(personmenu,personmenu_EDIT);
 	AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
+	AJWLib_Menu_Shade(personmenu,personmenu_UNLINK);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
 	Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Person:Person"));
@@ -242,8 +244,9 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 
 	switch (selected) {
 		case element_PERSON:
-			AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
 			AJWLib_Menu_UnShade(personmenu,personmenu_EDIT);
+			AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+			AJWLib_Menu_UnShade(personmenu,personmenu_UNLINK);
 			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
 			break;
 		case element_MARRIAGE:
@@ -254,6 +257,7 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 			break;
 		case element_SELECTION:
 			AJWLib_Menu_UnShade(personmenu,personmenu_DELETE);
+			AJWLib_Menu_UnShade(personmenu,personmenu_UNLINK);
 			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
 			Desk_Menu_SetText(mainmenu,mainmenu_PERSON,AJWLib_Msgs_TempLookup("Item.Select:Selection"));
 			break;
@@ -775,6 +779,12 @@ static void Windows_PersonMenuClick(int entry,void *ref)
 			break;
 		case personmenu_DELETE:
 			Layout_DeleteSelected(mousedata.window->layout);
+			AJWLib_Menu_Shade(personmenu,personmenu_EDIT);
+			AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
+			AJWLib_Menu_Shade(personmenu,personmenu_UNLINK);
+			break;
+		case personmenu_UNLINK:
+			Layout_UnlinkSelected(mousedata.window->layout);
 			AJWLib_Menu_Shade(personmenu,entry);
 			break;
 	}

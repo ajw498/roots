@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.61 2000/11/21 21:16:41 AJW Exp $
+	$Id: Layout.c,v 1.62 2000/11/27 20:39:15 AJW Exp $
 
 */
 
@@ -176,6 +176,20 @@ void Layout_DeleteSelected(layout *layout)
 			Database_RemoveElement(layout,layout->person[i].element);
 			Modules_ChangedStructure();
 			i--; /*This item in the layout has been removed, and so everyone above has moved down by one place*/
+		}
+	}
+}
+
+void Layout_UnlinkSelected(layout *layout)
+/*Delete all selected elements from the layout and database*/
+{
+	int i;
+	for (i=0;i<layout->numpeople;i++) {
+		if (Layout_GetSelect(layout->person[i].element)) {
+			if (Database_GetElementType(layout->person[i].element)==element_PERSON) {
+				Database_UnlinkFromSiblingsAndParents(layout->person[i].element,Database_GetParentsMarriage(layout->person[i].element));
+				Modules_ChangedStructure();
+			}
 		}
 	}
 }
@@ -358,7 +372,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.61 2000/11/21 21:16:41 AJW Exp $
+	$Id: Layout.c,v 1.62 2000/11/27 20:39:15 AJW Exp $
 
 */
 
