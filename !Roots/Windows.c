@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.29  2000/01/11 17:13:50  AJW
+	Changed to use File_SaveFile rather than Database_Save
+
 	Revision 1.28  2000/01/11 13:44:40  AJW
 	Removed EOR plots and matrix to Draw.c
 
@@ -138,6 +141,7 @@
 #include "Layout.h"
 #include "Drawfile.h"
 #include "Draw.h"
+#include "File.h"
 
 /*	Macros  */
 
@@ -1308,7 +1312,7 @@ Desk_bool Graphics_NewViewClick(Desk_event_pollblock *block,void *ref)
 
 Desk_bool SaveHandler(char *filename,Desk_bool safe,Desk_bool selection,void *ref)
 {
-	Database_Save(filename);
+	File_SaveFile(filename);
 	return Desk_TRUE;
 }
 
