@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.39 2000/11/12 16:13:23 AJW Exp $
+	$Id: File.c,v 1.40 2000/11/14 22:56:51 AJW Exp $
 
 */
 
@@ -581,7 +581,10 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 	/* file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
 		Desk_Hourglass_On();
-		if (prescan || !plain) Database_New();
+		if (prescan || !plain) {
+			Database_New();
+			Config_LoadFileConfig();
+		}
 		if (fgets(line,MAXLINELEN,file)!=NULL) {
 			/* Get the first line, File_GEDCOMLine will get and process the rest*/
 			if (prescan) {
@@ -590,15 +593,16 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 				Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
 				Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Imp:"));
 				for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,"");
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,"");
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,Database_GetPersonUserDesc(i));
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,Database_GetPersonGEDCOMDesc(i));
 				}
 				for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,"");
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,"");
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,Database_GetMarriageUserDesc(i));
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,Database_GetMarriageGEDCOMDesc(i));
 				}
+			} else {
+				File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
 			}
-			File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
 			if (!prescan) {
 				Database_LinkAllChildren();
 				Database_LinkAllMarriages();
@@ -646,6 +650,7 @@ void File_New(void)
 {
 	Desk_Error2_Try {
 		Database_New();
+		Config_LoadFileConfig();
 		Desk_Error2_Try {
 			char buffer[256];
 			strcpy(buffer,AJWLib_Msgs_TempLookup("Style.Default:Default"));

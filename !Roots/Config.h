@@ -10,6 +10,8 @@ extern char choicesread[256],choiceswrite[256];
 
 char *Config_GraphicsStyle(void);
 
+void Config_SaveFileConfig(void);
+void Config_LoadFileConfig(void);
 Desk_bool Config_SeparateMarriages(void);
 void Config_SetSeparateMarriages(layout *layout,Desk_bool separate);
 Desk_bool Config_ImportGraphicsStyle(void);

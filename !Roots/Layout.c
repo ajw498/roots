@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.58 2000/11/14 20:09:36 AJW Exp $
+	$Id: Layout.c,v 1.59 2000/11/14 22:56:53 AJW Exp $
 
 */
 
@@ -138,7 +138,7 @@ void Layout_AddElement(layout *layout,elementptr person,int x,int y,int width,in
 	layout->person[layout->numpeople].element=person;
 	layout->person[layout->numpeople].flags=flags;
 	layout->numpeople++;
-	Layout_DeSelect(person);
+/*	Layout_DeSelect(person);*/
 	Modules_ChangedLayout();
 }
 
@@ -358,7 +358,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.58 2000/11/14 20:09:36 AJW Exp $
+	$Id: Layout.c,v 1.59 2000/11/14 22:56:53 AJW Exp $
 
 */
 

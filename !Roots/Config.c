@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.19 2000/11/14 20:09:34 AJW Exp $
+	$Id: Config.c,v 1.20 2000/11/14 22:56:48 AJW Exp $
 
 */
 
@@ -45,6 +45,8 @@
 #define config_SAVE 14
 #define config_OK 13
 #define config_FONTBLEND 16
+
+#define FILECONFIG_FILE "FileChoices"
 
 typedef struct configdata {
 	Desk_bool separatemarriages;
@@ -99,6 +101,84 @@ static void Config_SetChoicesPath(void)
 		}
 	} Desk_Error2_Catch {
 		AJWLib_Error2_ReportMsgs("Error.Choices:%s");
+	} Desk_Error2_EndCatch
+}
+
+void Config_SaveFileConfig(void)
+/*Save file config as the default*/
+{
+	FILE *file;
+
+	Desk_Error2_Try {
+		char buffer[256];
+		int i;
+
+		sprintf(buffer,"%s.%s",choiceswrite,FILECONFIG_FILE);
+		file=AJWLib_File_fopen(buffer,"w");
+		for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+			fprintf(file,"%s\n%s\n",Database_GetPersonUserDesc(i),Database_GetPersonGEDCOMDesc(i));
+		}
+		for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+			fprintf(file,"%s\n%s\n",Database_GetMarriageUserDesc(i),Database_GetMarriageGEDCOMDesc(i));
+		}
+		fprintf(file,"%d\n",Config_SeparateMarriages());
+		AJWLib_File_fclose(file);
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.SChoice:%s");
+	} Desk_Error2_EndCatch
+}
+
+void Config_LoadFileConfig(void)
+/*Load the default file config*/
+{
+	FILE *file;
+
+	config.separatemarriages=Desk_FALSE; /*Default value*/
+	Desk_Error2_Try {
+		char buffer[256];
+		int i;
+
+		sprintf(buffer,"%s.%s",choicesread,FILECONFIG_FILE);
+		if (Desk_File_Exists(buffer)) {
+			file=AJWLib_File_fopen(buffer,"r");
+			for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+				if (fgets(buffer,256,file)) {
+					int len;
+	
+					len=strlen(buffer);
+					if (len>0) if (buffer[len-1]=='\n') buffer[len-1]='\0';
+					Database_SetPersonUserDesc(i,buffer);
+				}
+				if (fgets(buffer,256,file)) {
+					int len;
+	
+					len=strlen(buffer);
+					if (len>0) if (buffer[len-1]=='\n') buffer[len-1]='\0';
+					Database_SetPersonGEDCOMDesc(i,buffer);
+				}
+			}
+			for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+				if (fgets(buffer,256,file)) {
+					int len;
+	
+					len=strlen(buffer);
+					if (len>0) if (buffer[len-1]=='\n') buffer[len-1]='\0';
+					Database_SetMarriageUserDesc(i,buffer);
+				}
+				if (fgets(buffer,256,file)) {
+					int len;
+	
+					len=strlen(buffer);
+					if (len>0) if (buffer[len-1]=='\n') buffer[len-1]='\0';
+					Database_SetMarriageGEDCOMDesc(i,buffer);
+				}
+			}
+			fscanf(file,"%d",&i);
+			config.separatemarriages=(Desk_bool)i; /*Don't use Config_Set.. as this would cause layout to be changed, and a layout might not currently be loaded*/
+			AJWLib_File_fclose(file);
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.LChoice:%s");
 	} Desk_Error2_EndCatch
 }
 

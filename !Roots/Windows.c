@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.98 2000/11/14 20:09:44 AJW Exp $
+	$Id: Windows.c,v 1.99 2000/11/14 22:56:58 AJW Exp $
 
 */
 
@@ -676,6 +676,14 @@ static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
+static Desk_bool Windows_FileConfigSaveAsDefault(Desk_event_pollblock *block,void *ref)
+{
+	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	Windows_FileConfigOk(block,ref);
+	Config_SaveFileConfig();
+	return Desk_TRUE;
+}
+
 static void Windows_OpenFileConfig(void)
 {
 	int i;
@@ -912,6 +920,7 @@ void Windows_Init(void)
 	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_TEXT,(void *)1);
 	fieldconfigwin=Desk_Window_Create("FieldConfig",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_SAVEASDEFAULT,Windows_FileConfigSaveAsDefault,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_KeyHandler(fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);

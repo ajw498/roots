@@ -120,7 +120,9 @@ Error.SynD:Syntax error in dimensions file, line %d
 Error.SynP:Syntax error in person file, line %d
 Error.SynM:Syntax error in marriage file, line %d
 Error.SynT:Syntax error in title file, line %d
-Error.Alien:A person/marriage is linked to an element that is not a person/marriage 
+Error.SChoice:Error while saving file choices (%s)
+Error.LChoice:Error while loading file choices (%s)
+Error.Alien:A person/marriage is linked to an element that is not a person/marriage
 Error.NoDir:Cannot find graphics style %s
 Error.NoFile:Cannot find %s file in graphics style %s
 Error.NufWin:You cannot have more than %d windows open at once
