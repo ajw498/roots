@@ -1,9 +1,16 @@
 #ifndef FILE_H
 #define FILE_H
 
-#ifndef __Desk_Save_h
 #include "Desk.Save.h"
-#endif
+
+typedef enum tag {
+	tag_WINDOW=0,
+	tag_LAYOUT,
+	tag_GRAPHICS,
+	tag_DATABASE,
+	tag_UNDOBUFFER
+} tag;
+
 
 Desk_bool File_SaveFile(char *filename,void *ref);
 

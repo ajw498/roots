@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.10 2000/02/20 19:45:17 uid1 Exp $
+	$Id: Main.c,v 1.11 2000/02/20 23:03:12 uid1 Exp $
 	
 */
 
@@ -72,8 +72,9 @@ Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 	if (block->data.mouse.button.data.select==1) {
 		if (!Windows_BringToFront()) {
 			File_New();
-			Windows_OpenWindow(wintype_UNLINKED,none,0,NULL);
-			Windows_OpenWindow(wintype_NORMAL,none,0,NULL);
+			Windows_OpenWindow(wintype_UNLINKED,none,0);
+			Windows_OpenWindow(wintype_NORMAL,none,0);
+			Windows_LayoutNormal(NULL);
 		}
 		return Desk_TRUE;
 	}
@@ -94,9 +95,7 @@ void IconBarMenuClick(int entry, void *r)
 
 int main(void)
 {
-	Desk_Debug_SetLevel(99);
-	Desk_Error2_Init_JumpSig(); /*Just call handleallsignals here?*/
-	Desk_Error2_SetHandler(AJWLib_Error2_ReportFatal);
+	AJWLib_Error2_Init();
 	Desk_Resource_Initialise(DIRPREFIX);
 	Desk_Msgs_LoadFile("Messages");
 	Desk_Event_Initialise(AJWLib_Msgs_Lookup("Task.Name:"));

@@ -1,2 +1,6 @@
 redraw when updating peoples names
 next newperson number does not get saved with file
+seems to redraw whole screen sometimes
+clicking on save icon (rather than dragging) doesn't unset modified flag
+when saving unlinked,normal and descendents, the normal layout doesn't get restored
+properly. (it does when there is no descendents window saved)
