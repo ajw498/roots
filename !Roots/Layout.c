@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Layout.c,v $
+	Revision 1.3  1999/09/29 15:51:40  AJW
+	Added Layout_AddPerson
+
 	Revision 1.2  1999/09/27 16:57:51  AJW
 	Added Layout_FindXCoord and Layout_FindMarriageXCoord
 
@@ -86,6 +89,17 @@ return layouts;
 		layouts->numpeople++;
 	}
 	return layouts;
+}
+
+void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
+{
+		Flex_Extend((flex_ptr)&(layout->person),sizeof(personlayout)*(layout->numpeople+1)); /*errors*/
+		layout->person[layout->numpeople].x=x;
+		layout->person[layout->numpeople].y=y;
+		layout->person[layout->numpeople].person=person;
+		layout->person[layout->numpeople].child=(Database_GetMother(person)==none ? FALSE : TRUE);
+		layout->person[layout->numpeople].selected=FALSE;
+		layout->numpeople++;
 }
 
 BOOL Layout_Selected(layout *layout,elementptr person)
