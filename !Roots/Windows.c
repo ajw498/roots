@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.72 2000/06/26 21:45:11 AJW Exp $
+	$Id: Windows.c,v 1.73 2000/06/28 20:12:06 AJW Exp $
 
 */
 
@@ -66,10 +66,11 @@
 #define mainmenu_PERSON 1
 #define mainmenu_ADDPERSON 2
 #define mainmenu_SELECT 3
-#define mainmenu_NEWVIEW 4
-#define mainmenu_SCALE 5
-#define mainmenu_SEARCH 6
-#define mainmenu_REPORTS 7
+#define mainmenu_GRAPHICSSTYLE 4
+#define mainmenu_NEWVIEW 5
+#define mainmenu_SCALE 6
+#define mainmenu_SEARCH 7
+#define mainmenu_REPORTS 8
 
 #define filemenu_INFO 0
 #define filemenu_SAVE 1
@@ -135,14 +136,11 @@
 #define unsaved_CANCEL 3
 #define unsaved_SAVE 0
 
-#define fileconfig_STYLE 10
-#define fileconfig_STYLEMENU 8
-#define fileconfig_USER1 2
-#define fileconfig_USER2 3
-#define fileconfig_USER3 4
-#define fileconfig_OK 12
-#define fileconfig_CANCEL 13
-#define fileconfig_REREAD 14
+#define fileconfig_USER1 1
+#define fileconfig_USER2 2
+#define fileconfig_USER3 3
+#define fileconfig_OK 8
+#define fileconfig_CANCEL 9
 
 typedef struct windowdata {
 	Desk_window_handle handle;
@@ -794,9 +792,21 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	Desk_Drag_SetHandlers(NULL,Windows_LinkDragEnd,&dragdata);
 }
 
+static void Windows_StyleMenuClick(int entry,void *ref)
+{
+	Desk_UNUSED(ref);
+	Graphics_RemoveStyle();
+	Graphics_LoadStyle(Desk_Menu_GetText(fileconfigmenu,entry));
+	Modules_ChangedStructure();
+}
+
 static void Windows_SetUpMenu(void)
 {
 	char buffer[20];
+	Desk_filing_dirdata dir;
+	char *name=NULL;
+	char dirname[256];
+	int i=0;
 	Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
 	Desk_Icon_SetText(savedrawwin,save_FILENAME,AJWLib_Msgs_TempLookup("File.Draw:Drawfile"));
 	sprintf(buffer,"%d",Database_GetNumPeople());
@@ -807,6 +817,43 @@ static void Windows_SetUpMenu(void)
 	Desk_Icon_SetText(fileinfowin,info_SIZE,buffer);
 	Desk_Icon_SetText(fileinfowin,info_DATE,File_GetDate());
 	Desk_Icon_SetInteger(scalewin,scale_TEXT,mousedata.window->scale);
+	if (fileconfigmenu) {
+		AJWLib_Menu_FullDispose(fileconfigmenu);
+		fileconfigmenu=NULL;
+	}
+	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
+	if (Desk_File_IsDirectory(dirname)) {
+		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY);
+		do {
+			name=Desk_Filing_ReadDir(&dir);
+			if (name) {
+				if (fileconfigmenu) {
+					fileconfigmenu=Desk_Menu_Extend(fileconfigmenu,name);
+					i++;
+				} else {
+					fileconfigmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
+					i=0;
+				}
+				if (Desk_stricmp(name,Graphics_GetCurrentStyle())) {
+					Desk_Menu_SetFlags(fileconfigmenu,i,0,0);
+				} else {
+					Desk_Menu_SetFlags(fileconfigmenu,i,1,0);
+				}
+			}
+		} while (name);
+		Desk_Filing_CloseDir(&dir);
+	}
+	AJWLib_Menu_Register(fileconfigmenu,Windows_StyleMenuClick,NULL);
+	Desk_Menu_AddSubMenu(mainmenu,mainmenu_GRAPHICSSTYLE,fileconfigmenu);
+}
+
+static Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref)
+{
+	windowdata *windowdata=ref;
+	Desk_UNUSED(block);
+	Windows_UnselectAll(windowdata);
+	Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted);
+	return Desk_TRUE;
 }
 
 static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
@@ -901,12 +948,13 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 								Database_Select(mousedata.element);
 								Windows_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
 								selected=element_PERSON;
+								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
 								break;
 							case element_MARRIAGE:
 								Database_Select(mousedata.element);
 								Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
 								selected=element_MARRIAGE;
-								/*Register menusdeleted handler*/
+								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
 								break;
 						}
 					}
@@ -1323,76 +1371,24 @@ Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-static void Windows_StyleMenuClick(int entry,void *ref)
-{
-	Desk_UNUSED(ref);
-	Desk_Icon_SetText(fileconfigwin,fileconfig_STYLE,Desk_Menu_GetText(fileconfigmenu,entry));
-}
-
-static Desk_bool Windows_FileConfigReRead(Desk_event_pollblock *block,void *ref)
-{
-	Desk_UNUSED(ref);
-	if (!block->data.mouse.button.data.select) return Desk_FALSE;
-	Graphics_RemoveStyle();
-	Graphics_LoadStyle(Graphics_GetCurrentStyle());
-	Modules_ChangedStructure();
-	return Desk_TRUE;
-}
-
 static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
 {
-	char *style;
 	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	if (fileconfigmenu) {
-		AJWLib_Menu_FullDispose(fileconfigmenu);
-		fileconfigmenu=NULL;
-	}
 	Database_SetUserDesc(0,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER1));
 	Database_SetUserDesc(1,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER2));
 	Database_SetUserDesc(2,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER3));
-	style=Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_STYLE);
-	if (Desk_stricmp(style,Graphics_GetCurrentStyle())) {
-		Graphics_RemoveStyle();
-		Graphics_LoadStyle(style);
-		Modules_ChangedStructure();
-	}
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(block->data.mouse.window);
 	return Desk_TRUE;
 }
 
 static void Windows_OpenFileConfig(void)
 {
-	Desk_filing_dirdata dir;
-	char *name=NULL;
-	char dirname[256];
-	if (fileconfigmenu) {
-		AJWLib_Menu_FullDispose(fileconfigmenu);
-		fileconfigmenu=NULL;
-	}
 	Desk_Icon_SetText(fileconfigwin,fileconfig_USER1,Database_GetUserDesc(0));
 	Desk_Icon_SetText(fileconfigwin,fileconfig_USER2,Database_GetUserDesc(1));
 	Desk_Icon_SetText(fileconfigwin,fileconfig_USER3,Database_GetUserDesc(2));
-	Desk_Icon_SetText(fileconfigwin,fileconfig_STYLE,Graphics_GetCurrentStyle());
 	Desk_Window_Show(fileconfigwin,Desk_open_CENTERED);
 	Desk_Icon_SetCaret(fileconfigwin,fileconfig_USER1);
-	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
-	if (Desk_File_IsDirectory(dirname)) {
-		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY);
-		do {
-			name=Desk_Filing_ReadDir(&dir);
-			if (name) {
-				if (fileconfigmenu) {
-					fileconfigmenu=Desk_Menu_Extend(fileconfigmenu,name);
-				} else {
-					fileconfigmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
-				}
-			}
-		} while (name);
-		Desk_Filing_CloseDir(&dir);
-	}
-	AJWLib_Menu_Register(fileconfigmenu,Windows_StyleMenuClick,NULL);
-	AJWLib_Menu_AttachPopup(fileconfigwin,fileconfig_STYLEMENU,fileconfig_STYLE,fileconfigmenu,Desk_button_MENU | Desk_button_SELECT);
 }
 
 static void Windows_FileMenuClick(int entry,void *ref)
@@ -1612,7 +1608,6 @@ void Windows_Init(void)
 	fileconfigwin=Desk_Window_Create("FileConfig",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_OK,Windows_FileConfigOk,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_REREAD,Windows_FileConfigReRead,NULL);
 	AJWLib_Window_KeyHandler(fileconfigwin,fileconfig_OK,Windows_FileConfigOk,fileconfig_CANCEL,Windows_Cancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
 }
