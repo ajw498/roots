@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.12 2000/02/26 21:17:06 uid1 Exp $
+	$Id: Drawfile.c,v 1.13 2000/02/28 00:21:54 uid1 Exp $
 
 */
 
@@ -28,6 +28,7 @@
 #include "Desk.Font2.h"
 #include "Desk.ColourTran.h"
 
+#include "AJWLib.Error2.h"
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
 #include "AJWLib.Assert.h"
@@ -60,6 +61,8 @@
 
 extern graphics graphicsdata;
 static drawfile_diagram *drawfile=NULL;
+static char *fontarray[256];
+static int numberoffonts=0;
 
 void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour,const Desk_bool filled)
 {
@@ -129,9 +132,6 @@ void Drawfile_PlotLine(const int scale,const int originx,const int originy,const
 	object[15]=originy+maxy<<8;
 	object[16]=0; /*End path*/
 }
-
-static char *fontarray[256];
-static int numberoffonts=0;
 
 static void Drawfile_FreeFontArray(void)
 {
@@ -249,35 +249,40 @@ void Drawfile_Save(const char *filename,layout *layout)
 	int width,height;
 	int xoffset,yoffset;
 	Desk_bool landscape=Desk_FALSE;
-	Drawfile_FreeFontArray();
-	AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
-	strcpy(drawfile->tag,"Draw");
-	drawfile->major_version=201;
-	drawfile->minor_version=0;
-	strcpy(drawfile->source,"Roots       "); /*Padded with spaces*/
-	box=Layout_FindExtent(layout,Desk_FALSE);
-	width=box.max.x-box.min.x;
-	height=box.max.y-box.min.y;
-	if (width>height) {
-		swap(width,height);
-		landscape=Desk_TRUE;
-	}
-	for (papersize=0x500;papersize>0x100;papersize-=0x100) {
-		if (width<paperwidth && height<paperheight) break;
-		swap(paperwidth,paperheight);
-		paperheight*=2;
-	}
-	xoffset=(paperwidth-width)/2;
-	yoffset=(paperheight-height)/2;
-	if (landscape) swap(xoffset,yoffset);
-	drawfile->bbox.min.x=xoffset;
-	drawfile->bbox.min.y=yoffset;
-	drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
-	drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
-	Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
-	Drawfile_CreateTable();
-	Drawfile_CreateOptions(papersize,landscape);
-	Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
-	AJWLib_Flex_Free((flex_ptr)&drawfile);
+	AJWLib_Assert(drawfile==NULL);
+	Desk_Error2_Try {
+		Drawfile_FreeFontArray();
+		AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
+		strcpy(drawfile->tag,"Draw");
+		drawfile->major_version=201;
+		drawfile->minor_version=0;
+		strcpy(drawfile->source,"Roots       "); /*Padded with spaces*/
+		box=Layout_FindExtent(layout,Desk_FALSE);
+		width=box.max.x-box.min.x;
+		height=box.max.y-box.min.y;
+		if (width>height) {
+			swap(width,height);
+			landscape=Desk_TRUE;
+		}
+		for (papersize=0x500;papersize>0x100;papersize-=0x100) {
+			if (width<paperwidth && height<paperheight) break;
+			swap(paperwidth,paperheight);
+			paperheight*=2;
+		}
+		xoffset=(paperwidth-width)/2;
+		yoffset=(paperheight-height)/2;
+		if (landscape) swap(xoffset,yoffset);
+		drawfile->bbox.min.x=xoffset;
+		drawfile->bbox.min.y=yoffset;
+		drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
+		drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
+		Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+		Drawfile_CreateTable();
+		Drawfile_CreateOptions(papersize,landscape);
+		Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.DrawS:%s");
+	}Desk_Error2_EndCatch
+	if (drawfile) AJWLib_Flex_Free((flex_ptr)&drawfile);
 	Drawfile_FreeFontArray();
 }

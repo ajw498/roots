@@ -2,12 +2,14 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.54 2000/02/27 13:29:40 uid1 Exp $
+	$Id: Windows.c,v 1.55 2000/02/28 00:22:01 uid1 Exp $
 
 */
 
 #include "Desk.Window.h"
+#include "Desk.Error.h"
 #include "Desk.Error2.h"
+#include "Desk.SWI.h"
 #include "Desk.Event.h"
 #include "Desk.EventMsg.h"
 #include "Desk.Handler.h"
@@ -28,6 +30,7 @@
 #include "Desk.Font2.h"
 #include "Desk.ColourTran.h"
 
+#include "AJWLib.Error2.h"
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
 #include "AJWLib.Assert.h"
@@ -162,9 +165,8 @@ static windowdata windows[MAXWINDOWS];
 static int numwindows;
 static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin,scalewin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
-static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
+static elementptr addparentsperson,addparentschild,newviewperson,menuoverperson;
 static windowdata *menuoverwindow;
-/*Make menuoverperson static local var to be passed as a reference?*/
 
 void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 {
@@ -222,42 +224,52 @@ static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
-Desk_bool Windows_AddParentsClick(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_AddParentsClick(Desk_event_pollblock *block,void *ref)
 {
-	int x=-INFINITY,window=-1,i,y;
+	int x=-INFINITY,i,y;
 	elementptr person;
+	layout *layout=NULL;
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	Desk_Window_Hide(addparentswin);
-	Database_Marry(addparentschild,addparentsperson);
-	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle && windows[i].type==wintype_NORMAL) window=i;
-	if (window==-1) return Desk_FALSE;
+	Desk_Error2_TryCatch(Database_Marry(addparentschild,addparentsperson); , AJWLib_Error2_Report("%s"); return Desk_TRUE;)
+	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle && windows[i].type==wintype_NORMAL) layout=windows[i].layout;
+	if (layout==NULL) return Desk_FALSE;
 	person=addparentschild;
 	do {
-		for (i=0;i<windows[window].layout->numpeople;i++) {
-			if (windows[window].layout->person[i].person==person) {
-				if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
-				y=windows[window].layout->person[i].y;
+		for (i=0;i<layout->numpeople;i++) {
+			if (layout->person[i].person==person) {
+				if (layout->person[i].x>x) x=layout->person[i].x;
+				y=layout->person[i].y;
 			}
 		}
 	} while ((person=Database_GetMarriageLtoR(person))!=none);
 	person=addparentschild;
 	while ((person=Database_GetMarriageRtoL(person))!=none) {
-		for (i=0;i<windows[window].layout->numpeople;i++) {
-			if (windows[window].layout->person[i].person==person) {
-				if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
-				y=windows[window].layout->person[i].y;
+		for (i=0;i<layout->numpeople;i++) {
+			if (layout->person[i].person==person) {
+				if (layout->person[i].x>x) x=layout->person[i].x;
+				y=layout->person[i].y;
 			}
 		}
 	}
 	AJWLib_Assert(x!=-INFINITY);
 	x+=Graphics_PersonWidth()+Graphics_MarriageWidth()+Graphics_SecondMarriageGap();
-	Layout_AddPerson(windows[window].layout,addparentsperson,x,y);
-	Layout_AddMarriage(windows[window].layout,Database_GetMarriage(addparentsperson),x-Graphics_MarriageWidth(),y);
-	/*What happens if a addparentschild has since been unlinked?  hide addparents win whenever structure changes?*/
+	Desk_Error2_Try {
+		Layout_AddPerson(layout,addparentsperson,x,y);
+		Desk_Error2_Try {
+			Layout_AddMarriage(layout,Database_GetMarriage(addparentsperson),x-Graphics_MarriageWidth(),y);
+		} Desk_Error2_Catch {
+			Layout_RemovePerson(layout,addparentsperson);
+			Desk_Error2_ReThrow();
+		} Desk_Error2_EndCatch
+	} Desk_Error2_Catch {
+		Database_RemoveSpouse(addparentsperson);
+		AJWLib_Error2_Report("%s");
+	} Desk_Error2_EndCatch
 	return Desk_TRUE;
 }
 
-void Windows_UnselectAll(windowdata *windowdata)
+static void Windows_UnselectAll(windowdata *windowdata)
 {
 	int i;
 	for (i=0;i<windowdata->layout->numpeople;i++) {
@@ -274,7 +286,7 @@ void Windows_UnselectAll(windowdata *windowdata)
 	}
 }
 
-void Windows_AddSelected(layout *layout,int amount)
+static void Windows_AddSelected(layout *layout,int amount)
 {
 	int i;
 	for (i=0;i<layout->numpeople;i++) {
@@ -286,7 +298,7 @@ void Windows_AddSelected(layout *layout,int amount)
 	Modules_ChangedLayout();
 }
 
-void Windows_ResizeWindow(windowdata *windowdata)
+static void Windows_ResizeWindow(windowdata *windowdata)
 {
 	Desk_wimp_rect box;
 	Desk_window_info infoblk;
@@ -381,7 +393,7 @@ void Windows_ChangedLayout(void)
 	}
 }
 
-void Windows_PlotDragBox(dragdata *dragdata)
+static void Windows_PlotDragBox(dragdata *dragdata)
 {
 	/*Plot or remove a drag box*/
 	Desk_window_redrawblock blk;
@@ -399,7 +411,7 @@ void Windows_PlotDragBox(dragdata *dragdata)
 	}
 }
 
-void Windows_DragEnd(void *ref)
+static void Windows_DragEnd(void *ref)
 {
 	/*User has finished a drag*/
 	Desk_mouse_block mouseblk;
@@ -414,16 +426,31 @@ void Windows_DragEnd(void *ref)
 			/*Add parents*/
 			int childx,childy;
 			Desk_Window_Hide(addparentswin);
-			Database_AddParents(addparentschild,addparentsperson,initialperson);
+			Desk_Error2_TryCatch(Database_AddParents(addparentschild,addparentsperson,initialperson); , AJWLib_Error2_Report("%s"); return;)
 			for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle && windows[i].type==wintype_NORMAL) window=i;
 			if (window==-1) return;
 			childx=Layout_FindXCoord(windows[window].layout,addparentschild);
 			childy=Layout_FindYCoord(windows[window].layout,addparentschild);
-			/*what if an error occours - some are added,some not?*/
-			Layout_AddPerson(windows[window].layout,addparentsperson,childx-(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
-			Layout_AddPerson(windows[window].layout,initialperson,childx+(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
-			Layout_AddMarriage(windows[window].layout,Database_GetMarriage(initialperson),childx+(Graphics_PersonWidth()-Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
-			Layout_AlterChildline(windows[window].layout,addparentschild,Desk_TRUE);
+			Desk_Error2_Try {
+				Layout_AddPerson(windows[window].layout,addparentsperson,childx-(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
+				Desk_Error2_Try {
+					Layout_AddPerson(windows[window].layout,initialperson,childx+(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
+					Desk_Error2_Try {
+						Layout_AddMarriage(windows[window].layout,Database_GetMarriage(initialperson),childx+(Graphics_PersonWidth()-Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
+					} Desk_Error2_Catch {
+						Layout_RemovePerson(windows[window].layout,initialperson);
+						Desk_Error2_ReThrow();
+					} Desk_Error2_EndCatch
+				} Desk_Error2_Catch {
+					Layout_RemovePerson(windows[window].layout,addparentsperson);
+					Desk_Error2_ReThrow();
+				} Desk_Error2_EndCatch
+				Layout_AlterChildline(windows[window].layout,addparentschild,Desk_TRUE);
+			} Desk_Error2_Catch {
+				AJWLib_Error2_Report("%s");
+				Database_RemoveParents(addparentsperson);
+				return;
+			} Desk_Error2_EndCatch
 			return;
 		}
 	}
@@ -450,7 +477,7 @@ void Windows_DragEnd(void *ref)
 			if (Database_GetLinked()==none) {
 				/*The layout is empty*/
 				Database_LinkPerson(initialperson);
-				Layout_AddPerson(windows[window].layout,initialperson,0,0);
+				Desk_Error2_TryCatch(Layout_AddPerson(windows[window].layout,initialperson,0,0);,AJWLib_Error2_Report("%s");)
 				return;
 			} else {
 				/*There are already people on the layout*/
@@ -473,9 +500,23 @@ void Windows_DragEnd(void *ref)
 								Desk_Window_Show(addparentswin,Desk_open_CENTERED);
 							} else {
 								/*Must be a first marriage*/
-								Database_Marry(finalperson,initialperson);
-								Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->person[i].x+Graphics_PersonWidth()+Graphics_MarriageWidth(),windows[window].layout->person[i].y);
-								Layout_AddMarriage(windows[window].layout,Database_GetMarriage(finalperson),windows[window].layout->person[i].x+Graphics_PersonWidth(),windows[window].layout->person[i].y);
+								Desk_Error2_Try {
+									Database_Marry(finalperson,initialperson);
+									Desk_Error2_Try {
+										Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->person[i].x+Graphics_PersonWidth()+Graphics_MarriageWidth(),windows[window].layout->person[i].y);
+										Desk_Error2_Try {
+											Layout_AddMarriage(windows[window].layout,Database_GetMarriage(finalperson),windows[window].layout->person[i].x+Graphics_PersonWidth(),windows[window].layout->person[i].y);
+										} Desk_Error2_Catch {
+											Layout_RemovePerson(windows[window].layout,initialperson);
+											Desk_Error2_ReThrow();
+										} Desk_Error2_EndCatch
+									} Desk_Error2_Catch {
+										Database_RemoveSpouse(initialperson);
+										Desk_Error2_ReThrow();
+									} Desk_Error2_EndCatch
+								} Desk_Error2_Catch {
+									AJWLib_Error2_Report("%s");
+								} Desk_Error2_EndCatch
 							}
 							/*Nothing else to do*/
 							return;
@@ -489,33 +530,42 @@ void Windows_DragEnd(void *ref)
 							/*Must be adding a child*/
 							elementptr person;
 							int x=-INFINITY;
-							Database_AddChild(windows[window].layout->marriage[i].marriage,initialperson);
-							windows[window].layout->marriage[i].childline=Desk_TRUE;
-							person=initialperson;
-							do {
-								int i;
-								for (i=0;i<windows[window].layout->numpeople;i++) {
-									if (windows[window].layout->person[i].person==person) {
-										/*Find coords of furthest right hand sibling*/
-										if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+							Desk_Error2_Try {
+								Database_AddChild(windows[window].layout->marriage[i].marriage,initialperson);
+								windows[window].layout->marriage[i].childline=Desk_TRUE;
+								person=initialperson;
+								do {
+									int i;
+									for (i=0;i<windows[window].layout->numpeople;i++) {
+										if (windows[window].layout->person[i].person==person) {
+											/*Find coords of furthest right hand sibling*/
+											if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+										}
+									}
+								} while ((person=Database_GetSiblingLtoR(person))!=none);
+								person=initialperson;
+								while ((person=Database_GetSiblingRtoL(person))!=none) {
+									int i;
+									for (i=0;i<windows[window].layout->numpeople;i++) {
+										if (windows[window].layout->person[i].person==person) {
+											/*Find coords of furthest left hand sibling*/
+											if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+										}
 									}
 								}
-							} while ((person=Database_GetSiblingLtoR(person))!=none);
-							person=initialperson;
-							while ((person=Database_GetSiblingRtoL(person))!=none) {
-								int i;
-								for (i=0;i<windows[window].layout->numpeople;i++) {
-									if (windows[window].layout->person[i].person==person) {
-										/*Find coords of furthest left hand sibling*/
-										if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
-									}
+								if (x==-INFINITY) {
+									/*There must have been no siblings, therefore centre under marriage*/
+									x=windows[window].layout->marriage[i].x-Graphics_PersonWidth()-Graphics_GapWidth()+Graphics_MarriageWidth()/2-Graphics_PersonWidth()/2;
 								}
-							}
-							if (x==-INFINITY) {
-								/*There must have been no siblings, therefore centre under marriage*/
-								x=windows[window].layout->marriage[i].x-Graphics_PersonWidth()-Graphics_GapWidth()+Graphics_MarriageWidth()/2-Graphics_PersonWidth()/2;
-							}
-							Layout_AddPerson(windows[window].layout,initialperson,x+Graphics_PersonWidth()+Graphics_GapWidth(),windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
+								Desk_Error2_Try {
+									Layout_AddPerson(windows[window].layout,initialperson,x+Graphics_PersonWidth()+Graphics_GapWidth(),windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
+								} Desk_Error2_Catch {
+									Database_RemoveChild(initialperson);
+									Desk_Error2_ReThrow();
+								} Desk_Error2_EndCatch
+							} Desk_Error2_Catch {
+								AJWLib_Error2_Report("%s");
+							} Desk_Error2_EndCatch
 							return;
 						}
 					}
@@ -525,7 +575,8 @@ void Windows_DragEnd(void *ref)
 	}
 }
 
-void Windows_SelectDragEnd(void *ref)
+static void Windows_SelectDragEnd(void *ref)
+/*A select drag box has ended, so select everything enclosed by it*/
 {
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
@@ -553,7 +604,7 @@ void Windows_SelectDragEnd(void *ref)
 	}
 }
 
-void Windows_GetOffset(dragdata *dragdata)
+static void Windows_GetOffset(dragdata *dragdata)
 {
 	int i,distance;
 	dragdata->oldoffset=0;
@@ -597,7 +648,7 @@ void Windows_GetOffset(dragdata *dragdata)
 	if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 }
 
-void Windows_DragFn(void *ref)
+static void Windows_DragFn(void *ref)
 {
 	/*Called every null poll when dragging*/
 	dragdata *dragdata=ref;
@@ -659,7 +710,7 @@ void Windows_DragFn(void *ref)
 	}
 }
 
-void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdata,Desk_bool marriage)
+static void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdata,Desk_bool marriage)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -734,7 +785,7 @@ void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdat
 	Desk_Drag_SetHandlers(Windows_DragFn,Windows_DragEnd,&dragdata);
 }
 
-void Windows_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowdata)
+static void Windows_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowdata)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -767,7 +818,7 @@ void Windows_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowd
 	Desk_Drag_SetHandlers(NULL,Windows_DragEnd,&dragdata);
 }
 
-void Windows_StartDragSelect(windowdata *windowdata)
+static void Windows_StartDragSelect(windowdata *windowdata)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -795,7 +846,7 @@ void Windows_StartDragSelect(windowdata *windowdata)
 	Desk_Drag_SetHandlers(NULL,Windows_SelectDragEnd,&dragdata);
 }
 
-Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
 	int mousex,mousey,i;
@@ -884,19 +935,18 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	}
 	/*Has the menu button been clicked?*/
 	if (block->data.mouse.button.data.menu) {
-		char buffer[10];
+		char buffer[20];
 		if (windowdata->type==wintype_UNLINKED) {
 			AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
 			AJWLib_Menu_UnShade(personmenu,personmenu_ADD);
 		}
 		Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
-		Desk_Icon_SetText(savedrawwin,save_FILENAME,"Drawfile"); /*msgs*/
+		Desk_Icon_SetText(savedrawwin,save_FILENAME,AJWLib_Msgs_TempLookup("File.Draw:Drawfile"));
 		sprintf(buffer,"%d",Database_GetNumPeople());
 		Desk_Icon_SetText(fileinfowin,info_PEOPLE,buffer);
 		Desk_Icon_SetText(fileinfowin,info_FILENAME,File_GetFilename());
-		/*update filetype and icon*/
-		Desk_Icon_SetText(fileinfowin,info_MODIFIED,File_GetModified() ? "YES" : "NO"); /*Use messages*/
-		sprintf(buffer,"%d",File_GetSize()); /*kbytes*/
+		Desk_Icon_SetText(fileinfowin,info_MODIFIED,File_GetModified() ? AJWLib_Msgs_TempLookup("Mod.Yes:Yes") : AJWLib_Msgs_TempLookup("Mod.No:No"));
+		Desk_Error2_CheckOS(Desk_SWI(3,0,Desk_SWI_OS_ConvertFileSize,File_GetSize(),buffer,sizeof(buffer)));
 		Desk_Icon_SetText(fileinfowin,info_SIZE,buffer);
 		Desk_Icon_SetText(fileinfowin,info_DATE,File_GetDate());
 		Desk_Icon_SetInteger(scalewin,scale_TEXT,windowdata->scale);
@@ -962,25 +1012,32 @@ void Windows_Relayout(void)
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle!=0) {
-			switch (windows[i].type) {
-				case wintype_NORMAL:
-					Layout_LayoutLines(windows[i].layout);
-					break;
-				case wintype_DESCENDENTS:
-					Layout_Free(windows[i].layout);
-					windows[i].layout=Layout_LayoutDescendents(windows[i].person,windows[i].generations);
-					break;
-				case wintype_ANCESTORS:
-					Layout_Free(windows[i].layout);
-					windows[i].layout=Layout_LayoutAncestors(windows[i].person,windows[i].generations);
-					break;
-				case wintype_UNLINKED:
-					Layout_Free(windows[i].layout);
-					windows[i].layout=Layout_LayoutUnlinked();
-					break;
-				default:
-					AJWLib_Assert(0);
-			}
+			Desk_Error2_Try {
+				switch (windows[i].type) {
+					case wintype_NORMAL:
+						Layout_LayoutLines(windows[i].layout);
+						break;
+					case wintype_DESCENDENTS:
+						Layout_Free(windows[i].layout);
+						windows[i].layout=NULL;
+						windows[i].layout=Layout_LayoutDescendents(windows[i].person,windows[i].generations);
+						break;
+					case wintype_ANCESTORS:
+						Layout_Free(windows[i].layout);
+						windows[i].layout=NULL;
+						windows[i].layout=Layout_LayoutAncestors(windows[i].person,windows[i].generations);
+						break;
+					case wintype_UNLINKED:
+						Layout_Free(windows[i].layout);
+						windows[i].layout=NULL;
+						windows[i].layout=Layout_LayoutUnlinked();
+						break;
+					default:
+						AJWLib_Assert(0);
+				}
+			} Desk_Error2_Catch {
+				AJWLib_Error2_Report("%s");
+			} Desk_Error2_EndCatch
 			Windows_ResizeWindow(&windows[i]);
 			Desk_Window_ForceWholeRedraw(windows[i].handle);
 		}
@@ -1006,6 +1063,7 @@ int Windows_GetSize(void)
 void Windows_Load(FILE *file)
 {
 	savedata data;
+	AJWLib_Assert(file!=NULL);
 	AJWLib_File_fread(&data,sizeof(savedata),1,file);
 	Windows_OpenWindow(data.type,data.person,data.generations,data.scale,&(data.coords));
 }
@@ -1017,6 +1075,7 @@ layout *Windows_Save(FILE *file,int *index)
 	savedata data;
 	tag tag=tag_WINDOW;
 	int size=sizeof(savedata)+sizeof(tag)+sizeof(int);
+	AJWLib_Assert(file!=NULL);
 	if (i>=MAXWINDOWS) {
 		*index=-1;
 		return NULL;
@@ -1040,7 +1099,20 @@ layout *Windows_Save(FILE *file,int *index)
 	return NULL;
 }
 
-Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
+void Windows_CloseAllWindows(void)
+/*Tidy up after an error*/
+{
+	int i;
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle) {
+			Desk_Error2_TryCatch(if (windows[i].layout) Layout_Free(windows[i].layout);,)
+			Desk_Error2_TryCatch(Desk_Window_Delete(windows[i].handle);,)
+			windows[i].handle=NULL;
+		}
+	}
+}
+
+static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
 	int i,found=0;
 	for (i=0;i<MAXWINDOWS;i++)
@@ -1074,22 +1146,12 @@ Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata
 	return Desk_TRUE;
 }
 
-void Windows_FilenameChanged(char *filename)
-{
-	int i;
-	for (i=0;i<MAXWINDOWS;i++) {
-		if (windows[i].handle) {
-			if (windows[i].type==wintype_NORMAL) Desk_Window_SetTitle(windows[i].handle,filename);
-		}
-	}
-}
-
 void Windows_FileModified(void)
 {
 	int i;
 	char title[256+2];
 	strcpy(title,File_GetFilename());
-	strcat(title," *");
+	if (File_GetModified()) strcat(title," *");
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
 			if (windows[i].type==wintype_NORMAL) Desk_Window_SetTitle(windows[i].handle,title);
@@ -1100,7 +1162,7 @@ void Windows_FileModified(void)
 void Windows_LayoutNormal(layout *layout)
 {
 	int i;
-	if (layout==NULL) layout=Layout_LayoutNormal();
+	if (layout==NULL) Desk_Error2_TryCatch(layout=Layout_LayoutNormal();,AJWLib_Error2_Report("%s");)
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle && windows[i].type==wintype_NORMAL) {
 			AJWLib_Assert(windows[i].layout==NULL);
@@ -1112,17 +1174,18 @@ void Windows_LayoutNormal(layout *layout)
 
 void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale,Desk_convert_block *coords)
 {
+	/*Let any Error2s be habdled by the calling function*/
 	int newwindow;
 	char str[256]="";
 	layout *layoutnormal=NULL;
 	int i;
 	if (numwindows>MAXWINDOWS) {
-		Desk_Error2_HandleText("Too many windows");
+		Desk_Msgs_Report(1,"Error.NufWin:Too many windows (%d)",MAXWINDOWS);
 		return;
 	}
 	for (newwindow=0;windows[newwindow].handle!=0 && newwindow<MAXWINDOWS;newwindow++);
 	if (newwindow==MAXWINDOWS) {
-		Desk_Error2_HandleText("Too many windows");
+		Desk_Msgs_Report(1,"Error.NufWin:Too many windows (%d)",MAXWINDOWS);
 		return;
 	}
 	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle!=0 && windows[i].type==wintype_NORMAL) layoutnormal=windows[i].layout;
@@ -1155,6 +1218,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			strcat(str," ");
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
+			windows[newwindow].layout=NULL;
 			windows[newwindow].layout=Layout_LayoutDescendents(person,generations);
 			break;
 		case wintype_ANCESTORS:
@@ -1162,6 +1226,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			strcat(str," ");
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
+			windows[newwindow].layout=NULL;
 #if DEBUG
 			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
@@ -1171,6 +1236,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 		case wintype_UNLINKED:
 			Desk_Msgs_Lookup("Win.Unlkd:Unlinked",str,255);
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
+			windows[newwindow].layout=NULL;
 			windows[newwindow].layout=Layout_LayoutUnlinked();
 			break;
 		default:
@@ -1178,13 +1244,12 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			AJWLib_Assert(0);
 	}
 	if (type!=wintype_NORMAL) Windows_ResizeWindow(&windows[newwindow]);
-	/*Register handlers for this window*/
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Windows_MouseClick,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
 }
 
-void Windows_MainMenuClick(int entry,void *ref)
+static void Windows_MainMenuClick(int entry,void *ref)
 {
 	char buffer[10]="";
 	switch (entry) {
@@ -1225,7 +1290,7 @@ void Windows_MainMenuClick(int entry,void *ref)
 	}
 }
 
-Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 {
 	if (block->data.mouse.button.data.select) {
 		Desk_Window_Hide(block->data.mouse.window);
@@ -1234,7 +1299,7 @@ Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 {
 	wintype wintype;
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
@@ -1255,59 +1320,63 @@ Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 			wintype=wintype_CLOSERELATIVES;
 			break;
 	}
-	Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),100,NULL);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(newviewwin);
+	Desk_Error2_TryCatch(Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),100,NULL);,AJWLib_Error2_Report("%s");)
 	return Desk_TRUE;
 }
 
-Desk_bool Windows_SaveDraw(char *filename,void *ref)
+static Desk_bool Windows_SaveDraw(char *filename,void *ref)
 {
 	Drawfile_Save(filename,menuoverwindow->layout);
 	return Desk_TRUE;
 }
 
-void Windows_PersonMenuClick(int entry,void *ref)
+static void Windows_PersonMenuClick(int entry,void *ref)
 {
 	elementptr mother,marriage,mothermarriage;
-	switch (entry) {
-		case personmenu_ADD:
-			Database_Add();
-			break;
-		case personmenu_DELETE:
-			Database_Delete(menuoverperson);
-			AJWLib_Menu_Shade(personmenu,entry);
-			break;
-		case personmenu_UNLINK:
-			AJWLib_Menu_Shade(personmenu,entry);
-			mother=Database_GetMother(menuoverperson);
-			marriage=Database_GetMarriage(menuoverperson);
-			mothermarriage=Database_GetMarriage(mother);
-			if (marriage==none) {
-				Layout_RemovePerson(menuoverwindow->layout,menuoverperson);
-				Database_RemoveChild(menuoverperson);
-				if (Database_GetLeftChild(mothermarriage)==none) Layout_AlterMarriageChildline(menuoverwindow->layout,mothermarriage,Desk_FALSE);
-			} else if (mother==none) {
-				if (Database_GetLeftChild(marriage)) {
-					Layout_RemovePerson(menuoverwindow->layout,Database_GetPrincipalFromMarriage(marriage));
-					Layout_RemovePerson(menuoverwindow->layout,Database_GetSpouseFromMarriage(marriage));
-					Layout_RemoveMarriage(menuoverwindow->layout,marriage);
-					Layout_AlterChildline(menuoverwindow->layout,Database_GetLeftChild(marriage),Desk_FALSE);
-					Database_RemoveParents(menuoverperson);
-				} else {
-					if (Database_GetMarriageRtoL(menuoverperson)!=none || Database_GetMarriageLtoR(Database_GetMarriageLtoR(menuoverperson))==none) {
-						Layout_RemovePerson(menuoverwindow->layout,menuoverperson);
+	Desk_Error2_Try {
+		switch (entry) {
+			case personmenu_ADD:
+				Database_Add();
+				break;
+			case personmenu_DELETE:
+				Database_Delete(menuoverperson);
+				AJWLib_Menu_Shade(personmenu,entry);
+				break;
+			case personmenu_UNLINK:
+				AJWLib_Menu_Shade(personmenu,entry);
+				mother=Database_GetMother(menuoverperson);
+				marriage=Database_GetMarriage(menuoverperson);
+				mothermarriage=Database_GetMarriage(mother);
+				if (marriage==none) {
+					Layout_RemovePerson(menuoverwindow->layout,menuoverperson);
+					Database_RemoveChild(menuoverperson);
+					if (Database_GetLeftChild(mothermarriage)==none) Layout_AlterMarriageChildline(menuoverwindow->layout,mothermarriage,Desk_FALSE);
+				} else if (mother==none) {
+					if (Database_GetLeftChild(marriage)) {
+						Layout_RemovePerson(menuoverwindow->layout,Database_GetPrincipalFromMarriage(marriage));
+						Layout_RemovePerson(menuoverwindow->layout,Database_GetSpouseFromMarriage(marriage));
 						Layout_RemoveMarriage(menuoverwindow->layout,marriage);
-						Database_RemoveSpouse(menuoverperson);
+						Layout_AlterChildline(menuoverwindow->layout,Database_GetLeftChild(marriage),Desk_FALSE);
+						Database_RemoveParents(menuoverperson);
+					} else {
+						if (Database_GetMarriageRtoL(menuoverperson)!=none || Database_GetMarriageLtoR(Database_GetMarriageLtoR(menuoverperson))==none) {
+							Layout_RemovePerson(menuoverwindow->layout,menuoverperson);
+							Layout_RemoveMarriage(menuoverwindow->layout,marriage);
+							Database_RemoveSpouse(menuoverperson);
+						}
 					}
+				} else {
+					/*cannot unlink*/
 				}
-			} else {
-				/*cannot unlink*/
-			}
-			break;
-	}
+				break;
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_Report("%s");
+	} Desk_Error2_EndCatch
 }
 
-void Windows_SelectMenuClick(int entry,void *ref)
+static void Windows_SelectMenuClick(int entry,void *ref)
 {
 	switch (entry) {
 		case selectmenu_DESCENDENTS:
@@ -1329,7 +1398,7 @@ void Windows_SelectMenuClick(int entry,void *ref)
 	}
 }
 
-Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 {
 	switch (block->data.mouse.icon) {
 		case newview_UNLINKED:
@@ -1355,7 +1424,7 @@ Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 {
 	Desk_wimp_rect bbox;
 	int scale,xscale,yscale,xwindowborders,ywindowborders;
@@ -1408,6 +1477,11 @@ Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 			break;
 	}
 	return Desk_FALSE;
+}
+
+void Windows_CloseAddParentsWindow(void)
+{
+	Desk_Window_Hide(addparentswin);
 }
 
 void Windows_Init(void)

@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.13 2000/02/27 00:47:51 uid1 Exp $
+	$Id: Main.c,v 1.14 2000/02/28 00:21:50 uid1 Exp $
 	
 */
 
@@ -53,22 +53,23 @@
 
 Desk_window_handle info;
 Desk_menu_ptr iconbarmenu;
+char *taskname=NULL,*errbad=NULL;
 
 #if DEBUG
 extern Desk_bool halt;
 #endif
 
-Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
+static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 {
 	if (Database_GetSize()) {
-		Desk_Error2_HandleText("Cannot load while there is another loaded");
+		Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
 	} else {
 		File_LoadFile(block->data.message.data.dataload.filename);
 	}
 	return Desk_TRUE;
 }
 
-Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
+static Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 {
 	if (block->data.mouse.button.data.select==1) {
 		if (!Windows_BringToFront()) File_New();
@@ -80,7 +81,7 @@ Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 	return Desk_FALSE;
 }
 
-void IconBarMenuClick(int entry, void *r)
+static void IconBarMenuClick(int entry, void *r)
 {
 	switch (entry) {
 		case iconbarmenu_CHOICES:
@@ -94,33 +95,44 @@ void IconBarMenuClick(int entry, void *r)
 
 int main(void)
 {
-	AJWLib_Error2_Init();
-	Desk_Resource_Initialise(DIRPREFIX);
-	Desk_Msgs_LoadFile("Messages");
-	Desk_Event_Initialise(AJWLib_Msgs_Lookup("Task.Name:"));
-	Desk_EventMsg_Initialise();
-	Desk_Screen_CacheModeInfo();
-	Desk_Template_Initialise();
-	Desk_EventMsg_Claim(Desk_message_MODECHANGE,Desk_event_ANY,Desk_Handler_ModeChange,NULL);
-	Desk_Event_Claim(Desk_event_CLOSE,Desk_event_ANY,Desk_event_ANY,Desk_Handler_CloseWindow,NULL);
-	Desk_Event_Claim(Desk_event_OPEN,Desk_event_ANY,Desk_event_ANY,Desk_Handler_OpenWindow,NULL);
-	Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
-	Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
-	Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
-	info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
-	Desk_Template_LoadFile("Templates");
-	iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
-	Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)info);
-	AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
-	Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);
-	Desk_EventMsg_Claim(Desk_message_DATALOAD,Desk_event_ANY,ReceiveDrag,NULL);
-	AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
-	Modules_Init();
+	Desk_Error2_Init_JumpSig();
+	Desk_Error2_Try {
+		Desk_Resource_Initialise(DIRPREFIX);
+		Desk_Msgs_LoadFile("Messages");
+		Desk_Event_Initialise(taskname=AJWLib_Msgs_Lookup("Task.Name:"));
+		errbad=AJWLib_Msgs_Lookup("Error.Bad:%s Click Ok to continue, Cancel to quit.");
+		Desk_EventMsg_Initialise();
+		Desk_Screen_CacheModeInfo();
+		Desk_Template_Initialise();
+		Desk_EventMsg_Claim(Desk_message_MODECHANGE,Desk_event_ANY,Desk_Handler_ModeChange,NULL);
+		Desk_Event_Claim(Desk_event_CLOSE,Desk_event_ANY,Desk_event_ANY,Desk_Handler_CloseWindow,NULL);
+		Desk_Event_Claim(Desk_event_OPEN,Desk_event_ANY,Desk_event_ANY,Desk_Handler_OpenWindow,NULL);
+		Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
+		Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
+		Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
+		info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999",VERSION);
+		Desk_Template_LoadFile("Templates");
+		iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
+		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)info);
+		AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
+		Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);
+		Desk_EventMsg_Claim(Desk_message_DATALOAD,Desk_event_ANY,ReceiveDrag,NULL);
+		AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
+		Modules_Init();
+	} Desk_Error2_Catch {
+		AJWLib_Error2_Report("Fatal error while initialising (%s)");
+		return EXIT_FAILURE;
+	} Desk_Error2_EndCatch
 	while (Desk_TRUE) {
-		/*put in a try catch type error handling here?*/
-		Modules_ReflectChanges();
-		Desk_Event_Poll();
+		Desk_Error2_Try {
+			Modules_ReflectChanges();
+			Desk_Event_Poll();
+		} Desk_Error2_Catch {
+			Desk_os_error errblk={1,""};
+			sprintf(errblk.errmess,errbad,AJWLib_Error2_Describe(&Desk_Error2_globalblock));
+			if (Desk_Wimp_ReportErrorR(&errblk,3,taskname)==Desk_wimp_reporterror_button_CANCEL) return EXIT_FAILURE;
+		} Desk_Error2_EndCatch
 	}
-	return 0;
+	return EXIT_SUCCESS;
 }
 

@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.8 2000/02/27 13:29:35 uid1 Exp $
+	$Id: Config.c,v 1.9 2000/02/28 00:21:51 uid1 Exp $
 
 */
 
@@ -10,13 +10,16 @@
 #include "Desk.Window.h"
 #include "Desk.Icon.h"
 #include "Desk.Error.h"
+#include "Desk.Error2.h"
 #include "Desk.File.h"
 #include "Desk.Filing.h"
+#include "Desk.Msgs.h"
 #include "Desk.Menu.h"
 #include "Desk.Event.h"
 #include "Desk.Template.h"
 
 #include "AJWLib.Assert.h"
+#include "AJWLib.Error2.h"
 #include "AJWLib.File.h"
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Menu.h"
@@ -144,22 +147,30 @@ static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 
 static Desk_bool Config_Save(Desk_event_pollblock *block,void *ref)
 {
-	FILE *file;
+	FILE *file=NULL;
 	if (!Config_Ok(block,ref)) return Desk_FALSE;
-	file=AJWLib_File_fopen(CONFIGFILEWRITE,"wb");
-	AJWLib_File_fwrite(&config,sizeof(config),1,file);
-	AJWLib_File_fclose(file);
+	Desk_Error2_Try {
+		file=AJWLib_File_fopen(CONFIGFILEWRITE,"wb");
+		AJWLib_File_fwrite(&config,sizeof(config),1,file);
+		AJWLib_File_fclose(file);
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.ConfigS:%s");
+	} Desk_Error2_EndCatch
 	return Desk_TRUE;
 }
 
 static void Config_Load(void)
 {
-	FILE *file;
-	if (Desk_File_Exists(CONFIGFILEREAD)) {
-		file=AJWLib_File_fopen(CONFIGFILEREAD,"rb");
-		AJWLib_File_fread(&config,sizeof(config),1,file);
-		AJWLib_File_fclose(file);
-	}
+	FILE *file=NULL;
+	Desk_Error2_Try {
+		if (Desk_File_Exists(CONFIGFILEREAD)) {
+			file=AJWLib_File_fopen(CONFIGFILEREAD,"rb");
+			AJWLib_File_fread(&config,sizeof(config),1,file);
+			AJWLib_File_fclose(file);
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.ConfigL:%s");
+	} Desk_Error2_EndCatch
 }
 
 static Desk_bool Config_SnapClick(Desk_event_pollblock *block,void *ref)
@@ -189,7 +200,6 @@ void Config_Open(void)
 {
 	Desk_filing_dirdata dir;
 	char *name=NULL;
-	Desk_Window_Show(configwin,Desk_open_CENTERED);
 	Desk_Icon_SetText(configwin,config_DEFAULTSTYLE,config.graphicsstyle);
 	Desk_Icon_SetText(configwin,config_USER1,config.userdesc[0]);
 	Desk_Icon_SetText(configwin,config_USER2,config.userdesc[1]);
@@ -201,7 +211,6 @@ void Config_Open(void)
 	Desk_Icon_SetSelect(configwin,config_DISPLAYTITLE,config.title);
 	Desk_Icon_SetSelect(configwin,config_AUTOINCREASE,config.autoincreasesize);
 	Desk_Icon_SetSelect(configwin,config_AUTOINCREASEONLY,!config.autoincreasealways);
-	Desk_Icon_SetCaret(configwin,config_USER1);
 	Config_SnapClick(NULL,NULL);
 	Config_AutoIncreaseClick(NULL,NULL);
 	Desk_Filing_OpenDir(GRAPHICSDIR,&dir,256,Desk_readdirtype_NAMEONLY);
@@ -216,6 +225,8 @@ void Config_Open(void)
 		}
 	} while (name);
 	Desk_Filing_CloseDir(&dir);
+	Desk_Window_Show(configwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(configwin,config_USER1);
 	AJWLib_Menu_Register(configmenu,Config_MenuClick,NULL);
 	AJWLib_Menu_AttachPopup(configwin,config_DEFAULTSTYLEMENU,config_DEFAULTSTYLE,configmenu,Desk_button_MENU | Desk_button_SELECT);
 }

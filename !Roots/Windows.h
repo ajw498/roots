@@ -37,10 +37,12 @@ layout *Windows_Save(FILE *file,int *index);
 
 void Windows_Load(FILE *file);
 
-void Windows_FilenameChanged(char *filename);
-
 void Windows_FileModified(void);
 
 void Windows_LayoutNormal(layout *layout);
+
+void Windows_CloseAddParentsWindow(void);
+
+void Windows_CloseAllWindows(void);
 
 #endif

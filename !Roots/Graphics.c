@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.20 2000/02/27 13:29:38 uid1 Exp $
+	$Id: Graphics.c,v 1.21 2000/02/28 00:21:55 uid1 Exp $
 
 */
 
@@ -38,6 +38,7 @@
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
 #include "AJWLib.Assert.h"
+#include "AJWLib.Error2.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -70,14 +71,14 @@ static unsigned int Graphics_RGBToPalette(char *str)
 void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 {
 	if (!strcmp(values[0],"filetitle")) {
-		if (numvalues!=6) Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
+		if (numvalues!=6) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
 		graphicsdata.titleheight=Graphics_ConvertToOS(values[1]);
 		graphicsdata.title.size=(int)strtol(values[2],NULL,10);
 		graphicsdata.title.colour=Graphics_RGBToPalette(values[3]);
 		graphicsdata.title.bgcolour=Graphics_RGBToPalette(values[4]);
 		strcpy(graphicsdata.title.fontname,values[5]);
 	} else {
-		if (numvalues!=2) Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
+		if (numvalues!=2) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
 		if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
 		else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
 		else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
@@ -87,7 +88,7 @@ void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 		else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
 		else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
 		else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
-		else Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
+		else Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
 	}
 }
 
@@ -104,15 +105,14 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 	else if (!strcmp(values[0],"field")) graphictype=graphictype_FIELD;
 	else if (!strcmp(values[0],"centredtext")) graphictype=graphictype_CENTREDTEXTLABEL;
 	else if (!strcmp(values[0],"centredfield")) graphictype=graphictype_CENTREDFIELD;
-	else Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
+	else Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 	switch (graphictype) {
 		case graphictype_LINE:
 		case graphictype_CHILDLINE:
 			if (numvalues!=7) {
-				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 			} else {
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),(++graphicsdata.numpersonobjects)*sizeof(object));
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype;
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
@@ -124,10 +124,9 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 			break;
 		case graphictype_RECTANGLE:
 			if (numvalues!=7) {
-				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 			} else {
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),(++graphicsdata.numpersonobjects)*sizeof(object));
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype_RECTANGLE;
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
@@ -139,10 +138,9 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 			break;
 		case graphictype_FILLEDRECTANGLE:
 			if (numvalues!=6) {
-				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 			} else {
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),(++graphicsdata.numpersonobjects)*sizeof(object));
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype_FILLEDRECTANGLE;
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
@@ -154,11 +152,10 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 		case graphictype_CENTREDTEXTLABEL:
 		case graphictype_TEXTLABEL:
 			if (numvalues!=8) {
-				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 			} else {
 				int size;
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),(++graphicsdata.numpersonobjects)*sizeof(object));
 				graphicsdata.person[graphicsdata.numpersonobjects-1].type=graphictype;
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.x=Graphics_ConvertToOS(values[1]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.y=Graphics_ConvertToOS(values[2]);
@@ -173,12 +170,10 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 		case graphictype_CENTREDFIELD:
 		case graphictype_FIELD:
 			if (numvalues!=8) {
-				Desk_Error_Report(1,"Syntax error in person file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 			} else {
 				personfieldtype field;
 				int size;
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.person),((graphicsdata.numpersonobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
 				AJWLib_Str_LowerCase(values[7]);
 				if (!strcmp(values[7],"surname")) field=personfieldtype_SURNAME;
 				else if (!strcmp(values[7],"forename")) field=personfieldtype_FORENAME;
@@ -195,8 +190,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				else if (!strcmp(values[7],"user1")) field=personfieldtype_USER1;
 				else if (!strcmp(values[7],"user2")) field=personfieldtype_USER2;
 				else if (!strcmp(values[7],"user3")) field=personfieldtype_USER3;
-				else Desk_Error_Report(1,"Syntax error in person file, line %d (unknown field type)",linenum); /*what is field?*/
-				/*Error2 error?*/
+				else Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 				graphicsdata.personfields[field].plot=Desk_TRUE;
 				graphicsdata.personfields[field].type=graphictype;
 				graphicsdata.personfields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
@@ -225,7 +219,7 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 	switch (graphictype) {
 		case graphictype_SIBLINGLINE:
 			if (numvalues!=3) {
-				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
 				graphicsdata.siblinglinethickness=Graphics_ConvertToOS(values[1]);
 				graphicsdata.siblinglinecolour=Graphics_RGBToPalette(values[2]);
@@ -234,10 +228,9 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 		case graphictype_LINE:
 		case graphictype_CHILDLINE:
 			if (numvalues!=7) {
-				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),(++graphicsdata.nummarriageobjects)*sizeof(object));
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype;
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
@@ -249,10 +242,9 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 			break;
 		case graphictype_RECTANGLE:
 			if (numvalues!=7) {
-				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),(++graphicsdata.nummarriageobjects)*sizeof(object));
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_RECTANGLE;
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
@@ -264,10 +256,9 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 			break;
 		case graphictype_FILLEDRECTANGLE:
 			if (numvalues!=6) {
-				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),(++graphicsdata.nummarriageobjects)*sizeof(object));
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_FILLEDRECTANGLE;
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.x0=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.linebox.y0=Graphics_ConvertToOS(values[2]);
@@ -278,11 +269,10 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 			break;
 		case graphictype_TEXTLABEL:
 			if (numvalues!=8) {
-				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
 				int size;
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),(++graphicsdata.nummarriageobjects)*sizeof(object));
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].type=graphictype_TEXTLABEL;
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.x=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.y=Graphics_ConvertToOS(values[2]);
@@ -294,16 +284,15 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 			break;
 		case graphictype_FIELD:
 			if (numvalues!=8) {
-				Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum);
+				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
 				marriagefieldtype field;
 				int size;
-				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriage),((graphicsdata.nummarriageobjects++)+1)*sizeof(object));
-				/*Check for flex error*/
 				AJWLib_Str_LowerCase(values[7]);
 				if (!strcmp(values[7],"place")) field=marriagefieldtype_PLACE;
 				else if (!strcmp(values[7],"date")) field=marriagefieldtype_DATE;
-				else Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum); /*what is field?*/
+				else if (!strcmp(values[7],"divorce")) field=marriagefieldtype_DIVORCE;
+				else Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 				graphicsdata.marriagefields[field].plot=Desk_TRUE;
 				graphicsdata.marriagefields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriagefields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
@@ -319,12 +308,14 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 
 void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
 {
-	FILE *file;
+	FILE *file=NULL;
 	char fullfilename[256];
 	int ch=0,line=0;
+	sprintf(fullfilename,"%s.%s",GRAPHICSDIR,style);
+	if (!Desk_File_IsDirectory(fullfilename)) AJWLib_Error2_HandleMsgs2("Error.NoDir:Dir %s does not exist",style);
 	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,style,filename);
-	/*Check that dir actually exists*/
-	file=AJWLib_File_fopen(fullfilename,"r");
+	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs3("Error.NoFile:File %s does not exist in dir %s",filename,style);
+	file=AJWLib_File_fopen(fullfilename,"r"); /*Error will be caught by caller*/
 	while (ch!=EOF) {
 		char str[256];
 		int i=-1;
@@ -422,28 +413,30 @@ void Graphics_ClaimFonts(void)
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
-/*	Desk_Font2_ClaimFont(&(graphicsdata.title.font),graphicsdata.title.fontname,16*graphicsdata.title.size,16*graphicsdata.title.size);
-*/	Desk_Font2_ClaimFont(&(graphicsdata.title.font),"Homerton.Bold",16*24,16*24);
+	graphicsdata.title.font=NULL;
+	Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.title.font),graphicsdata.title.fontname,16*graphicsdata.title.size,16*graphicsdata.title.size));
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
-			Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,16*graphicsdata.person[i].details.textlabel.properties.size,16*graphicsdata.person[i].details.textlabel.properties.size);
+			graphicsdata.person[i].details.textlabel.properties.font=NULL;
+			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,16*graphicsdata.person[i].details.textlabel.properties.size,16*graphicsdata.person[i].details.textlabel.properties.size));
 		}
 	}
 	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
 		if (graphicsdata.personfields[i].plot) {
-			Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,16*graphicsdata.personfields[i].textproperties.size,16*graphicsdata.personfields[i].textproperties.size);
-			/*errors - font not found*/
+			graphicsdata.personfields[i].textproperties.font=NULL;
+			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,16*graphicsdata.personfields[i].textproperties.size,16*graphicsdata.personfields[i].textproperties.size));
 		}
 	}
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
-			Desk_Font2_ClaimFont(&(graphicsdata.marriage[i].details.textlabel.properties.font),graphicsdata.marriage[i].details.textlabel.properties.fontname,16*graphicsdata.marriage[i].details.textlabel.properties.size,16*graphicsdata.marriage[i].details.textlabel.properties.size);
+			graphicsdata.marriage[i].details.textlabel.properties.font=NULL;
+			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriage[i].details.textlabel.properties.font),graphicsdata.marriage[i].details.textlabel.properties.fontname,16*graphicsdata.marriage[i].details.textlabel.properties.size,16*graphicsdata.marriage[i].details.textlabel.properties.size));
 		}
 	}
 	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
 		if (graphicsdata.marriagefields[i].plot) {
-			Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,16*graphicsdata.marriagefields[i].textproperties.size,16*graphicsdata.marriagefields[i].textproperties.size);
-			/*errors - font not found*/
+			graphicsdata.marriagefields[i].textproperties.font=NULL;
+			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,16*graphicsdata.marriagefields[i].textproperties.size,16*graphicsdata.marriagefields[i].textproperties.size));
 		}
 	}
 }
@@ -451,8 +444,6 @@ void Graphics_ClaimFonts(void)
 void Graphics_ReleaseFonts(void)
 {
 	int i;
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	Desk_Font2_ReleaseFont(&(graphicsdata.title.font));
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
@@ -484,20 +475,14 @@ void Graphics_Load(FILE *file)
 	AJWLib_Assert(graphicsdata.person==NULL);
 	AJWLib_Assert(graphicsdata.marriage==NULL);
 	AJWLib_File_fread(&graphicsdata,sizeof(graphics),1,file);
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),sizeof(object)*graphicsdata.numpersonobjects+1);
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),sizeof(object)*graphicsdata.numpersonobjects+1); /*An extra byte incase there are no objects*/
 	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),sizeof(object)*graphicsdata.nummarriageobjects+1);
 	AJWLib_File_fread(graphicsdata.person,sizeof(object),graphicsdata.numpersonobjects,file);
 	AJWLib_File_fread(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
 	AJWLib_File_fread(&size,sizeof(int),1,file);
 	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
 	sprintf(filename,"%s.%s",GRAPHICSDIR,currentstyle);
-	if (Desk_File_IsDirectory(filename)) {
-		AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
-		AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
-		Graphics_LoadStyle(currentstyle);
-	} else {
-		Graphics_ClaimFonts();
-	}
+	Graphics_ClaimFonts();
 	/*Import style? ie save style into graphic dir if doesn't already exist*/
 }
 
@@ -522,21 +507,18 @@ void Graphics_Save(FILE *file)
 
 void Graphics_RemoveStyle(void)
 {
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	AJWLib_AssertWarning(graphicsdata.person!=NULL);
+	AJWLib_AssertWarning(graphicsdata.marriage!=NULL);
 	Graphics_ReleaseFonts();
 	graphicsdata.numpersonobjects=0;
 	graphicsdata.nummarriageobjects=0;
-	AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
-	AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
+	if (graphicsdata.person!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
+	if (graphicsdata.marriage!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
 }
 
-void Graphics_LoadStyle(char *style)
+static void Graphics_DefaultStyle(void)
 {
 	int i;
-	AJWLib_Assert(graphicsdata.person==NULL);
-	AJWLib_Assert(graphicsdata.marriage==NULL);
-	AJWLib_Assert(style!=NULL);
 	graphicsdata.personwidth=200;
 	graphicsdata.personheight=100;
 	graphicsdata.gapheightabove=40;
@@ -554,15 +536,29 @@ void Graphics_LoadStyle(char *style)
 	strcpy(graphicsdata.title.fontname,"Homerton.Bold");
 	graphicsdata.numpersonobjects=0;
 	graphicsdata.nummarriageobjects=0;
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
 	for (i=0;i<NUMPERSONFIELDS;i++) graphicsdata.personfields[i].plot=Desk_FALSE;
 	for (i=0;i<NUMMARRIAGEFIELDS;i++) graphicsdata.marriagefields[i].plot=Desk_FALSE;
-	Graphics_ReadFile(style,"Person",Graphics_StorePersonDetails);
-	Graphics_ReadFile(style,"Dimensions",Graphics_StoreDimensionDetails);
-	Graphics_ReadFile(style,"Marriage",Graphics_StoreMarriageDetails);
-	strcpy(currentstyle,style);
-	Graphics_ClaimFonts();
+}
+
+void Graphics_LoadStyle(char *style)
+{
+	AJWLib_Assert(graphicsdata.person==NULL);
+	AJWLib_Assert(graphicsdata.marriage==NULL);
+	AJWLib_Assert(style!=NULL);
+	Graphics_DefaultStyle();
+	Desk_Error2_Try {
+		AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
+		Graphics_ReadFile(style,"Person",Graphics_StorePersonDetails);
+		Graphics_ReadFile(style,"Dimensions",Graphics_StoreDimensionDetails);
+		Graphics_ReadFile(style,"Marriage",Graphics_StoreMarriageDetails);
+		strcpy(currentstyle,style);
+		Graphics_ClaimFonts();
+	} Desk_Error2_Catch {
+		Graphics_RemoveStyle();
+		Graphics_DefaultStyle();
+		Desk_Error2_ReThrow();
+	} Desk_Error2_EndCatch
 }
 
 void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
@@ -599,52 +595,52 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 			int xcoord=0;
 			switch (i) {
 				case personfieldtype_SURNAME:
-					strcat(fieldtext,Database_GetPersonData(person)->surname);
+					strcpy(fieldtext,Database_GetPersonData(person)->surname);
 					break;
 				case personfieldtype_FORENAME:
-					strcat(fieldtext,Database_GetPersonData(person)->forename);
+					strcpy(fieldtext,Database_GetPersonData(person)->forename);
 					break;
 				case personfieldtype_MIDDLENAMES:
-					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
+					strcpy(fieldtext,Database_GetPersonData(person)->middlenames);
 					break;
 				case personfieldtype_TITLEDNAME:
-					strcat(fieldtext,Database_GetTitledName(person));
+					strcpy(fieldtext,Database_GetTitledName(person));
 					break;
 				case personfieldtype_NAME:
-					strcat(fieldtext,Database_GetName(person));
+					strcpy(fieldtext,Database_GetName(person));
 					break;
 				case personfieldtype_TITLEDFULLNAME:
-					strcat(fieldtext,Database_GetTitledFullName(person));
+					strcpy(fieldtext,Database_GetTitledFullName(person));
 					break;
 				case personfieldtype_FULLNAME:
-					strcat(fieldtext,Database_GetFullName(person));
+					strcpy(fieldtext,Database_GetFullName(person));
 					break;
 				case personfieldtype_TITLE:
-					strcat(fieldtext,Database_GetPersonData(person)->title);
+					strcpy(fieldtext,Database_GetPersonData(person)->title);
 					break;
-/*				case personfieldtype_SEX:
-					strcat(fieldtext,Database_GetPersonData(person)->sex);
+				case personfieldtype_SEX:
+					sprintf(fieldtext,"%c",Database_GetPersonData(person)->sex);
 					break;
-*/				case personfieldtype_DOB:
-					strcat(fieldtext,Database_GetPersonData(person)->dob);
+				case personfieldtype_DOB:
+					strcpy(fieldtext,Database_GetPersonData(person)->dob);
 					break;
 				case personfieldtype_DOD:
-					strcat(fieldtext,Database_GetPersonData(person)->dod);
+					strcpy(fieldtext,Database_GetPersonData(person)->dod);
 					break;
 				case personfieldtype_BIRTHPLACE:
-					strcat(fieldtext,Database_GetPersonData(person)->placeofbirth);
+					strcpy(fieldtext,Database_GetPersonData(person)->placeofbirth);
 					break;
 				case personfieldtype_USER1:
-					strcat(fieldtext,Database_GetPersonData(person)->userdata[0]);
+					strcpy(fieldtext,Database_GetPersonData(person)->userdata[0]);
 					break;
 				case personfieldtype_USER2:
-					strcat(fieldtext,Database_GetPersonData(person)->userdata[1]);
+					strcpy(fieldtext,Database_GetPersonData(person)->userdata[1]);
 					break;
 				case personfieldtype_USER3:
-					strcat(fieldtext,Database_GetPersonData(person)->userdata[2]);
+					strcpy(fieldtext,Database_GetPersonData(person)->userdata[2]);
 					break;
 				default:
-					strcat(fieldtext,"Unimplemented");
+					strcpy(fieldtext,"Unimplemented");
 			}
 			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
 			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
@@ -682,16 +678,16 @@ void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,element
 			char fieldtext[256]=""; /*what is max field length?*/
 			switch (i) {
 				case marriagefieldtype_PLACE:
-					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
+					strcpy(fieldtext,Database_GetMarriageData(marriage)->place);
 					break;
 				case marriagefieldtype_DATE:
-					strcat(fieldtext,Database_GetMarriageData(marriage)->date);
+					strcpy(fieldtext,Database_GetMarriageData(marriage)->date);
 					break;
 				case marriagefieldtype_DIVORCE:
-					strcat(fieldtext,Database_GetMarriageData(marriage)->divorce);
+					strcpy(fieldtext,Database_GetMarriageData(marriage)->divorce);
 					break;
 				default:
-					strcat(fieldtext,"Unimplemented");
+					strcpy(fieldtext,"Unimplemented");
 			}
 			Graphics_PlotText(scale,originx,originy,x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 		}

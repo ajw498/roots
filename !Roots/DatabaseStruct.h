@@ -98,8 +98,6 @@ char *Database_GetName(elementptr person);
 char *Database_GetFullName(elementptr person);
 char *Database_GetTitledName(elementptr person);
 char *Database_GetTitledFullName(elementptr person);
-void Database_FudgeLinked(elementptr person);
-void Database_FudgeMarriageSwap(elementptr marriage);
 elementptr Database_GetMother(elementptr person);
 elementptr Database_GetFather(elementptr person);
 elementptr Database_GetSiblingLtoR(elementptr person);
@@ -110,7 +108,6 @@ elementptr Database_GetSpouseFromMarriage(elementptr marriage);
 elementptr Database_GetPrincipalFromMarriage(elementptr marriage);
 Desk_bool Database_IsFirstMarriage(elementptr marriage);
 Desk_bool Database_IsUnlinked(elementptr person);
-void Database_Info(Desk_window_handle infowin);
 void Database_New(void);
 void Database_Remove(void);
 void Database_Init(void);
@@ -132,6 +129,7 @@ void Database_Add(void);
 void Database_Delete(elementptr person);
 int Database_GetNumPeople(void);
 int Database_GetSize(void);
+void Database_StopEditing(void);
 
 #endif
 
