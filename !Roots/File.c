@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.49 2002/07/27 19:21:52 ajw Exp $
+	$Id: File.c,v 1.50 2002/12/07 16:18:18 ajw Exp $
 
 */
 
@@ -36,7 +36,7 @@
 #include "TreeLayout.h"
 #include "File.h"
 
-#define MAXLINELEN 256
+#define MAXLINELEN 10240
 #define ID_NONE (-1)
 
 #define SWI_Territory_ConvertStandardDateAndTime 0x4304C

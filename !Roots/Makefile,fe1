@@ -4,26 +4,20 @@
 
 include include/mk
 
-CC = cc
+CC = gcc
 MAKE = amu
-LINK ?= link
+#LINK ?= link
+LINK ?= gcc -mlibscl
 
 
-CCFLAGS = -c -throwback -depend !Depend -IC: $(EXTRAFLAGS) -strict -fah $(FLAGS)
+CCFLAGS = -c -mthrowback -mlibscl -IDesk: -IAJWLib: -ILua: -O2 -Wall $(FLAGS)
 
 NORMALLIBS = \
-	C:o.stubs\
-	C:Lua.lib.luacore\
-	C:Lua.lib.luastdlib\
-	C:AJWLib.o.AJWLib\
-	C:Desk.o.Desk
-
-32BITLIBS = \
-	C32:o.stubs\
-	C32:Lua.lib.luacore\
-	C32:Lua.lib.luastdlib\
-	C32:AJWLib.o.AJWLib\
-	C32:Desk.o.Desk
+	Lua:Lua.lib.luacore\
+	Lua:Lua.lib.luastdlib\
+	AJWLib:o.AJWLib\
+	Desk:o.Desk
+#	C:o.stubs\
 
 MEMCHECKLIBS = \
 	C:stubs.o.asstubs\

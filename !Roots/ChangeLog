@@ -1,3 +1,7 @@
+v1.16 7-Dec-02
+Increased maximum line length allowed for imported GEDCOM files
+Recompiled for 32bit compatibility
+
 v1.15 1-Aug-02
 Fixed bug that unlinked a family if they were moved up a generation or more
 Added user defineable field types

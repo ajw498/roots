@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.8 2001/07/02 20:47:31 AJW Exp $
+	$Id: EditGraphics.c,v 1.9 2002/12/07 16:18:18 ajw Exp $
 
 */
 
@@ -277,7 +277,7 @@ static Desk_menu_ptr shapemenu,textmenu,fontmenu,justmenu,editmenu=NULL,deleteme
 static void EditGraphics_UpdateWindow(void)
 {
 	int x;
-	Desk_wimp_rect bbox={0,0,0,0};
+	Desk_wimp_rect bbox={{0,0},{0,0}};
 	object *object;
 
 	bbox.max.x=item->width;
