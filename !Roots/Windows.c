@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.77 2000/09/11 11:08:22 AJW Exp $
+	$Id: Windows.c,v 1.78 2000/09/13 21:15:51 AJW Exp $
 
 */
 
@@ -195,6 +195,7 @@ static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomw
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconfigmenu=NULL;
 static elementptr newviewperson;
 static mouseclickdata mousedata;
+static savedata nextloadwindowdata;
 
 static void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 {
@@ -1103,6 +1104,47 @@ int Windows_GetSize(void)
 	return size;
 }
 
+void Windows_CreateWindow(wintype type) {
+	/* Create the window using details stored in nextloadwindowdata*/
+	Windows_OpenWindow(type,nextloadwindowdata.person,nextloadwindowdata.generations,nextloadwindowdata.scale,&(nextloadwindowdata.coords));
+}
+
+void Windows_SetMinX(int val) {
+	nextloadwindowdata.coords.screenrect.min.x=val;
+}
+
+void Windows_SetMinY(int val) {
+	nextloadwindowdata.coords.screenrect.min.y=val;
+}
+
+void Windows_SetMaxX(int val) {
+	nextloadwindowdata.coords.screenrect.max.x=val;
+}
+
+void Windows_SetMaxY(int val) {
+	nextloadwindowdata.coords.screenrect.max.y=val;
+}
+
+void Windows_SetScrollX(int val) {
+	nextloadwindowdata.coords.scroll.x=val;
+}
+
+void Windows_SetScrollY(int val) {
+	nextloadwindowdata.coords.scroll.y=val;
+}
+
+void Windows_SetPerson(elementptr person) {
+	nextloadwindowdata.person=person;
+}
+
+void Windows_SetGenerations(int val) {
+	nextloadwindowdata.generations=val;
+}
+
+void Windows_SetScale(int val) {
+	nextloadwindowdata.scale=val;
+}
+
 void Windows_Load(FILE *file)
 {
 	savedata data;
@@ -1156,12 +1198,12 @@ layout *Windows_SaveGEDCOM(FILE *file,int *index)
 	if (i==0) fprintf(file,"0 @W1@ _WINDOWS\n");
 
 	if (windows[i].handle) {
-		fprintf(file,"1 _TYPE %d\n",windows[i].type);
 		Desk_Window_GetCoords(windows[i].handle,&(coords));
 		fprintf(file,"1 _COORDS\n2 _SCREENRECT\n3 _MIN\n4 _X %d\n4 _Y %d\n3 _MAX\n4 _X %d\n4 _Y %d\n2 _SCROLL\n3 _X %d\n3 _Y %d\n",coords.screenrect.min.x,coords.screenrect.min.y,coords.screenrect.max.x,coords.screenrect.max.y,coords.scroll.x,coords.scroll.y);
 		fprintf(file,"1 _PERSON @%d@\n",windows[i].person);
 		fprintf(file,"1 _GENERATIONS %d\n",windows[i].generations);
 		fprintf(file,"1 _SCALE %d\n",windows[i].scale);
+		fprintf(file,"1 _TYPE %d\n",windows[i].type);
 
 		if (windows[i].type==wintype_NORMAL) return windows[i].layout;
 	}

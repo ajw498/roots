@@ -28,7 +28,7 @@ OBJECTS = \
 	Print.o\
 	Drawfile.o\
 	Database.o\
-	!RunImage.o
+	Main.o
 
 SOURCES = $(OBJECTS:.o=.c)
 
@@ -51,12 +51,12 @@ LINK		=	DrLink $(LINKFLAGS)
 #LINK		=	gcc $(LINKFLAGS)
 
 
-.c.o:
+.c.o: $(HEADERS)
 	$(CC) $< -o $@
 
 
 
-!RunImage: $(OBJECTS) $(HEADERS)
+!RunImage: $(OBJECTS)
 	$(LINK) -o $@ $(OBJECTS) $(LIBS)
 
 remove:

@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.26 2000/09/11 11:08:14 AJW Exp $
+	$Id: File.c,v 1.27 2000/09/13 21:15:40 AJW Exp $
 
 */
 
@@ -12,6 +12,8 @@
 #include "Desk.File.h"
 #include "Desk.Icon.h"
 #include "Desk.KernelSWIs.h"
+#include "Desk.DeskMem.h"
+#include "Desk.str.h"
 
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Error2.h"
@@ -21,7 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
+#include "Main.h"
 #include "Database.h"
 #include "Graphics.h"
 #include "Windows.h"
@@ -31,11 +35,14 @@
 
 #define FILEID "Root"
 #define FILEVERSION 200
+#define ID_NONE (-1)
+#define MAXLINELEN 256
 
 #define SWI_Territory_ConvertStandardDateAndTime 0x4304C
 
 static char currentfilename[256],oldfilename[256],filedate[256];
 static Desk_bool modified=Desk_FALSE,oldmodified;
+static int *idarray=NULL,idarraysize=0;
 
 static void File_GetCurrentTime(void)
 {
@@ -90,6 +97,7 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"w");,AJWLib_Error2_ReportMsgs("Error.Save:%s"); return Desk_TRUE;)
 	/*file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
+		fprintf(file,"0 HEAD\n1 SOUR ROOTS\n2 VERS %s\n",ROOTS_VERSION);
 		Database_SaveGEDCOM(file);
 		Graphics_SaveGEDCOM(file);
 		while (nextwindow>=0) {
@@ -177,6 +185,402 @@ void File_LoadFile(char *filename)
 		Windows_CloseAllWindows();
 		Database_Remove();
 	} Desk_Error2_EndCatch
+}
+
+static elementptr File_GetElementFromID(int id,elementtype type)
+/* Translate from ID to elementptr, creating a new element if nessecery*/
+{
+	int i;
+	elementptr element=none;
+
+	for (i=0;i<idarraysize;i++) {
+		if (idarray[i]==id) element=i;
+	}
+	if (element==none) {
+		/* The element does not exist, so create it*/
+		switch (type) {
+			case element_PERSON:
+				element=Database_Add();
+				break;
+			case element_MARRIAGE:
+				element=Database_AddMarriage();
+				break;
+			default:
+				AJWLib_Assert(0);
+		}
+		/* Increase array size if nessecery, in blocks of 20 to avoid reallocing to often*/
+		if (idarraysize<=element) {
+			idarray=Desk_DeskMem_Realloc(idarray,(element+20)*sizeof(int));
+			for (i=idarraysize;i<element+20;i++) idarray[i]=ID_NONE;
+			idarraysize=element+20;
+		}
+		/* Add entry to array*/
+		idarray[element]=id;
+		return element;
+	}
+	return element;
+}
+
+
+static void File_HandleData(char *id,char *tag,char *data)
+/* Handle a line of GEDCOM*/
+{
+	if (tag==NULL) return;
+	if (!Desk_stricmp(tag,"HEAD.SOUR")) {
+		if (strcmp(data,"ROOTS")) AJWLib_Error2_HandleMsgs("Error.NotRoot:");
+
+	} else if (!Desk_stricmp(tag,"HEAD.SOUR.VERS")) {
+		/*Check version?*/
+	} else if (!Desk_stricmp(tag,"_FILEINFO._TITLE")) {
+		Database_SetTitle(data);
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._NEXTNEWPERSON")) {
+		Database_SetNextNewPerson(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._USER1")) {
+		Database_SetUserDesc(0,data);
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._USER2")) {
+		Database_SetUserDesc(1,data);
+
+	} else if (!Desk_stricmp(tag,"_FILEINFO._USER3")) {
+		Database_SetUserDesc(2,data);
+
+	} else if (!Desk_stricmp(tag,"INDI")) {
+		/* Entry will be created for this person when the first data associated with them is processed*/
+	} else if (!Desk_stricmp(tag,"INDI.NAME")) {
+		char *ptr=data;
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		/*Find end of forename*/
+		while (*ptr!='\0' && !isspace(*ptr)) ptr++;
+		*(ptr++)='\0';
+		Database_SetForename(person,data);
+		data=ptr;
+		/*Find end of middle names*/
+		while (*ptr!='\0' && *ptr!='/') ptr++;
+		*(ptr++)='\0';
+		Database_SetMiddleNames(person,data);
+		data=ptr;
+		/*Find end of surname*/
+		while (*ptr!='\0' && *ptr!='/') ptr++;
+		*(ptr++)='\0';
+		Database_SetSurname(person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI.SEX")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetSex(person,data[0]);
+
+	} else if (!Desk_stricmp(tag,"INDI.BIRT.PLAC")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetPlaceOfBirth(person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI.BIRT.DATE")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetDOB(person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI.DEAT.DATE")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetDOD(person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI._USER1")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetUser(0,person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI._USER2")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetUser(1,person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI._USER3")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		Database_SetUser(2,person,data);
+
+	} else if (!Desk_stricmp(tag,"INDI.FAMS")) {
+		elementptr marriage,person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		marriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		Database_SetMarriage(person,marriage);
+		
+	} else if (!Desk_stricmp(tag,"INDI.FAMC")) {
+		elementptr marriage,person;
+
+		person=File_GetElementFromID(atoi(id),element_PERSON);
+		marriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		Database_SetParentsMarriage(person,marriage);
+
+	} else if (!Desk_stricmp(tag,"FAM")) {
+		/* Entry will be created for this marrriage when the first data associated with it is processed*/
+	} else if (!Desk_stricmp(tag,"FAM.HUSB")) {
+		elementptr marriage,person;
+
+		person=File_GetElementFromID(atoi(data),element_PERSON);
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		Database_SetPrincipal(marriage,person);
+		
+	} else if (!Desk_stricmp(tag,"FAM.WIFE")) {
+		elementptr marriage,person;
+
+		person=File_GetElementFromID(atoi(data),element_PERSON);
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		Database_SetSpouse(marriage,person);
+		
+	} else if (!Desk_stricmp(tag,"FAM.CHIL")) {
+		elementptr marriage,person;
+
+		person=File_GetElementFromID(atoi(data),element_PERSON);
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		Database_SetChild(marriage,person);
+		
+	} else if (!Desk_stricmp(tag,"FAM._LINKN")) {
+		elementptr marriage,nextmarriage;
+
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		nextmarriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		Database_SetNextMarriage(marriage,nextmarriage);
+
+	} else if (!Desk_stricmp(tag,"FAM._LINKP")) {
+		elementptr marriage,previousmarriage;
+
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		previousmarriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		Database_SetPreviousMarriage(marriage,previousmarriage);
+
+	} else if (!Desk_stricmp(tag,"FAM.MARR.DATE")) {
+		elementptr marriage;
+
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		Database_SetMarriageDate(marriage,data);
+
+	} else if (!Desk_stricmp(tag,"FAM.MARR.PLAC")) {
+		elementptr marriage;
+
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		Database_SetMarriagePlace(marriage,data);
+
+	} else if (!Desk_stricmp(tag,"FAM.DIV")) {
+		elementptr marriage;
+
+		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		Database_SetDivorceDate(marriage,data);
+
+	} else if (!Desk_stricmp(tag,"_GRAPHICS._PERSONFILE._LINE")) {
+		Graphics_LoadPersonFileLine(data);
+
+	} else if (!Desk_stricmp(tag,"_GRAPHICS._MARRIAGEFILE._LINE")) {
+		Graphics_LoadMarriageFileLine(data);
+
+	} else if (!Desk_stricmp(tag,"_GRAPHICS._TITLEFILE._LINE")) {
+		Graphics_LoadTitleFileLine(data);
+
+	} else if (!Desk_stricmp(tag,"_GRAPHICS._DIMENSIONSFILE._LINE")) {
+		Graphics_LoadDimensionsFileLine(data);
+
+	} else if (!Desk_stricmp(tag,"_GRAPHICS._CURRENTSTYLE")) {
+		Graphics_SetGraphicsStyle(data);
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._TYPE")) {
+		Windows_CreateWindow((wintype)atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._COORDS._SCREENRECT._MIN._X")) {
+		Windows_SetMinX(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._COORDS._SCREENRECT._MIN._Y")) {
+		Windows_SetMinY(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._COORDS._SCREENRECT._MAX._X")) {
+		Windows_SetMaxX(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._COORDS._SCREENRECT._MAX._Y")) {
+		Windows_SetMaxY(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._COORDS._SCROLL._X")) {
+		Windows_SetScrollX(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._COORDS._SCROLL._Y")) {
+		Windows_SetScrollY(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._PERSON")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(data),element_PERSON);
+		Windows_SetPerson(person);
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._GENERATIONS")) {
+		Windows_SetGenerations(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_WINDOWS._SCALE")) {
+		Windows_SetScale(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._PERSON")) {
+		elementptr person;
+
+		person=File_GetElementFromID(atoi(data),element_PERSON);
+		Layout_GEDCOMNewPerson(person);
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._PERSON._X")) {
+		Layout_GEDCOMNewPersonX(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._PERSON._Y")) {
+		Layout_GEDCOMNewPersonY(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE")) {
+		elementptr marriage;
+
+		marriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		Layout_GEDCOMNewMarriage(marriage);
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._X")) {
+		Layout_GEDCOMNewMarriageX(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._Y")) {
+		Layout_GEDCOMNewMarriageY(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"")) {
+	} else {
+		char temp[256]="Unknown Tag: ";
+		strcat(temp,tag);
+		Desk_Error2_HandleText(temp);
+	}
+}
+
+static void File_ParseLine(char *line,int *level,char **id,char **tag,char **data)
+/* Parse a line of GEDCOM into the level, id (if any), tag and any data*/
+{
+	/* Remove initial whitespace*/
+	while (isspace(*line)) line++;
+	/* Get tag level*/
+	*level=atoi(line);
+	/* Skip over tag level*/
+	while (*line!='\0' && !isspace(*line)) line++;
+	/* Skip whitespace*/
+	while(isspace(*line)) line++;
+	/* Get id if it exists*/
+	if (*line=='@') {
+		*id=++line;
+		while (*line!='@' && *line!='\0') line++;
+		*line='\0';
+		line++;
+	} else {
+		*id=NULL;
+	}
+	/* Skip whitespace*/
+	while(isspace(*line)) line++;
+	/* Get tag*/
+	*tag=line;
+	while (*line!='\0' && !isspace(*line)) line++;
+	*(line++)='\0';
+	/* Remaining text must be the data (if any)*/
+	switch (*line) {
+		case '\0':
+			*data=NULL;
+			break;
+		case '@':
+			/* Remove @ at begging and end of data*/
+			*data=++line;
+			while (*line!='\0' && *line!='@') line++;
+			*line='\0';
+			break;
+		default:
+			*data=line;
+			/* Remove the terminating '\n'*/
+			while (*line!='\0' && *line!='\n') line++;
+			*line='\0';
+	}
+}
+
+static char *File_GEDCOMLine(FILE *file,char *line,char *existingtag,char *existingid)
+/* Recursively read though the GEDCOM file building up the whole tag for each line*/
+{
+	int level,newlevel;
+	char wholetag[MAXLINELEN],idbuffer[MAXLINELEN]="";
+	char *id,*tag,*data;
+	
+	do {
+		/* Unwind if error or EOF reached*/
+		if (line==NULL) return NULL;
+		/* Split line into parts*/
+		File_ParseLine(line,&level,&id,&tag,&data);
+		/* Use last known id*/
+		if (id==NULL) {
+			if (existingid!=NULL) strcpy(idbuffer,existingid);
+		} else {
+			strcpy(idbuffer,id);
+		}
+		id=idbuffer;
+		/* Check for overlong tags*/
+		if (strlen(wholetag)+strlen(tag)+2>MAXLINELEN) AJWLib_Error2_HandleMsgs("Error.TooLong:");
+		/* Create the tag including all tags from higher levels*/
+		if (existingtag) sprintf(wholetag,"%s.%s",existingtag,tag); else strcpy(wholetag,tag);
+		/* Do something if there is data associated with the line*/
+		if (data) File_HandleData(id,wholetag,data);
+
+		/* Get the next line*/
+		if (feof(file)) return NULL;
+		if (fgets(line,MAXLINELEN,file)==NULL) return NULL;
+        newlevel=atoi(line);
+
+		/* Recurse if the new level is lower, return to previous recursion if level is higher*/
+		
+		while (newlevel>level) {
+			line=File_GEDCOMLine(file,line,wholetag,id);
+			newlevel=atoi(line);
+		}
+	} while (newlevel==level);
+	return line;
+}
+
+void File_LoadGEDCOM(char *filename)
+/* Load a GEDCOM file*/
+{
+	FILE *file=NULL;
+	char fivebytedate[5];
+	char line[MAXLINELEN];
+
+	AJWLib_Assert(idarray==NULL);
+	AJWLib_Assert(idarraysize==0);
+	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"r");,AJWLib_Error2_ReportMsgs("Error.Load:%s"); return;)
+	/* file is guaranteed to be valid if we get here*/
+	Desk_Error2_Try {
+		Database_New();
+		if (fgets(line,MAXLINELEN,file)==NULL) AJWLib_Error2_HandleMsgs("Error.TooLong:");
+		/* Get the first line, File_GEDCOMLine will get and process the rest*/
+		File_GEDCOMLine(file,line,NULL,NULL);
+		AJWLib_File_fclose(file);
+		Database_LinkAllChildren();
+		Database_CheckConsistency();
+		Layout_LayoutLines(Layout_GetGEDCOMLayout());
+		Windows_LayoutNormal(Layout_GetGEDCOMLayout(),Desk_FALSE);
+		strcpy(currentfilename,filename);
+		modified=Desk_FALSE;
+		Windows_FileModified();
+		Desk_File_Date(filename,fivebytedate);
+		Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Territory_ConvertStandardDateAndTime,-1,fivebytedate,filedate,sizeof(filedate)));
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.Load:%s");
+		if (file) fclose(file);
+		Graphics_RemoveStyle();
+		Windows_CloseAllWindows();
+		Database_Remove();
+	} Desk_Error2_EndCatch
+	free(idarray);
+	idarray=NULL;
+	idarraysize=0;
 }
 
 void File_New(void)

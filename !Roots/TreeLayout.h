@@ -69,6 +69,13 @@ int Layout_GetSize(layout *layout);
 void Layout_Save(layout *layout,FILE *file);
 void Layout_SaveGEDCOM(layout *layout,FILE *file);
 layout *Layout_Load(FILE *file);
+layout *Layout_GetGEDCOMLayout(void);
+void Layout_GEDCOMNewPerson(elementptr person);
+void Layout_GEDCOMNewPersonX(int pos);
+void Layout_GEDCOMNewPersonY(int pos);
+void Layout_GEDCOMNewMarriage(elementptr marriage);
+void Layout_GEDCOMNewMarriageX(int pos);
+void Layout_GEDCOMNewMarriageY(int pos);
 
 #endif
 

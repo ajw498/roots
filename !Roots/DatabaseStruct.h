@@ -141,6 +141,29 @@ char *Database_GetUserDesc(int num);
 void Database_SetUserDesc(int num,char *desc);
 sextype Database_GetSex(elementptr person);
 void Database_SaveGEDCOM(FILE *file);
+void Database_SetTitle(char *title);
+void Database_SetNextNewPerson(int personnumber);
+void Database_SetForename(elementptr person,char *name);
+void Database_SetMiddleNames(elementptr person,char *name);
+void Database_SetSurname(elementptr person,char *name);
+void Database_SetSex(elementptr person,char sexchar);
+void Database_SetPlaceOfBirth(elementptr person,char *place);
+void Database_SetDOB(elementptr person,char *date);
+void Database_SetDOD(elementptr person,char *date);
+void Database_SetUser(int num,elementptr person,char *str);
+void Database_SetMarriage(elementptr person,elementptr marriage);
+void Database_SetParentsMarriage(elementptr person,elementptr marriage);
+void Database_SetPrincipal(elementptr marriage,elementptr person);
+void Database_SetSpouse(elementptr marriage,elementptr person);
+void Database_SetChild(elementptr marriage,elementptr person);
+void Database_SetNextMarriage(elementptr marriage,elementptr nextmarriage);
+void Database_SetPreviousMarriage(elementptr marriage,elementptr previousmarriage);
+void Database_SetMarriageDate(elementptr marriage,char *date);
+void Database_SetMarriagePlace(elementptr marriage,char *place);
+void Database_SetDivorceDate(elementptr marriage,char *date);
+elementptr Database_AddMarriage(void);
+void Database_CheckConsistency(void);
+void Database_LinkAllChildren(void);
 
 #endif
 
