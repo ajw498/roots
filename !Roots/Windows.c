@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.56 2000/02/28 17:07:25 uid1 Exp $
+	$Id: Windows.c,v 1.57 2000/02/28 17:21:10 uid1 Exp $
 
 */
 
@@ -470,6 +470,7 @@ static void Windows_DragEnd(void *ref)
 		/*Move all people/marriages that were selected*/
 		Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex);
 		Layout_LayoutLines(dragdata->windowdata->layout);
+		Layout_LayoutTitle(dragdata->windowdata->layout);
 		Windows_ResizeWindow(dragdata->windowdata);
 		Desk_Window_ForceWholeRedraw(dragdata->windowdata->handle);
 	} else if (dragdata->windowdata->type==wintype_UNLINKED) {
@@ -1018,6 +1019,7 @@ void Windows_Relayout(void)
 				switch (windows[i].type) {
 					case wintype_NORMAL:
 						Layout_LayoutLines(windows[i].layout);
+						Layout_LayoutTitle(windows[i].layout);
 						break;
 					case wintype_DESCENDENTS:
 						Layout_Free(windows[i].layout);

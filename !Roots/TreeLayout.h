@@ -55,6 +55,7 @@ int Layout_FindYCoord(layout *layout,elementptr person);
 int Layout_FindMarriageXCoord(layout *layout,elementptr marriage);
 void Layout_LayoutMarriages(layout *layout);
 void Layout_LayoutLines(layout *layout);
+void Layout_LayoutTitle(layout *layout);
 void Layout_SelectDescendents(layout *layout,elementptr person);
 void Layout_SelectAncestors(layout *layout,elementptr person);
 void Layout_SelectSiblings(layout *layout,elementptr person);
