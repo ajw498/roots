@@ -42,4 +42,6 @@ void Graphics_RemoveStyle(void);
 
 void Graphics_LoadStyle(char *style);
 
+char *Graphics_GetCurrentStyle(void);
+
 #endif

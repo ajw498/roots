@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.12 2000/03/07 21:13:56 uid1 Exp $
+	$Id: Config.c,v 1.13 2000/05/14 19:42:40 AJW Exp $
 
 */
 
@@ -31,25 +31,19 @@
 #include "Config.h"
 #include "Modules.h"
 
-#define config_DEFAULTSTYLE 20
-#define config_DEFAULTSTYLEMENU 18
-#define config_IMPORTSTYLE 8
-#define config_USER1 11
-#define config_USER2 12
-#define config_USER3 13
-#define config_DISPLAYTITLE 17
-#define config_AUTOINCREASE 9
-#define config_AUTOINCREASEONLY 10
-#define config_SNAP 22
-#define config_SNAPDISTANCE 4
-#define config_SNAPDISTANCETEXT 5
-#define config_SCROLLSPEED 6
-#define config_CANCEL 26
-#define config_SAVE 25
-#define config_OK 24
+#define config_IMPORTSTYLE 6
+#define config_DISPLAYTITLE 9
+#define config_AUTOINCREASE 7
+#define config_AUTOINCREASEONLY 8
+#define config_SNAP 11
+#define config_SNAPDISTANCE 2
+#define config_SNAPDISTANCETEXT 3
+#define config_SCROLLSPEED 4
+#define config_CANCEL 15
+#define config_SAVE 14
+#define config_OK 13
 
 typedef struct configdata {
-	char graphicsstyle[256];
 	Desk_bool importgraphicsstyle;
 	Desk_bool snap;
 	Desk_bool title;
@@ -58,16 +52,13 @@ typedef struct configdata {
 	int scrolldistance;
 	Desk_bool autoincreasesize;
 	Desk_bool autoincreasealways;
-	char userdesc[3][20];
 } configdata;
 
 static configdata config;
 static Desk_window_handle configwin;
-static Desk_menu_ptr configmenu;
 
 static void Config_Default(void)
 {
-	strcpy(config.graphicsstyle,"Default");
 	config.importgraphicsstyle=Desk_TRUE;
 	config.snap=Desk_TRUE;
 	config.title=Desk_TRUE;
@@ -76,14 +67,6 @@ static void Config_Default(void)
 	config.scrolldistance=30;
 	config.autoincreasesize=Desk_TRUE;
 	config.autoincreasealways=Desk_FALSE;
-	strcpy(config.userdesc[0],"Profession");
-	strcpy(config.userdesc[1],"Status");
-	strcpy(config.userdesc[2],"Other");
-}
-
-char *Config_GraphicsStyle(void)
-{
-	return config.graphicsstyle;
 }
 
 Desk_bool Config_ImportGraphicsStyle(void)
@@ -126,21 +109,10 @@ Desk_bool Config_AutoIncreaseAlways(void)
 	return config.autoincreasealways;
 }
 
-char *Config_UserDesc(int num)
-{
-	AJWLib_Assert(num>0);
-	AJWLib_Assert(num<4);
-	return config.userdesc[num-1];
-}
-
 static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	Desk_Icon_GetText(configwin,config_DEFAULTSTYLE,config.graphicsstyle);
-	Desk_Icon_GetText(configwin,config_USER1,config.userdesc[0]);
-	Desk_Icon_GetText(configwin,config_USER2,config.userdesc[1]);
-	Desk_Icon_GetText(configwin,config_USER3,config.userdesc[2]);
 	config.snapdistance=Desk_Icon_GetInteger(configwin,config_SNAPDISTANCE);
 	config.scrollspeed=Desk_Icon_GetInteger(configwin,config_SCROLLSPEED);
 	config.importgraphicsstyle=Desk_Icon_GetSelect(configwin,config_IMPORTSTYLE);
@@ -148,13 +120,7 @@ static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 	config.title=Desk_Icon_GetSelect(configwin,config_DISPLAYTITLE);
 	config.autoincreasesize=Desk_Icon_GetSelect(configwin,config_AUTOINCREASE);
 	config.autoincreasealways=(Desk_bool)!Desk_Icon_GetSelect(configwin,config_AUTOINCREASEONLY);
-	if (block->data.mouse.button.data.select) {
-		Desk_Window_Hide(configwin);
-		if (configmenu) {
-			AJWLib_Menu_FullDispose(configmenu);
-			configmenu=NULL;
-		}
-	}
+	if (block->data.mouse.button.data.select) Desk_Window_Hide(configwin);
 	Modules_ChangedLayout();
 	return Desk_TRUE;
 }
@@ -212,20 +178,8 @@ static Desk_bool Config_AutoIncreaseClick(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
-static void Config_MenuClick(int entry,void *ref)
-{
-	Desk_UNUSED(ref);
-	Desk_Icon_SetText(configwin,config_DEFAULTSTYLE,Desk_Menu_GetText(configmenu,entry));
-}
-
 void Config_Open(void)
 {
-	Desk_filing_dirdata dir;
-	char *name=NULL;
-	Desk_Icon_SetText(configwin,config_DEFAULTSTYLE,config.graphicsstyle);
-	Desk_Icon_SetText(configwin,config_USER1,config.userdesc[0]);
-	Desk_Icon_SetText(configwin,config_USER2,config.userdesc[1]);
-	Desk_Icon_SetText(configwin,config_USER3,config.userdesc[2]);
 	Desk_Icon_SetInteger(configwin,config_SNAPDISTANCE,config.snapdistance);
 	Desk_Icon_SetInteger(configwin,config_SCROLLSPEED,config.scrollspeed);
 	Desk_Icon_SetSelect(configwin,config_IMPORTSTYLE,config.importgraphicsstyle);
@@ -235,24 +189,8 @@ void Config_Open(void)
 	Desk_Icon_SetSelect(configwin,config_AUTOINCREASEONLY,!config.autoincreasealways);
 	Config_SnapClick(NULL,NULL);
 	Config_AutoIncreaseClick(NULL,NULL);
-	if (Desk_File_IsDirectory(GRAPHICSREAD)) {
-		Desk_Filing_OpenDir(GRAPHICSREAD,&dir,256,Desk_readdirtype_NAMEONLY);
-		do {
-			name=Desk_Filing_ReadDir(&dir);
-			if (name) {
-				if (configmenu) {
-					configmenu=Desk_Menu_Extend(configmenu,name);
-				} else {
-					configmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
-				}
-			}
-		} while (name);
-		Desk_Filing_CloseDir(&dir);
-	}
 	Desk_Window_Show(configwin,Desk_open_CENTERED);
-	Desk_Icon_SetCaret(configwin,config_USER1);
-	AJWLib_Menu_Register(configmenu,Config_MenuClick,NULL);
-	AJWLib_Menu_AttachPopup(configwin,config_DEFAULTSTYLEMENU,config_DEFAULTSTYLE,configmenu,Desk_button_MENU | Desk_button_SELECT);
+	Desk_Icon_SetCaret(configwin,-1);
 }
 
 static Desk_bool Config_Cancel(Desk_event_pollblock *block,void *ref)
@@ -260,10 +198,6 @@ static Desk_bool Config_Cancel(Desk_event_pollblock *block,void *ref)
 	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.select) {
 		Desk_Window_Hide(configwin);
-		if (configmenu) {
-			AJWLib_Menu_FullDispose(configmenu);
-			configmenu=NULL;
-		}
 		return Desk_TRUE;
 	}
 	return Desk_FALSE;

@@ -32,7 +32,7 @@ Title.Select:Select
 Menu.Select:Descendents,Ancestors,Siblings,Spouses
 
 Title.File:File
-Menu.File:Info,Save,Export
+Menu.File:Info,Save,Export,Choices...
 
 Title.Export:Export
 Menu.Export:~GEDCOM,Draw,~Text
@@ -41,6 +41,8 @@ Title.Person:Person
 Menu.Person:Add,Delete,Unlink
 
 Title.Config:Styles
+
+Style.Default:Default
 
 Scale.1:33
 Scale.2:80
@@ -58,6 +60,10 @@ Mod.No:NO
 Win.Desc:Descendents of
 Win.Anc:Ancestors of
 Win.Unlkd:Unlinked
+
+User.Desc1:Profession
+User.Desc2:Status
+User.Desc3:Other
 
 Error.NoMem:Not enough free memory.
 Error.Prncpl:You are not marrying the principal person.

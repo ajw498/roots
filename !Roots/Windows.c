@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.62 2000/03/04 23:52:33 uid1 Exp $
+	$Id: Windows.c,v 1.63 2000/05/14 19:42:48 AJW Exp $
 
 */
 
@@ -27,6 +27,7 @@
 #include "Desk.Screen.h"
 #include "Desk.GFX.h"
 #include "Desk.Save.h"
+#include "Desk.Str.h"
 #include "Desk.Font2.h"
 #include "Desk.ColourTran.h"
 
@@ -71,7 +72,8 @@
 #define filemenu_INFO 0
 #define filemenu_SAVE 1
 #define filemenu_EXPORT 2
-#define filemenu_PRINT 3
+#define filemenu_CHOICES 3
+#define filemenu_PRINT 4
 
 #define exportmenu_GEDCOM 0
 #define exportmenu_DRAW 1
@@ -132,6 +134,15 @@
 #define unsaved_CANCEL 3
 #define unsaved_SAVE 0
 
+#define fileconfig_STYLE 10
+#define fileconfig_STYLEMENU 8
+#define fileconfig_USER1 2
+#define fileconfig_USER2 3
+#define fileconfig_USER3 4
+#define fileconfig_OK 12
+#define fileconfig_CANCEL 13
+#define fileconfig_REREAD 14
+
 typedef struct windowdata {
 	Desk_window_handle handle;
 	wintype type;
@@ -166,8 +177,8 @@ extern layout *debuglayout;
 
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
-static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin,scalewin,unsavedwin;
-static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
+static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin,scalewin,unsavedwin,fileconfigwin;
+static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconfigmenu=NULL;
 static elementptr addparentsperson,addparentschild,newviewperson,menuoverperson;
 static windowdata *menuoverwindow;
 
@@ -1128,6 +1139,7 @@ void Windows_CloseAllWindows(void)
 			windows[i].handle=NULL;
 		}
 	}
+	Desk_Error2_TryCatch(Desk_Window_Hide(fileconfigwin);,)
 	Desk_Error2_TryCatch(File_Remove();,)
 }
 
@@ -1339,6 +1351,83 @@ static Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 		return Desk_TRUE;
 	}
 	return Desk_FALSE;
+}
+
+static void Windows_StyleMenuClick(int entry,void *ref)
+{
+	Desk_UNUSED(ref);
+	Desk_Icon_SetText(fileconfigwin,fileconfig_STYLE,Desk_Menu_GetText(fileconfigmenu,entry));
+}
+
+static Desk_bool Windows_FileConfigReRead(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(ref);
+	if (!block->data.mouse.button.data.select) return Desk_FALSE;
+	Graphics_RemoveStyle();
+	Graphics_LoadStyle(Graphics_GetCurrentStyle());
+	Modules_ChangedStructure();
+	return Desk_TRUE;
+}
+
+static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
+{
+	char *style;
+	Desk_UNUSED(ref);
+	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	if (fileconfigmenu) {
+		AJWLib_Menu_FullDispose(fileconfigmenu);
+		fileconfigmenu=NULL;
+	}
+	Database_SetUserDesc(0,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER1));
+	Database_SetUserDesc(1,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER2));
+	Database_SetUserDesc(2,Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_USER3));
+	style=Desk_Icon_GetTextPtr(fileconfigwin,fileconfig_STYLE);
+	if (Desk_stricmp(style,Graphics_GetCurrentStyle())) {
+		Graphics_RemoveStyle();
+		Graphics_LoadStyle(style);
+		Modules_ChangedStructure();
+	}
+	if (block->data.mouse.button.data.select) Desk_Window_Hide(block->data.mouse.window);
+	return Desk_TRUE;
+}
+
+static void Windows_OpenFileConfig(void)
+{
+	Desk_filing_dirdata dir;
+	char *name=NULL;
+	if (fileconfigmenu) {
+		AJWLib_Menu_FullDispose(fileconfigmenu);
+		fileconfigmenu=NULL;
+	}
+	Desk_Icon_SetText(fileconfigwin,fileconfig_USER1,Database_GetUserDesc(0));
+	Desk_Icon_SetText(fileconfigwin,fileconfig_USER2,Database_GetUserDesc(1));
+	Desk_Icon_SetText(fileconfigwin,fileconfig_USER3,Database_GetUserDesc(2));
+	Desk_Icon_SetText(fileconfigwin,fileconfig_STYLE,Graphics_GetCurrentStyle());
+	Desk_Window_Show(fileconfigwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(fileconfigwin,fileconfig_USER1);
+	if (Desk_File_IsDirectory(GRAPHICSREAD)) {
+		Desk_Filing_OpenDir(GRAPHICSREAD,&dir,256,Desk_readdirtype_NAMEONLY);
+		/*This doesn't seem to work if there are files in both directories in the path*/
+		do {
+			name=Desk_Filing_ReadDir(&dir);
+			if (name) {
+				if (fileconfigmenu) {
+					fileconfigmenu=Desk_Menu_Extend(fileconfigmenu,name);
+				} else {
+					fileconfigmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
+				}
+			}
+		} while (name);
+		Desk_Filing_CloseDir(&dir);
+	}
+	AJWLib_Menu_Register(fileconfigmenu,Windows_StyleMenuClick,NULL);
+	AJWLib_Menu_AttachPopup(fileconfigwin,fileconfig_STYLEMENU,fileconfig_STYLE,fileconfigmenu,Desk_button_MENU | Desk_button_SELECT);
+}
+
+static void Windows_FileMenuClick(int entry,void *ref)
+{
+	Desk_UNUSED(ref);
+	if (entry==filemenu_CHOICES) Windows_OpenFileConfig();
 }
 
 static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
@@ -1560,7 +1649,7 @@ void Windows_Init(void)
 	Desk_Event_Claim(Desk_event_REDRAW,addparentswin,Desk_event_ANY,Windows_RedrawAddParents,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,addparentswin,addparents_SECONDMARRIAGE,Windows_AddParentsClick,NULL);
 	exportmenu=AJWLib_Menu_CreateFromMsgs("Title.Export:","Menu.Export:",NULL,NULL);
-	filemenu=AJWLib_Menu_CreateFromMsgs("Title.File:","Menu.File:",NULL,NULL);
+	filemenu=AJWLib_Menu_CreateFromMsgs("Title.File:","Menu.File:",Windows_FileMenuClick,NULL);
 	personmenu=AJWLib_Menu_CreateFromMsgs("Title.Person:","Menu.Person:",Windows_PersonMenuClick,NULL);
 	mainmenu=AJWLib_Menu_CreateFromMsgs("Title.Main:","Menu.Main:",Windows_MainMenuClick,NULL);
 	selectmenu=AJWLib_Menu_CreateFromMsgs("Title.Select:","Menu.Select:",Windows_SelectMenuClick,NULL);
@@ -1588,5 +1677,11 @@ void Windows_Init(void)
 /*	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);*/
 	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);
 	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
+	fileconfigwin=Desk_Window_Create("FileConfig",Desk_template_TITLEMIN);
+	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_OK,Windows_FileConfigOk,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_REREAD,Windows_FileConfigReRead,NULL);
+	AJWLib_Window_KeyHandler(fileconfigwin,fileconfig_OK,Windows_FileConfigOk,fileconfig_CANCEL,Windows_Cancel,NULL);
+
 }
 
