@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.9  2000/01/11 17:12:15  AJW
+	Uses newer version of AJWLib_File_*
+
 	Revision 1.8  2000/01/09 12:19:10  AJW
 	Added reading and stroing of font name and size
 
@@ -332,7 +335,7 @@ void Graphics_ReadFile(char *filename,void (*decodefn)(char *values[],int numval
 	char fullfilename[256];
 	int ch=0,line=0;
 	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,Config_GraphicsStyle(),filename);
-	file=AJWLib_fopen(fullfilename,"r");
+	file=AJWLib_File_fopen(fullfilename,"r");
 	while (ch!=EOF) {
 		char str[256];
 		int i=-1;
@@ -357,7 +360,7 @@ void Graphics_ReadFile(char *filename,void (*decodefn)(char *values[],int numval
 			(*decodefn)(values,j,line);
 		}
 	}
-	fclose(file);
+	AJWLib_File_fclose(file);
 }
 
 int Graphics_PersonHeight(void)
