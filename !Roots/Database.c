@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.20 2000/02/26 18:04:42 uid1 Exp $
+	$Id: Database.c,v 1.21 2000/02/26 18:54:27 uid1 Exp $
 
 */
 
@@ -562,6 +562,7 @@ Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 	Desk_Icon_GetText(editpersonwin,editpersonicon_USERDESC1,database[0].element.file.userdesc[0]);
 	Desk_Icon_GetText(editpersonwin,editpersonicon_USERDESC2,database[0].element.file.userdesc[1]);
 	Desk_Icon_GetText(editpersonwin,editpersonicon_USERDESC3,database[0].element.file.userdesc[2]);
+	Modules_ChangedData(editingperson);
 	editingperson=none;
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(editpersonwin);
 	return Desk_TRUE;
@@ -583,6 +584,7 @@ Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 	Desk_Icon_GetText(editmarriagewin,editmarriageicon_PLACE,database[editingmarriage].element.marriage.data.place);
 	Desk_Icon_GetText(editmarriagewin,editmarriageicon_DATE,database[editingmarriage].element.marriage.data.date);
 	Desk_Icon_GetText(editmarriagewin,editmarriageicon_DIVORCE,database[editingmarriage].element.marriage.data.divorce);
+	Modules_ChangedData(editingmarriage);
 	editingmarriage=none;
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(editmarriagewin);
 	return Desk_TRUE;
