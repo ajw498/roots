@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.62 2001/02/03 15:55:49 AJW Exp $
+	$Id: Graphics.c,v 1.63 2001/02/03 19:54:28 AJW Exp $
 
 */
 
@@ -218,6 +218,9 @@ static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRe
 static plottextfn Graphics_PlotText=NULL;
 static layout *redrawlayout=NULL;
 static Desk_bool uselua=Desk_FALSE;
+
+static void (*Graphics_SetWidth)(layout *redrawlayout,elementptr element,int width);
+static int newpersonwidth;
 
 static void Graphics_LuaInit(void);
 
@@ -547,8 +550,22 @@ int Graphics_PersonHeight(void)
 	return graphicsdata.personheight;
 }
 
-int Graphics_PersonWidth(void)
+static void Graphics_RecordWidth(layout *redrawlayout,elementptr element,int width)
 {
+	Desk_UNUSED(redrawlayout);
+	Desk_UNUSED(element);
+	newpersonwidth=width;
+}
+
+int Graphics_PersonWidth(elementptr person)
+{
+	if (uselua && person!=none) {
+		newpersonwidth=graphicsdata.personwidth;
+		Graphics_SetWidth=Graphics_RecordWidth;
+		Graphics_PersonChanged(person);
+		Graphics_SetWidth=Layout_SetWidth;
+		return newpersonwidth;
+	}
 	return graphicsdata.personwidth;
 }
 
@@ -1072,7 +1089,7 @@ static int Graphics_LuaSetWidth(lua_State *state)
 	if (!lua_isnumber(state,2)) Graphics_LuaThrowError(state,"Error.Lua6:Bad arg %d to %s",2,"SetWidth");
 	element=(elementptr)lua_tonumber(state,1);
 	width=(int)lua_tonumber(state,2);
-	Layout_SetWidth(redrawlayout,element,width);
+	Graphics_SetWidth(redrawlayout,element,width);
 	return 0;
 }
 
@@ -1190,6 +1207,7 @@ static void Graphics_LuaInit(void)
 	luadetails.error="Init Error"; /*Don't use lua if an error occours before we are initialised*/
 	luadetails.numberoffonts=0;
 
+	Graphics_SetWidth=Layout_SetWidth;
 	/*Initialise Lua*/
 	luadetails.state=lua_open(0);
 	lua_strlibopen(luadetails.state);

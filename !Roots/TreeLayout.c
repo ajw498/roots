@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.56 2000/11/27 21:30:16 AJW Exp $
+	$Id: TreeLayout.c,v 1.57 2001/02/03 19:54:35 AJW Exp $
 
 */
 
@@ -177,8 +177,8 @@ static void Layout_PlotPerson(layout *layout,elementptr person,int generation)
 	flags.linkable=1;
 	flags.snaptogrid=1;
 	flags.selectable=1;
-	Layout_AddElement(layout,person,spaces[generation-mingeneration].maxx,Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_PersonWidth(),Graphics_PersonHeight(),0,generation,flags);
-	spaces[generation-mingeneration].maxx+=Graphics_PersonWidth();
+	Layout_AddElement(layout,person,spaces[generation-mingeneration].maxx,Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_PersonWidth(person),Graphics_PersonHeight(),0,generation,flags);
+	spaces[generation-mingeneration].maxx+=Graphics_PersonWidth(person);
 }
 
 static void Layout_PlotMarriage(layout *layout,elementptr marriage)
@@ -260,7 +260,7 @@ static int Layout_FindChildCoords(layout *layout,elementptr marriage)
 	rightchild=leftchild;
 	while (Database_GetSiblingLtoR(rightchild)!=none) rightchild=Database_GetSiblingLtoR(rightchild);
 
-	return (Layout_FindXCoord(layout,leftchild)+Layout_FindXCoord(layout,rightchild)+Graphics_PersonWidth())/2;
+	return (Layout_FindXCoord(layout,leftchild)+Graphics_PersonWidth(leftchild)/2+Layout_FindXCoord(layout,rightchild)+Graphics_PersonWidth(rightchild)/2)/2;
 }
 
 static void Layout_Plot(layout *layout,elementptr person,int generation)
@@ -280,7 +280,7 @@ static void Layout_Plot(layout *layout,elementptr person,int generation)
 			childcoords=Layout_FindChildCoords(layout,marriage);
 			if (Database_GetMarriageRtoL(person)!=Database_GetPrincipalFromMarriage(marriage)) {
 				int maxx=spaces[generation-mingeneration].maxx+Graphics_MarriageWidth()/2;
-				if (Database_GetPrincipalFromMarriage(marriage)==person) maxx+=Graphics_PersonWidth()+Graphics_GapWidth();
+				if (Database_GetPrincipalFromMarriage(marriage)==person) maxx+=Graphics_PersonWidth(person)+Graphics_GapWidth();
                 if (!Database_IsFirstMarriage(marriage)) maxx+=Graphics_SecondMarriageGap();
 				if (childcoords>=maxx) {
 					spaces[generation-mingeneration].maxx+=childcoords-maxx;

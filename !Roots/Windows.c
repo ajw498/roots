@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.106 2001/02/03 15:55:54 AJW Exp $
+	$Id: Windows.c,v 1.107 2001/02/03 19:54:36 AJW Exp $
 
 */
 
@@ -682,7 +682,7 @@ static void Windows_MainMenuClick(int entry,void *ref)
 				flags.linkable=1;
 				flags.snaptogrid=1;
 				flags.selectable=1;
-				Layout_AddElement(mousedata.window->layout,newperson,mousedata.pos.x,Layout_NearestGeneration(mousedata.pos.y),Graphics_PersonWidth(),Graphics_PersonHeight(),0,0,flags);
+				Layout_AddElement(mousedata.window->layout,newperson,mousedata.pos.x,Layout_NearestGeneration(mousedata.pos.y),Graphics_PersonWidth(none),Graphics_PersonHeight(),0,0,flags);
 			} Desk_Error2_Catch {
 				Database_Delete(newperson);
 				AJWLib_Error2_Report("%s");
