@@ -2,30 +2,30 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.62 2001/07/02 19:55:34 AJW Exp $
+	$Id: Database.c,v 1.63 2002/02/25 23:48:29 uid1 Exp $
 
 */
 
 
-#include "Desk.Window.h"
-#include "Desk.Error2.h"
-#include "Desk.Event.h"
-#include "Desk.Template.h"
-#include "Desk.File.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.DeskMem.h"
-#include "Desk.Filing.h"
-#include "Desk.Str.h"
+#include "Desk/Window.h"
+#include "Desk/Error2.h"
+#include "Desk/Event.h"
+#include "Desk/Template.h"
+#include "Desk/File.h"
+#include "Desk/Menu.h"
+#include "Desk/Msgs.h"
+#include "Desk/DeskMem.h"
+#include "Desk/Filing.h"
+#include "Desk/Str.h"
 
-#include "AJWLib.Assert.h"
-#include "AJWLib.Window.h"
-#include "AJWLib.Error2.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.File.h"
+#include "AJWLib/Assert.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/File.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,7 +47,7 @@
 #define editpersonicon_OK 3
 #define editpersonicon_CANCEL 2
 #define editpersonicon_SEXMENU 10
-#define editpersonicon_USERBASE 11
+/*#define editpersonicon_USERBASE 11*/
 
 #define edittitleicon_TEXT 0
 #define edittitleicon_CANCEL 1
@@ -63,12 +63,17 @@
 #define sexmenu_F 1
 #define sexmenu_U 2
 
+typedef union field {
+	char *text;
+	Desk_bool option;
+} field;
+
 typedef struct persondata {
 	char *surname;
 	char *forename;
 	char *middlenames;
 	sextype sex;
-    char *user[NUMBERPERSONUSERFIELDS];
+    field user[NUMBERPERSONUSERFIELDS];
 } persondata;
 
 typedef struct person {
@@ -84,7 +89,7 @@ typedef struct freeelement {
 } freeelement;
 
 typedef struct marriagedata {
-	char *user[NUMBERMARRIAGEUSERFIELDS];
+	field user[NUMBERMARRIAGEUSERFIELDS];
 } marriagedata;
 
 typedef struct marriage {
@@ -117,14 +122,126 @@ typedef struct databaseelement {
 	Desk_bool selected;
 } databaseelement;
 
-static char personuser[NUMBERPERSONUSERFIELDS][FIELDSIZE];
-static char personGEDCOM[NUMBERPERSONUSERFIELDS][FIELDSIZE];
-static char marriageuser[NUMBERMARRIAGEUSERFIELDS][FIELDSIZE];
-static char marriageGEDCOM[NUMBERMARRIAGEUSERFIELDS][FIELDSIZE];
+typedef enum fieldtype {
+	fieldtype_TEXT,
+	fieldtype_OPTION,
+	fieldtype_LIST,
+	fieldtype_OPENLIST
+} fieldtype;
+
+typedef struct fielddefn {
+	fieldtype type;
+	char *name;
+	char *list;
+} fielddefn;
+
+static int numberofpersonusers;
+static int numberofmarriageusers;
+static fielddefn personuser[NUMBERPERSONUSERFIELDS];
+static char *personGEDCOM[NUMBERPERSONUSERFIELDS];
+static fielddefn marriageuser[NUMBERMARRIAGEUSERFIELDS];
+static char *marriageGEDCOM[NUMBERMARRIAGEUSERFIELDS];
+
 static databaseelement *database=NULL;
 static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin,edittitlewin;
 static Desk_menu_ptr sexmenu;
+
+static void Database_RemoveEditPersonIcons(void)
+{
+	int i;
+	int icon = /*editpersonicon_USERBASE*/11;
+
+	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+		switch (personuser[i].type) {
+			/* all fall through */
+			case fieldtype_LIST:
+			case fieldtype_OPENLIST:
+				Desk_Wimp_DeleteIcon(editpersonwin,icon++);
+			case fieldtype_TEXT:
+				Desk_Wimp_DeleteIcon(editpersonwin,icon++);
+			case fieldtype_OPTION:
+				Desk_Wimp_DeleteIcon(editpersonwin,icon++);
+		}
+	}
+}
+
+#define usericon_HEIGHT 52
+#define usericon_GAP 8
+#define usericon_BASEY (-252)
+#define usericon_LABELLEFT 0
+#define usericon_LABELRIGHT 216
+#define usericon_TEXTLEFT 224
+#define usericon_TEXTRIGHT 564
+#define usericon_MENULEFT 572
+#define usericon_MENURIGHT 616
+
+static Desk_icon_handle usertexticons[NUMBERPERSONUSERFIELDS];
+static Desk_icon_handle userlabelicons[NUMBERPERSONUSERFIELDS];
+#define INDDATASEGMENTLEN 256
+static char inddata[INDDATASEGMENTLEN*2*NUMBERPERSONUSERFIELDS];
+
+static void Database_AddEditPersonIcons(void)
+{
+	int i;
+	Desk_icon_handle icon;
+
+	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+		Desk_icon_createblock iconblk;
+		iconblk.window = editpersonwin;
+		iconblk.icondata.workarearect.max.y = usericon_BASEY-(usericon_HEIGHT+usericon_GAP)*i;
+		iconblk.icondata.workarearect.min.y = iconblk.icondata.workarearect.max.y - usericon_HEIGHT;
+		if (personuser[i].type == fieldtype_OPTION) {
+			/* create option icon */
+			iconblk.icondata.workarearect.min.x = usericon_TEXTLEFT;
+			iconblk.icondata.workarearect.max.x = usericon_TEXTRIGHT;
+			iconblk.icondata.flags.value = 0x1700B113;
+			iconblk.icondata.data.indirecttext.buffer = inddata + INDDATASEGMENTLEN * (2*i+1);
+			iconblk.icondata.data.indirecttext.bufflen = INDDATASEGMENTLEN;
+			iconblk.icondata.data.indirecttext.validstring = "Soptoff,opton";
+			Desk_Wimp_CreateIcon(&iconblk,&icon);
+			usertexticons[i] = 0;
+			userlabelicons[i] = icon;
+		} else {
+			/* create text label */
+			iconblk.icondata.workarearect.min.x = usericon_LABELLEFT;
+			iconblk.icondata.workarearect.max.x = usericon_LABELRIGHT;
+			iconblk.icondata.flags.value = 0x17000311;
+			iconblk.icondata.data.indirecttext.buffer = inddata + INDDATASEGMENTLEN * (2*i);
+			iconblk.icondata.data.indirecttext.bufflen = INDDATASEGMENTLEN;
+			iconblk.icondata.data.indirecttext.validstring = "";
+			Desk_Wimp_CreateIcon(&iconblk,&icon);
+			userlabelicons[i] = icon;
+
+			/* create text icon */
+			iconblk.icondata.workarearect.min.x = usericon_TEXTLEFT;
+			iconblk.icondata.workarearect.max.x = usericon_TEXTRIGHT;
+			iconblk.icondata.data.indirecttext.buffer = inddata + INDDATASEGMENTLEN * (2*i+1);
+			iconblk.icondata.data.indirecttext.bufflen = INDDATASEGMENTLEN;
+			if (personuser[i].type == fieldtype_LIST) {
+				iconblk.icondata.data.indirecttext.validstring = "R2";
+				iconblk.icondata.flags.value = 0x1700F135;
+			} else {
+				iconblk.icondata.data.indirecttext.validstring = "Pptr_write;Ktar";
+				iconblk.icondata.flags.value = 0x0700F135;
+			}
+			Desk_Wimp_CreateIcon(&iconblk,&icon);
+			usertexticons[i] = icon;
+
+			if (personuser[i].type != fieldtype_TEXT) {
+				/* create menu icon */
+				iconblk.icondata.workarearect.min.x = usericon_MENULEFT;
+				iconblk.icondata.workarearect.max.x = usericon_MENURIGHT;
+				iconblk.icondata.flags.value = 0x17003313;
+				iconblk.icondata.data.indirecttext.buffer = "";
+				iconblk.icondata.data.indirecttext.bufflen = 1;
+				iconblk.icondata.data.indirecttext.validstring = "R5;Sgright,pgright";
+				Desk_Wimp_CreateIcon(&iconblk,&icon);
+				/*register menuclick handler*/
+			}
+		}
+	}
+}
 
 elementtype Database_GetElementType(elementptr element)
 {
@@ -194,13 +311,13 @@ Desk_bool Database_ElementValid(elementptr person)
 }
 
 #define Database_UpdateField(field,text) \
-{\
+do {\
 	char *newtext;\
 	newtext = Desk_DeskMem_Malloc(strlen(text)+1);\
 	if (field != NULL) free(field);\
 	field = newtext;\
 	strcpy(field,text);\
-}
+} while (0)
 
 void Database_SetTitle(char *title)
 {
@@ -250,13 +367,21 @@ void Database_SetSex(elementptr person,sextype sexchar)
 void Database_SetPersonUser(int num,elementptr person,char *str)
 {
 	AJWLib_Assert(num<NUMBERPERSONUSERFIELDS);
-	Database_UpdateField(database[person].element.person.data.user[num],str);
+	if (personuser[num].type == fieldtype_OPTION) {
+		database[person].element.person.data.user[num].option = (str == NULL ? Desk_FALSE : Desk_TRUE);
+	} else {
+		Database_UpdateField(database[person].element.person.data.user[num].text,str);
+	}
 }
 
 void Database_SetMarriageUser(int num,elementptr marriage,char *str)
 {
 	AJWLib_Assert(num<NUMBERMARRIAGEUSERFIELDS);
-	Database_UpdateField(database[marriage].element.marriage.data.user[num],str);
+	if (marriageuser[num].type == fieldtype_OPTION) {
+		database[marriage].element.marriage.data.user[num].option = (str == NULL ? Desk_FALSE : Desk_TRUE);
+	} else {
+		Database_UpdateField(database[marriage].element.marriage.data.user[num].text,str);
+	}
 }
 
 char *Database_GetField(elementptr element,char *fieldname)
@@ -272,34 +397,33 @@ char *Database_GetField(elementptr element,char *fieldname)
 	switch (database[element].type) {
 		case element_PERSON:
 			sexstr[0]=database[element].element.person.data.sex;
-			if (Desk_stricmp(fieldname,"forename")==0) return database[element].element.person.data.forename;
-			if (Desk_stricmp(fieldname,"surname")==0) return database[element].element.person.data.surname;
-			if (Desk_stricmp(fieldname,"middlenames")==0) return database[element].element.person.data.middlenames;
-			if (Desk_stricmp(fieldname,"name")==0) {
+			if (Desk_stricmp(fieldname,"forename")==0) {
+				return database[element].element.person.data.forename;
+			} else if (Desk_stricmp(fieldname,"surname")==0) {
+				return database[element].element.person.data.surname;
+			} else if (Desk_stricmp(fieldname,"middlenames")==0) {
+				return database[element].element.person.data.middlenames;
+			} else if (Desk_stricmp(fieldname,"name")==0) {
 				strcpy(name,database[element].element.person.data.forename);
 				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
 				return name;
-			}
-			if (Desk_stricmp(fieldname,"forenames")==0) {
+			} else if (Desk_stricmp(fieldname,"forenames")==0) {
 				strcpy(name,database[element].element.person.data.forename);
 				if (database[element].element.person.data.middlenames[0]) strcat(name," "),strcat(name,database[element].element.person.data.middlenames);
 				return name;
-			}
-			if (Desk_stricmp(fieldname,"fullname")==0) {
+			} else if (Desk_stricmp(fieldname,"fullname")==0) {
 				strcpy(name,database[element].element.person.data.forename);
 				if (database[element].element.person.data.middlenames[0]) strcat(name," "),strcat(name,database[element].element.person.data.middlenames);
 				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
 				return name;
-			}
-			if (Desk_stricmp(fieldname,"initialedmiddlename")==0) {
+			} else if (Desk_stricmp(fieldname,"initialedmiddlename")==0) {
 				char temp[2]="z";
 				strcpy(name,database[element].element.person.data.forename);
 				temp[0]=database[element].element.person.data.middlenames[0];
 				if (temp[0]) strcat(name," "),strcat(name,temp);
 				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
 				return name;
-			}
-			if (Desk_stricmp(fieldname,"initialedname")==0) {
+			} else if (Desk_stricmp(fieldname,"initialedname")==0) {
 				char temp[2]="z";
 				temp[0]=database[element].element.person.data.forename[0];
 				if (temp[0]) strcpy(name,temp);
@@ -307,15 +431,29 @@ char *Database_GetField(elementptr element,char *fieldname)
 				if (temp[0]) strcat(name," "),strcat(name,temp);
 				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
 				return name;
-			}
-			if (Desk_stricmp(fieldname,"sex")==0) return sexstr;
-			for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-				if (Desk_stricmp(fieldname,personuser[i])==0) return database[element].element.person.data.user[i];
+			} else if (Desk_stricmp(fieldname,"sex")==0) {
+				return sexstr;
+			} else {
+				for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+					if (Desk_stricmp(fieldname,personuser[i].name)==0) {
+						if (personuser[i].type == fieldtype_OPTION) {
+							return database[element].element.person.data.user[i].option ? "True" : "False";
+						} else {
+							return database[element].element.person.data.user[i].text;
+						}
+					}
+				}
 			}
 			break;
 		case element_MARRIAGE:
 			for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-				if (Desk_stricmp(fieldname,marriageuser[i])==0) return database[element].element.marriage.data.user[i];
+				if (Desk_stricmp(fieldname,marriageuser[i].name)==0) {
+					if (marriageuser[i].type == fieldtype_OPTION) {
+						return database[element].element.marriage.data.user[i].option ? "True" : "False";
+					} else {
+						return database[element].element.marriage.data.user[i].text;
+					}
+				}
 			}
 			break;
 	}
@@ -354,7 +492,7 @@ void Database_SetSpouse(elementptr marriage,elementptr person)
 }
 
 #define Database_CheckConsistencyPerson(person,i,typem) \
-{\
+do {\
 	if (person==i) {\
 		person=none;\
 		Desk_Msgs_Report(1,"Error.Dizzy:%s",Database_GetFullName(i));\
@@ -367,10 +505,10 @@ void Database_SetSpouse(elementptr marriage,elementptr person)
 		person=none;\
 		Desk_Msgs_Report(1,"Error.Alien:%s",Database_GetFullName(i));\
 	}\
-}
+} while (0)
 
 #define Database_CheckConsistencyMarriage(person,i,typem) \
-{\
+do {\
 	if (person==i) {\
 		person=none;\
 		Desk_Msgs_Report(1,"Error.DizzyM:");\
@@ -383,7 +521,7 @@ void Database_SetSpouse(elementptr marriage,elementptr person)
 		person=none;\
 		Desk_Msgs_Report(1,"Error.AlienM:");\
 	}\
-}
+} while (0)
 
 void Database_CheckConsistency(void)
 /* Check for invalid links between people*/
@@ -554,9 +692,17 @@ static void Database_FreeElement(elementptr element)
 		if (database[element].element.person.data.forename) free(database[element].element.person.data.forename);
 		if (database[element].element.person.data.middlenames) free(database[element].element.person.data.middlenames);
 		if (database[element].element.person.data.surname) free(database[element].element.person.data.surname);
-		for (i=0;i<NUMBERPERSONUSERFIELDS;i++) if (database[element].element.person.data.user[i]) free(database[element].element.person.data.user[i]);
+		for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+			if (personuser[i].type != fieldtype_OPTION) {
+				if (database[element].element.person.data.user[i].text) free(database[element].element.person.data.user[i].text);
+			}
+		}
 	} else if (database[element].type == element_MARRIAGE) {
-		for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) if (database[element].element.marriage.data.user[i]) free(database[element].element.marriage.data.user[i]);
+		for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+			if (marriageuser[i].type != fieldtype_OPTION) {
+				if (database[element].element.marriage.data.user[i].text) free(database[element].element.marriage.data.user[i].text);
+			}
+		}
 	}
 	database[element].type=element_FREE;
 	database[element].selected=Desk_FALSE;
@@ -875,14 +1021,16 @@ char *Database_GetPersonUserField(elementptr person,int num)
 {
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(person!=none);
-	return database[person].element.person.data.user[num];
+	if (personuser[num].type == fieldtype_OPTION) return database[person].element.person.data.user[num].option ? "True" : "False";
+	return database[person].element.person.data.user[num].text;
 }
 
 char *Database_GetMarriageUserField(elementptr marriage,int num)
 {
 	AJWLib_Assert(database!=NULL);
 	AJWLib_Assert(marriage!=none);
-	return database[marriage].element.marriage.data.user[num];
+	if (marriageuser[num].type == fieldtype_OPTION) return database[marriage].element.marriage.data.user[num].option ? "True" : "False";
+	return database[marriage].element.marriage.data.user[num].text;
 }
 
 static elementptr Database_GetFreeElement(void)
@@ -924,8 +1072,9 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 
 	marriage=Database_GetFreeElement(); /*An error is ok, as we haven't altered the structure yet*/
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		database[marriage].element.marriage.data.user[i]=Desk_DeskMem_Malloc(1);
-		database[marriage].element.marriage.data.user[i][0]='\0';
+		int fixme;
+		database[marriage].element.marriage.data.user[i].text=Desk_DeskMem_Malloc(1);
+		database[marriage].element.marriage.data.user[i].text[0]='\0';
 	}
 	database[marriage].type=element_MARRIAGE;
 	database[marriage].selected=Desk_FALSE;
@@ -1011,8 +1160,9 @@ static void Database_EditPerson(elementptr person)
 			break;
 	}
 	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		Desk_Icon_SetText(editpersonwin,editpersonicon_USERBASE+2*i,personuser[i]);
-		Desk_Icon_SetText(editpersonwin,editpersonicon_USERBASE+1+2*i,database[person].element.person.data.user[i]);
+		int fixme;
+		if (userlabelicons[i]) Desk_Icon_SetText(editpersonwin,userlabelicons[i],personuser[i].name);
+		if (usertexticons[i]) Desk_Icon_SetText(editpersonwin,usertexticons[i],database[person].element.person.data.user[i].text);
 	}
 	Desk_Window_Show(editpersonwin,editingperson ? Desk_open_WHEREVER : Desk_open_CENTERED);
 	Desk_Icon_SetCaret(editpersonwin,editpersonicon_SURNAME);
@@ -1081,8 +1231,9 @@ static Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 	else if (!strcmp(Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),AJWLib_Msgs_TempLookup("Sex.F:"))) database[editingperson].element.person.data.sex=sex_FEMALE;
 	else database[editingperson].element.person.data.sex=sex_UNKNOWN;
 	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		icon=Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_USERBASE+1+2*i);
-		Database_UpdateField(database[editingperson].element.person.data.user[i],icon);
+		int fixme;
+		icon=Desk_Icon_GetTextPtr(editpersonwin,usertexticons[i]);
+		Database_UpdateField(database[editingperson].element.person.data.user[i].text,icon);
 	}
 	Modules_ChangedData(editingperson);
 	Graphics_PersonChanged(editingperson);
@@ -1110,8 +1261,9 @@ static Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void 
 	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingmarriage==none) return Desk_FALSE;
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+		int fixme;
 		icon=Desk_Icon_GetTextPtr(editmarriagewin,editmarriageicon_USERBASE+1+2*i);
-		Database_UpdateField(database[editingmarriage].element.marriage.data.user[i],icon);
+		Database_UpdateField(database[editingmarriage].element.marriage.data.user[i].text,icon);
 	}
 	Modules_ChangedData(editingmarriage);
 	Graphics_MarriageChanged(editingmarriage);
@@ -1130,8 +1282,9 @@ static void Database_EditMarriage(elementptr marriage)
 	Desk_Icon_SetText(editmarriagewin,editmarriageicon_PRINCIPAL,Database_GetFullName(database[marriage].element.marriage.principal));
 	Desk_Icon_SetText(editmarriagewin,editmarriageicon_SPOUSE,Database_GetFullName(database[marriage].element.marriage.spouse));
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		Desk_Icon_SetText(editmarriagewin,editmarriageicon_USERBASE+2*i,marriageuser[i]);
-		Desk_Icon_SetText(editmarriagewin,editmarriageicon_USERBASE+1+2*i,database[marriage].element.marriage.data.user[i]);
+		int fixme;
+		Desk_Icon_SetText(editmarriagewin,editmarriageicon_USERBASE+2*i,marriageuser[i].name);
+		Desk_Icon_SetText(editmarriagewin,editmarriageicon_USERBASE+1+2*i,database[marriage].element.marriage.data.user[i].text);
 	}
 	Desk_Window_Show(editmarriagewin,editingmarriage ? Desk_open_WHEREVER : Desk_open_CENTERED);
 	Desk_Icon_SetCaret(editmarriagewin,editmarriageicon_USERBASE+1);
@@ -1178,8 +1331,9 @@ elementptr Database_Add(void)
 	database[newperson].element.person.siblingsltor=none;
 	database[newperson].element.person.marriage=none;
 	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		database[newperson].element.person.data.user[i]=Desk_DeskMem_Malloc(1);
-		database[newperson].element.person.data.user[i][0]='\0';
+		int fixme;
+		database[newperson].element.person.data.user[i].text=Desk_DeskMem_Malloc(1);
+		database[newperson].element.person.data.user[i].text[0]='\0';
 	}
 	database[newperson].element.person.data.surname=Desk_DeskMem_Malloc(FIELDSIZE);
 	sprintf(database[newperson].element.person.data.surname,"NewPerson%d",database[0].element.file.newpersonnumber++);
@@ -1208,8 +1362,9 @@ elementptr Database_AddMarriage(void)
 	database[newmarriage].element.marriage.principal=none;
 	database[newmarriage].element.marriage.spouse=none;
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		database[newmarriage].element.marriage.data.user[i]=Desk_DeskMem_Malloc(1);
-		database[newmarriage].element.marriage.data.user[i][0]='\0';
+		int fixme;
+		database[newmarriage].element.marriage.data.user[i].text=Desk_DeskMem_Malloc(1);
+		database[newmarriage].element.marriage.data.user[i].text[0]='\0';
 	}
 
 	Modules_ChangedStructure();
@@ -1294,12 +1449,16 @@ void Database_SaveGEDCOM(FILE *file,Desk_bool plainGEDCOM)
 		fprintf(file,"1 _NEXTNEWPERSON %d\n",database[0].element.file.newpersonnumber);
 		for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
 			fprintf(file,"1 _PERSONUSER %d\n",i);
-			fprintf(file,"2 _DESC %s\n",personuser[i]);
+			fprintf(file,"2 _DESC %s\n",personuser[i].name);
+			fprintf(file,"2 _TYPE %d\n",personuser[i].type);
+			if (personuser[i].type == fieldtype_LIST || personuser[i].type == fieldtype_OPENLIST) fprintf(file,"2 _LIST %s\n",personuser[i].list);
 			fprintf(file,"2 _GEDCOM %s\n",personGEDCOM[i]);
 		}
 		for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
 			fprintf(file,"1 _MARRIAGEUSER %d\n",i);
-			fprintf(file,"2 _DESC %s\n",marriageuser[i]);
+			fprintf(file,"2 _DESC %s\n",marriageuser[i].name);
+			fprintf(file,"2 _TYPE %d\n",marriageuser[i].type);
+			if (marriageuser[i].type == fieldtype_LIST || marriageuser[i].type == fieldtype_OPENLIST) fprintf(file,"2 _LIST %s\n",marriageuser[i].list);
 			fprintf(file,"2 _GEDCOM %s\n",marriageGEDCOM[i]);
 		}
 	}
@@ -1311,9 +1470,10 @@ void Database_SaveGEDCOM(FILE *file,Desk_bool plainGEDCOM)
 				if (database[i].element.person.data.sex!=sex_UNKNOWN) fprintf(file,"1 SEX %c\n",database[i].element.person.data.sex);
 				Database_WriteTag(NULL,"INDI");
 				for (j=0;j<NUMBERPERSONUSERFIELDS;j++) {
-					if (strcmp(database[i].element.person.data.user[j],"")!=0 && strcmp(personGEDCOM[j],"")!=0) {
+					char *field = Database_GetPersonUserField(i,j);
+					if (strcmp(field,"")!=0 && strcmp(personGEDCOM[j],"")!=0) {
 						Database_WriteTag(file,personGEDCOM[j]);
-						fprintf(file,"%s\n",database[i].element.person.data.user[j]);
+						fprintf(file,"%s\n",field);
 					}
 				}
 				if (database[i].element.person.marriage) {
@@ -1349,9 +1509,10 @@ void Database_SaveGEDCOM(FILE *file,Desk_bool plainGEDCOM)
 				}
 				Database_WriteTag(NULL,"FAM");
 				for (j=0;j<NUMBERMARRIAGEUSERFIELDS;j++) {
-					if (strcmp(database[i].element.marriage.data.user[j],"")!=0 && strcmp(marriageGEDCOM[j],"")!=0) {
+					char *field = Database_GetMarriageUserField(i,j);
+					if (strcmp(field,"")!=0 && strcmp(marriageGEDCOM[j],"")!=0) {
 						Database_WriteTag(file,marriageGEDCOM[j]);
-						fprintf(file,"%s\n",database[i].element.marriage.data.user[j]);
+						fprintf(file,"%s\n",field);
 					}
 				}
 				break;
@@ -1365,14 +1526,14 @@ char *Database_GetPersonUserDesc(int num)
 {
 	AJWLib_Assert(num>=0);
 	AJWLib_Assert(num<NUMBERPERSONUSERFIELDS);
-	return personuser[num];
+	return personuser[num].name;
 }
 
 void Database_SetPersonUserDesc(int num,char *desc)
 {
 	AJWLib_Assert(num>=0);
 	AJWLib_Assert(num<NUMBERPERSONUSERFIELDS);
-	strcpy(personuser[num],desc);
+	Database_UpdateField(personuser[num].name,desc);
 }
 
 char *Database_GetPersonGEDCOMDesc(int num)
@@ -1386,21 +1547,21 @@ void Database_SetPersonGEDCOMDesc(int num,char *desc)
 {
 	AJWLib_Assert(num>=0);
 	AJWLib_Assert(num<NUMBERPERSONUSERFIELDS);
-	strcpy(personGEDCOM[num],desc);
+	Database_UpdateField(personGEDCOM[num],desc);
 }
 
 char *Database_GetMarriageUserDesc(int num)
 {
 	AJWLib_Assert(num>=0);
 	AJWLib_Assert(num<NUMBERMARRIAGEUSERFIELDS);
-	return marriageuser[num];
+	return marriageuser[num].name;
 }
 
 void Database_SetMarriageUserDesc(int num,char *desc)
 {
 	AJWLib_Assert(num>=0);
 	AJWLib_Assert(num<NUMBERMARRIAGEUSERFIELDS);
-	strcpy(marriageuser[num],desc);
+	Database_UpdateField(marriageuser[num].name,desc);
 }
 
 char *Database_GetMarriageGEDCOMDesc(int num)
@@ -1414,7 +1575,7 @@ void Database_SetMarriageGEDCOMDesc(int num,char *desc)
 {
 	AJWLib_Assert(num>=0);
 	AJWLib_Assert(num<NUMBERMARRIAGEUSERFIELDS);
-	strcpy(marriageGEDCOM[num],desc);
+	Database_UpdateField(marriageGEDCOM[num],desc);
 }
 
 void Database_New(void)
@@ -1436,20 +1597,20 @@ void Database_New(void)
 
 		sprintf(tag,"User.P%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (strcmp(buffer,"*")==0) strcpy(personuser[i],""); else strcpy(personuser[i],buffer);
+		if (strcmp(buffer,"*")==0) Database_UpdateField(personuser[i].name,""); else Database_UpdateField(personuser[i].name,buffer);
 		sprintf(tag,"GED.P%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (strcmp(buffer,"*")==0) strcpy(personGEDCOM[i],""); else strcpy(personGEDCOM[i],buffer);
+		if (strcmp(buffer,"*")==0) Database_UpdateField(personGEDCOM[i],""); else Database_UpdateField(personGEDCOM[i],buffer);
 	}
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
 		char tag[20], *buffer;
 
 		sprintf(tag,"User.M%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (strcmp(buffer,"*")==0) strcpy(marriageuser[i],""); else strcpy(marriageuser[i],buffer);
+		if (strcmp(buffer,"*")==0) Database_UpdateField(marriageuser[i].name,""); else Database_UpdateField(marriageuser[i].name,buffer);
 		sprintf(tag,"GED.M%d:",i+1);
 		buffer=AJWLib_Msgs_TempLookup(tag);
-		if (strcmp(buffer,"*")==0) strcpy(marriageGEDCOM[i],""); else strcpy(marriageGEDCOM[i],buffer);
+		if (strcmp(buffer,"*")==0) Database_UpdateField(marriageGEDCOM[i],""); else Database_UpdateField(marriageGEDCOM[i],buffer);
 	}
 }
 
@@ -1476,6 +1637,7 @@ Desk_bool Database_Loaded(void)
 
 void Database_Init(void)
 {
+	int i;
 	AJWLib_Assert(database==NULL);
 	editpersonwin=Desk_Window_Create("EditPerson",Desk_template_TITLEMIN);
 	editmarriagewin=Desk_Window_Create("EditMarriage",Desk_template_TITLEMIN);
@@ -1491,4 +1653,17 @@ void Database_Init(void)
 	AJWLib_Window_KeyHandler(editmarriagewin,editmarriageicon_OK,Database_OkEditMarriageWindow,editmarriageicon_CANCEL,Database_CancelEditMarriageWindow,NULL);
 	sexmenu=AJWLib_Menu_CreateFromMsgs("Title.Sex:","Menu.Sex:M,F,U",Database_SexMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,Desk_button_MENU | Desk_button_SELECT);
+	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+		personuser[i].name = NULL;
+		personuser[i].type = fieldtype_TEXT;
+		personuser[i].list = NULL;
+		personGEDCOM[i] = NULL;
+	}
+	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+		marriageuser[i].name = NULL;
+		marriageuser[i].type = fieldtype_TEXT;
+		marriageuser[i].list = NULL;
+		marriageGEDCOM[i] = NULL;
+	}
+	Database_AddEditPersonIcons();
 }
