@@ -78,6 +78,7 @@ typedef struct object {
 
 typedef struct fieldproperties {
 	Desk_bool plot;
+    graphictype type;
 	textproperties textproperties;
 } fieldproperties;
 
