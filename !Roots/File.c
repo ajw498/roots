@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.7  2000/01/14 13:50:31  AJW
+	Renamed Graphics.h to Windows.h etc
+
 	Revision 1.6  2000/01/14 13:08:22  AJW
 	Changed Graphics_ to Windows_
 
@@ -62,7 +65,7 @@
 
 #include "Database.h"
 #include "Graphics.h"
-#include "GConfig.h"
+#include "Windows.h"
 #include "Config.h"
 #include "Layout.h"
 #include "File.h"
