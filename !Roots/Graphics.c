@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.24 2000/02/29 19:52:19 uid1 Exp $
+	$Id: Graphics.c,v 1.25 2000/03/07 21:13:58 uid1 Exp $
 
 */
 
@@ -52,8 +52,6 @@
 #include "Draw.h"
 #include "File.h"
 
-
-#define GRAPHICSDIR "<Roots$Dir>.Graphic"
 
 #define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7.087))
 
@@ -432,9 +430,9 @@ static void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *
 	FILE *file=NULL;
 	char fullfilename[256];
 	int ch=0,line=0;
-	sprintf(fullfilename,"%s.%s",GRAPHICSDIR,style);
+	sprintf(fullfilename,"%s.%s",GRAPHICSREAD,style);
 	if (!Desk_File_IsDirectory(fullfilename)) AJWLib_Error2_HandleMsgs2("Error.NoDir:Dir %s does not exist",style);
-	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,style,filename);
+	sprintf(fullfilename,"%s.%s.%s",GRAPHICSREAD,style,filename);
 	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs3("Error.NoFile:File %s does not exist in dir %s",filename,style);
 	file=AJWLib_File_fopen(fullfilename,"r"); /*Error will be caught by caller*/
 	while (ch!=EOF) {
@@ -603,7 +601,7 @@ void Graphics_Load(FILE *file)
 	AJWLib_File_fread(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
 	AJWLib_File_fread(&size,sizeof(int),1,file);
 	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
-	sprintf(filename,"%s.%s",GRAPHICSDIR,currentstyle);
+	sprintf(filename,"%s.%s",GRAPHICSREAD,currentstyle);
 	Graphics_ClaimFonts();
 	/*Import style? ie save style into graphic dir if doesn't already exist*/
 }

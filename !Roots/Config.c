@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.11 2000/03/04 23:52:29 uid1 Exp $
+	$Id: Config.c,v 1.12 2000/03/07 21:13:56 uid1 Exp $
 
 */
 
@@ -26,11 +26,10 @@
 #include "AJWLib.Menu.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "Config.h"
 #include "Modules.h"
-
-#define GRAPHICSDIR "<Roots$Dir>.Graphic"
 
 #define config_DEFAULTSTYLE 20
 #define config_DEFAULTSTYLEMENU 18
@@ -49,9 +48,6 @@
 #define config_SAVE 25
 #define config_OK 24
 
-#define CONFIGFILEWRITE "<Roots$Dir>.Config" /*Use Choices:*/
-#define CONFIGFILEREAD "<Roots$Dir>.Config" /*Use Choices:*/
-
 typedef struct configdata {
 	char graphicsstyle[256];
 	Desk_bool importgraphicsstyle;
@@ -65,9 +61,25 @@ typedef struct configdata {
 	char userdesc[3][20];
 } configdata;
 
-configdata config={"Default",Desk_TRUE,Desk_TRUE,Desk_TRUE,30,10,30,Desk_TRUE,Desk_FALSE,{"Profession","Status","Other"}};
+static configdata config;
 static Desk_window_handle configwin;
 static Desk_menu_ptr configmenu;
+
+static void Config_Default(void)
+{
+	strcpy(config.graphicsstyle,"Default");
+	config.importgraphicsstyle=Desk_TRUE;
+	config.snap=Desk_TRUE;
+	config.title=Desk_TRUE;
+	config.snapdistance=30;
+	config.scrollspeed=10;
+	config.scrolldistance=30;
+	config.autoincreasesize=Desk_TRUE;
+	config.autoincreasealways=Desk_FALSE;
+	strcpy(config.userdesc[0],"Profession");
+	strcpy(config.userdesc[1],"Status");
+	strcpy(config.userdesc[2],"Other");
+}
 
 char *Config_GraphicsStyle(void)
 {
@@ -152,7 +164,8 @@ static Desk_bool Config_Save(Desk_event_pollblock *block,void *ref)
 	FILE *file=NULL;
 	if (!Config_Ok(block,ref)) return Desk_FALSE;
 	Desk_Error2_Try {
-		file=AJWLib_File_fopen(CONFIGFILEWRITE,"wb");
+		if (!Desk_File_IsDirectory(CONFIGDIR)) Desk_File_CreateDirectory(CONFIGDIR);
+		file=AJWLib_File_fopen(CONFIGWRITE,"wb");
 		AJWLib_File_fwrite(&config,sizeof(config),1,file);
 		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
@@ -164,14 +177,16 @@ static Desk_bool Config_Save(Desk_event_pollblock *block,void *ref)
 static void Config_Load(void)
 {
 	FILE *file=NULL;
+	Config_Default();
 	Desk_Error2_Try {
-		if (Desk_File_Exists(CONFIGFILEREAD)) {
-			file=AJWLib_File_fopen(CONFIGFILEREAD,"rb");
+		if (Desk_File_Exists(CONFIGREAD)) {
+			file=AJWLib_File_fopen(CONFIGREAD,"rb");
 			AJWLib_File_fread(&config,sizeof(config),1,file);
 			AJWLib_File_fclose(file);
 		}
 	} Desk_Error2_Catch {
 		AJWLib_Error2_ReportMsgs("Error.ConfigL:%s");
+		Config_Default();
 	} Desk_Error2_EndCatch
 }
 
@@ -220,18 +235,20 @@ void Config_Open(void)
 	Desk_Icon_SetSelect(configwin,config_AUTOINCREASEONLY,!config.autoincreasealways);
 	Config_SnapClick(NULL,NULL);
 	Config_AutoIncreaseClick(NULL,NULL);
-	Desk_Filing_OpenDir(GRAPHICSDIR,&dir,256,Desk_readdirtype_NAMEONLY);
-	do {
-		name=Desk_Filing_ReadDir(&dir);
-		if (name) {
-			if (configmenu) {
-				configmenu=Desk_Menu_Extend(configmenu,name);
-			} else {
-				configmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
+	if (Desk_File_IsDirectory(GRAPHICSREAD)) {
+		Desk_Filing_OpenDir(GRAPHICSREAD,&dir,256,Desk_readdirtype_NAMEONLY);
+		do {
+			name=Desk_Filing_ReadDir(&dir);
+			if (name) {
+				if (configmenu) {
+					configmenu=Desk_Menu_Extend(configmenu,name);
+				} else {
+					configmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
+				}
 			}
-		}
-	} while (name);
-	Desk_Filing_CloseDir(&dir);
+		} while (name);
+		Desk_Filing_CloseDir(&dir);
+	}
 	Desk_Window_Show(configwin,Desk_open_CENTERED);
 	Desk_Icon_SetCaret(configwin,config_USER1);
 	AJWLib_Menu_Register(configmenu,Config_MenuClick,NULL);
