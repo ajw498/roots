@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.51 2000/11/12 16:13:21 AJW Exp $
+	$Id: Database.c,v 1.52 2000/11/12 19:58:40 AJW Exp $
 
 */
 
@@ -160,6 +160,35 @@ elementptr Database_GetLinkedMarriages(int *index)
 	}
 	*index=0;
 	return none;
+}
+
+Desk_bool Database_Married(elementptr person1,elementptr person2)
+/*Return TRUE if the two people are married to each other*/
+{
+	elementptr marriage;
+
+	marriage=Database_GetMarriage(person1);
+	while (marriage) {
+		if (database[marriage].element.marriage.spouse==person1 && database[marriage].element.marriage.principal==person2) return Desk_TRUE;
+		if (database[marriage].element.marriage.spouse==person2 && database[marriage].element.marriage.principal==person1) return Desk_TRUE;
+		marriage=database[marriage].element.marriage.next;
+	}
+	marriage=Database_GetMarriage(person1);
+	while (marriage) {
+		if (database[marriage].element.marriage.spouse==person1 && database[marriage].element.marriage.principal==person2) return Desk_TRUE;
+		if (database[marriage].element.marriage.spouse==person2 && database[marriage].element.marriage.principal==person1) return Desk_TRUE;
+		marriage=database[marriage].element.marriage.previous;
+	}
+	return Desk_FALSE;
+}
+
+Desk_bool Database_ElementValid(elementptr person)
+/*Check to see if a given elementptr is valid*/
+{
+	if (person>database[0].element.file.numberofelements) return Desk_FALSE;
+	if (person<0) return Desk_TRUE;
+	if (database[person].type==element_PERSON || database[person].type==element_MARRIAGE) return Desk_TRUE;
+	return Desk_FALSE;
 }
 
 void Database_SetTitle(char *title)
