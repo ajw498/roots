@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.3  1999/10/10 20:55:20  AJW
+	Modified to use Desk
+
 	Revision 1.2  1999/10/02 18:46:37  AJW
 	I'm not sure what has changed
 
@@ -15,32 +18,31 @@
 
 /*	Includes  */
 
-#include "DeskLib:Window.h"
-#include "DeskLib:Error.h"
-#include "DeskLib:Event.h"
-#include "DeskLib:EventMsg.h"
-#include "DeskLib:Handler.h"
-#include "DeskLib:Hourglass.h"
-#include "DeskLib:Icon.h"
-#include "DeskLib:Menu.h"
-#include "DeskLib:Msgs.h"
-#include "DeskLib:Resource.h"
-#include "DeskLib:Screen.h"
-#include "DeskLib:Template.h"
-#include "DeskLib:File.h"
-#include "DeskLib:Filing.h"
-#include "DeskLib:Sprite.h"
-#include "DeskLib:GFX.h"
-#include "DeskLib:ColourTran.h"
+#include "Desk.Window.h"
+#include "Desk.Error2.h"
+#include "Desk.Event.h"
+#include "Desk.EventMsg.h"
+#include "Desk.Handler.h"
+#include "Desk.Hourglass.h"
+#include "Desk.Icon.h"
+#include "Desk.Menu.h"
+#include "Desk.Msgs.h"
+#include "Desk.Resource.h"
+#include "Desk.Screen.h"
+#include "Desk.Template.h"
+#include "Desk.File.h"
+#include "Desk.Filing.h"
+#include "Desk.Sprite.h"
+#include "Desk.GFX.h"
+#include "Desk.ColourTran.h"
 
-#include "AJWLib:Window.h"
-#include "AJWLib:Menu.h"
-#include "AJWLib:Msgs.h"
-#include "AJWLib:Misc.h"
-#include "AJWLib:Handler.h"
-#include "AJWLib:Error.h"
-#include "AJWLib:Flex.h"
-#include "AJWLib:DrawFile.h"
+#include "AJWLib.Window.h"
+#include "AJWLib.Menu.h"
+#include "AJWLib.Msgs.h"
+#include "AJWLib.Handler.h"
+#include "AJWLib.Error2.h"
+#include "AJWLib.Flex.h"
+#include "AJWLib.DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -61,40 +63,40 @@
 
 /*	Variables  */
 
-window_handle info;
-menu_ptr iconbarmenu;
+Desk_window_handle info;
+Desk_menu_ptr iconbarmenu;
 
 #if DEBUG
-extern BOOL halt;
+extern Desk_bool halt;
 #endif
 /*	Functions  */
 
 
 
-BOOL ReceiveDrag(event_pollblock *block, void *r)
+Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 {
 	Database_Load(block->data.message.data.dataload.filename);
-	return TRUE;
+	return Desk_TRUE;
 }
 
-BOOL IconBarClick(event_pollblock *block, void *r)
+Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 {
 	if (block->data.mouse.button.data.select==1) {
 		Graphics_OpenWindow(wintype_UNLINKED,none,0);
 		Graphics_OpenWindow(wintype_NORMAL,none,0);
-		return TRUE;
+		return Desk_TRUE;
 	}
 #if DEBUG
-if (block->data.mouse.button.data.adjust==1) halt=FALSE;
+if (block->data.mouse.button.data.adjust==1) halt=Desk_FALSE;
 #endif
-	return FALSE;
+	return Desk_FALSE;
 }
 
 void IconBarMenuClick(int entry, void *r)
 {
 	switch (entry) {
 		case iconbarmenu_QUIT:
-			Event_CloseDown();
+			Desk_Event_CloseDown();
 			break;
 	}
 }
@@ -102,31 +104,33 @@ void IconBarMenuClick(int entry, void *r)
 int main(void)
 {
 
-	Error_RegisterSignals();
-	Resource_Initialise(DIRPREFIX);
-	Msgs_LoadFile("Messages");
-	Event_Initialise(Msgs_TempLookup("Task.Name:"));
-	EventMsg_Initialise();
-	Screen_CacheModeInfo();      /*Errors*/
-	Template_Initialise();
-	EventMsg_Claim(message_MODECHANGE,event_ANY,Handler_ModeChange,NULL);
-	Event_Claim(event_CLOSE,event_ANY,event_ANY,Handler_CloseWindow,NULL);
-	Event_Claim(event_OPEN,event_ANY,event_ANY,Handler_OpenWindow,NULL);
-	Event_Claim(event_KEY,event_ANY,event_ANY,Handler_KeyPress,NULL);
-	Event_Claim(event_REDRAW,event_ANY,event_ANY,Handler_HatchRedraw,NULL);
-	Icon_BarIcon(Msgs_TempLookup("Task.Icon:"),iconbar_RIGHT);
-	info=Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","©Alex Waugh 1999",VERSION);
-	Template_LoadFile("Templates");
-	iconbarmenu=Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
-	Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(menu_ptr)info);
-	Menu_Attach(window_ICONBAR,event_ANY,iconbarmenu,button_MENU);
-	Event_Claim(event_CLICK,window_ICONBAR,event_ANY,IconBarClick,NULL);
-	EventMsg_Claim(message_DATALOAD,event_ANY,ReceiveDrag,NULL);
-	Flex_InitDA("Task.Name:","DA.MaxSize:16");
+/*	Error_RegisterSignals();*/
+	Desk_Error2_Init_JumpSig();
+	Desk_Error2_SetHandler(AJWLib_Error2_ReportFatal);
+	Desk_Resource_Initialise(DIRPREFIX);
+	Desk_Msgs_LoadFile("Messages");
+	Desk_Event_Initialise(AJWLib_Msgs_Lookup("Task.Name:"));
+	Desk_EventMsg_Initialise();
+	Desk_Screen_CacheModeInfo();      /*Errors*/
+	Desk_Template_Initialise();
+	Desk_EventMsg_Claim(Desk_message_MODECHANGE,Desk_event_ANY,Desk_Handler_ModeChange,NULL);
+	Desk_Event_Claim(Desk_event_CLOSE,Desk_event_ANY,Desk_event_ANY,Desk_Handler_CloseWindow,NULL);
+	Desk_Event_Claim(Desk_event_OPEN,Desk_event_ANY,Desk_event_ANY,Desk_Handler_OpenWindow,NULL);
+	Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,AJWLib_Handler_KeyPress,NULL);
+	Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
+	Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
+	info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","©Alex Waugh 1999",VERSION);
+	Desk_Template_LoadFile("Templates");
+	iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
+	Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)info);
+	AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
+	Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);
+	Desk_EventMsg_Claim(Desk_message_DATALOAD,Desk_event_ANY,ReceiveDrag,NULL);
+	AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
 	Modules_Init();
-	while (TRUE) {
+	while (Desk_TRUE) {
 		Modules_ReflectChanges();
-		Event_Poll();
+		Desk_Event_Poll();
 	}
 	return 0;
 }

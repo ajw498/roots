@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Modules.c,v $
+	Revision 1.2  1999/10/10 20:54:23  AJW
+	Modified to use Desk
+
 	Revision 1.1  1999/09/27 15:33:18  AJW
 	Initial revision
 
@@ -11,32 +14,30 @@
 
 /*	Includes  */
 
-#include "DeskLib:Window.h"
-#include "DeskLib:Error.h"
-#include "DeskLib:Event.h"
-#include "DeskLib:EventMsg.h"
-#include "DeskLib:Handler.h"
-#include "DeskLib:Hourglass.h"
-#include "DeskLib:Icon.h"
-#include "DeskLib:Menu.h"
-#include "DeskLib:Msgs.h"
-#include "DeskLib:Resource.h"
-#include "DeskLib:Screen.h"
-#include "DeskLib:Template.h"
-#include "DeskLib:File.h"
-#include "DeskLib:Filing.h"
-#include "DeskLib:Sprite.h"
-#include "DeskLib:GFX.h"
-#include "DeskLib:ColourTran.h"
+#include "Desk.Window.h"
+#include "Desk.Error2.h"
+#include "Desk.Event.h"
+#include "Desk.EventMsg.h"
+#include "Desk.Handler.h"
+#include "Desk.Hourglass.h"
+#include "Desk.Icon.h"
+#include "Desk.Menu.h"
+#include "Desk.Msgs.h"
+#include "Desk.Resource.h"
+#include "Desk.Screen.h"
+#include "Desk.Template.h"
+#include "Desk.File.h"
+#include "Desk.Filing.h"
+#include "Desk.Sprite.h"
+#include "Desk.GFX.h"
+#include "Desk.ColourTran.h"
 
-#include "AJWLib:Window.h"
-#include "AJWLib:Menu.h"
-#include "AJWLib:Msgs.h"
-#include "AJWLib:Misc.h"
-#include "AJWLib:Handler.h"
-#include "AJWLib:Error.h"
-#include "AJWLib:Flex.h"
-#include "AJWLib:DrawFile.h"
+#include "AJWLib.Window.h"
+#include "AJWLib.Menu.h"
+#include "AJWLib.Msgs.h"
+#include "AJWLib.Handler.h"
+#include "AJWLib.Flex.h"
+#include "AJWLib.DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,9 +48,9 @@
 #include "Graphics.h"
 #include "GConfig.h"
 
-static BOOL changedstructure=FALSE,changeddata=FALSE;
+static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE;
 
-BOOL Modules_Init(void)
+Desk_bool Modules_Init(void)
 {
 	Database_Init(); /*errors*/
 	Graphics_Init();
@@ -102,23 +103,23 @@ BOOL Modules_Init(void)
 	Database_AddChild(31,9);
 *//*	Database_FudgeLinked(5);*/
     Database_Marry(1,7);
-	return TRUE;
+	return Desk_TRUE;
 }
 
 void Modules_ChangedStructure(void)
 {
-	changedstructure=TRUE;
+	changedstructure=Desk_TRUE;
 }
 
 void Modules_ReflectChanges(void)
 {
 	if (changedstructure) Graphics_Relayout();
-	changedstructure=FALSE;
+	changedstructure=Desk_FALSE;
 	/*if (changeddata) Graphics_ForceRedraw();*/
-	changeddata=FALSE;
+	changeddata=Desk_FALSE;
 }
 
 void Modules_ChangedData(elementptr person)
 {
-	changeddata=TRUE;
+	changeddata=Desk_TRUE;
 }

@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.4  1999/10/10 20:53:46  AJW
+	Modified to use Desk
+
 	Revision 1.3  1999/10/02 18:04:43  AJW
 	Fixed Database_RemoveParents
 
@@ -17,22 +20,20 @@
 
 /*	Includes  */
 
-#include "DeskLib:Window.h"
-#include "DeskLib:Error.h"
-#include "DeskLib:Event.h"
-#include "DeskLib:Template.h"
-#include "DeskLib:File.h"
-#include "DeskLib:Filing.h"
+#include "Desk.Window.h"
+#include "Desk.Error.h"
+#include "Desk.Event.h"
+#include "Desk.Template.h"
+#include "Desk.File.h"
+#include "Desk.Filing.h"
 
-#include "AJWLib:Window.h"
-#include "AJWLib:Menu.h"
-#include "AJWLib:Msgs.h"
-#include "AJWLib:Misc.h"
-#include "AJWLib:Menu.h"
-#include "AJWLib:Handler.h"
-#include "AJWLib:Error.h"
-#include "AJWLib:Flex.h"
-#include "AJWLib:DrawFile.h"
+#include "AJWLib.Window.h"
+#include "AJWLib.Menu.h"
+#include "AJWLib.Msgs.h"
+#include "AJWLib.Menu.h"
+#include "AJWLib.Handler.h"
+#include "AJWLib.Flex.h"
+#include "AJWLib.DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -80,8 +81,8 @@
 
 static element *database;
 static elementptr editingperson=none,editingmarriage=none;
-static window_handle editpersonwin,editmarriagewin;
-menu_ptr sexmenu,titlemenu;
+static Desk_window_handle editpersonwin,editmarriagewin;
+Desk_menu_ptr sexmenu,titlemenu;
 
 void Database_FudgeLinked(elementptr person)
 {
@@ -95,14 +96,14 @@ void Database_FudgeMarriageSwap(elementptr marriage)
 	database[marriage].marriage.spouse=temp;
 }
 
-BOOL Database_IsUnlinked(elementptr person)
+Desk_bool Database_IsUnlinked(elementptr person)
 {
 	elementptr unlinkedpeople=Database_GetUnlinked(none);
 	while (unlinkedpeople!=none) {
-		if (unlinkedpeople==person) return TRUE;
+		if (unlinkedpeople==person) return Desk_TRUE;
 		unlinkedpeople=Database_GetUnlinked(unlinkedpeople);
 	}
-	return FALSE;
+	return Desk_FALSE;
 }
 
 persondata *Database_GetPersonData(elementptr person)
@@ -182,11 +183,11 @@ marriagedata *Database_GetMarriageData(elementptr marriage)
 	return &(database[marriage].marriage.data);
 }
 
-BOOL Database_IsFirstMarriage(elementptr marriage)
+Desk_bool Database_IsFirstMarriage(elementptr marriage)
 {
-	if (marriage==none) return FALSE;
-	if (database[marriage].marriage.previous==none) return TRUE;
-	return FALSE;
+	if (marriage==none) return Desk_FALSE;
+	if (database[marriage].marriage.previous==none) return Desk_TRUE;
+	return Desk_FALSE;
 }
 
 elementptr Database_GetMarriageLtoR(elementptr person)
@@ -314,12 +315,12 @@ void Database_Marry(elementptr linked,elementptr unlinked)
 	if (Database_IsUnlinked(linked)) return;
 	if (!Database_IsUnlinked(unlinked)) return;
 	if (Database_GetMarriage(linked) && Database_GetPrincipalFromMarriage(Database_GetMarriage(linked))!=linked) {
-		Error_Report(1,"You are not marrying the principal person.");
+		Desk_Error_Report(1,"You are not marrying the principal person.");
 		/*swap principal and spouse if only one marriage*/
 		return;
 	}
 	if ((marriage=database[0].file.freeelement)==none) {
-		Check(Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1)),"NO MEMORY ERROR",);
+		AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1));
 		marriage=database[0].file.numberofelements++;
 	} else {
 		database[0].file.freeelement=database[marriage].freeelement.next;
@@ -375,7 +376,7 @@ void Database_AddChild(elementptr marriage,elementptr child)
 
 void Database_LinkPerson(elementptr person)
 {
-	if (database[0].file.linkedpeople!=none) { Error_Report(1,"DEBUGGING ERROR   REMOVE THIS");  return; }
+	if (database[0].file.linkedpeople!=none) { Desk_Error_Report(1,"DEBUGGING ERROR   REMOVE THIS");  return; }
 	Database_UnlinkUnlinkedPerson(person);
 	database[0].file.linkedpeople=person;
 	Modules_ChangedStructure();
@@ -383,64 +384,64 @@ void Database_LinkPerson(elementptr person)
 
 void Database_EditPerson(elementptr person)
 {
-	Icon_SetText(editpersonwin,editpersonicon_SURNAME,database[person].person.data.surname);
-	Icon_SetText(editpersonwin,editpersonicon_FORENAME,database[person].person.data.forename);
-	Icon_SetText(editpersonwin,editpersonicon_MIDDLENAMES,database[person].person.data.middlenames);
-	Icon_SetText(editpersonwin,editpersonicon_TITLE,database[person].person.data.title);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_SURNAME,database[person].person.data.surname);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_FORENAME,database[person].person.data.forename);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_MIDDLENAMES,database[person].person.data.middlenames);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_TITLE,database[person].person.data.title);
 	switch (database[person].person.data.sex) {
 		case male:
-			Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.M:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.M:");
 			break;
 		case female:
-			Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.F:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.F:");
 			break;
 		case unknown:
-			Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.U:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.U:");
 			break;
 	}
-/*	Icon_SetText(editpersonwin,editpersonicon_DOB,database[person].person.data.);
-	Icon_SetText(editpersonwin,editpersonicon_DOD,database[person].person.data.);
-*/	Icon_SetText(editpersonwin,editpersonicon_BIRTHPLACE,database[person].person.data.placeofbirth);
-	Icon_SetText(editpersonwin,editpersonicon_USER1,database[person].person.data.userdata[0]);
-	Icon_SetText(editpersonwin,editpersonicon_USER2,database[person].person.data.userdata[1]);
-	Icon_SetText(editpersonwin,editpersonicon_USER3,database[person].person.data.userdata[2]);
-	Icon_SetText(editpersonwin,editpersonicon_USERDESC1,database[0].file.userdesc[0]);
-	Icon_SetText(editpersonwin,editpersonicon_USERDESC2,database[0].file.userdesc[1]);
-	Icon_SetText(editpersonwin,editpersonicon_USERDESC3,database[0].file.userdesc[2]);
-	Window_Show(editpersonwin,editingperson ? open_WHEREVER : open_CENTERED);
+/*	Desk_Icon_SetText(editpersonwin,editpersonicon_DOB,database[person].person.data.);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_DOD,database[person].person.data.);
+*/	Desk_Icon_SetText(editpersonwin,editpersonicon_BIRTHPLACE,database[person].person.data.placeofbirth);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_USER1,database[person].person.data.userdata[0]);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_USER2,database[person].person.data.userdata[1]);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_USER3,database[person].person.data.userdata[2]);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_USERDESC1,database[0].file.userdesc[0]);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_USERDESC2,database[0].file.userdesc[1]);
+	Desk_Icon_SetText(editpersonwin,editpersonicon_USERDESC3,database[0].file.userdesc[2]);
+	Desk_Window_Show(editpersonwin,editingperson ? Desk_open_WHEREVER : Desk_open_CENTERED);
 	editingperson=person;
 }
 
-BOOL Database_CancelEditWindow(event_pollblock *block,void *ref)
+Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref)
 {
-	if (!block->data.mouse.button.data.select) return FALSE;
+	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	editingperson=none;
-	Window_Hide(editpersonwin);
-	return TRUE;
+	Desk_Window_Hide(editpersonwin);
+	return Desk_TRUE;
 }
 
-BOOL Database_OkEditWindow(event_pollblock *block,void *ref)
+Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 {
-	if (block->data.mouse.button.data.menu || editingperson==none) return FALSE;
-	Icon_GetText(editpersonwin,editpersonicon_SURNAME,database[editingperson].person.data.surname);
-	Icon_GetText(editpersonwin,editpersonicon_FORENAME,database[editingperson].person.data.forename);
-	Icon_GetText(editpersonwin,editpersonicon_MIDDLENAMES,database[editingperson].person.data.middlenames);
-	Icon_GetText(editpersonwin,editpersonicon_TITLE,database[editingperson].person.data.title);
-	if (!strcmp(Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),Msgs_TempLookup("Sex.M:"))) database[editingperson].person.data.sex=male;
-	else if (!strcmp(Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),Msgs_TempLookup("Sex.F:"))) database[editingperson].person.data.sex=female;
+	if (block->data.mouse.button.data.menu || editingperson==none) return Desk_FALSE;
+	Desk_Icon_GetText(editpersonwin,editpersonicon_SURNAME,database[editingperson].person.data.surname);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_FORENAME,database[editingperson].person.data.forename);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_MIDDLENAMES,database[editingperson].person.data.middlenames);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_TITLE,database[editingperson].person.data.title);
+	if (!strcmp(Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),AJWLib_Msgs_TempLookup("Sex.M:"))) database[editingperson].person.data.sex=male;
+	else if (!strcmp(Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),AJWLib_Msgs_TempLookup("Sex.F:"))) database[editingperson].person.data.sex=female;
 	else database[editingperson].person.data.sex=unknown;
-/*	Icon_GetText(editpersonwin,editpersonicon_DOB,database[editingperson].person.data.);
-	Icon_GetText(editpersonwin,editpersonicon_DOD,database[editingperson].person.data.);
-*/	Icon_GetText(editpersonwin,editpersonicon_BIRTHPLACE,database[editingperson].person.data.placeofbirth);
-	Icon_GetText(editpersonwin,editpersonicon_USER1,database[editingperson].person.data.userdata[0]);
-	Icon_GetText(editpersonwin,editpersonicon_USER2,database[editingperson].person.data.userdata[1]);
-	Icon_GetText(editpersonwin,editpersonicon_USER3,database[editingperson].person.data.userdata[2]);
-	Icon_GetText(editpersonwin,editpersonicon_USERDESC1,database[0].file.userdesc[0]);
-	Icon_GetText(editpersonwin,editpersonicon_USERDESC2,database[0].file.userdesc[1]);
-	Icon_GetText(editpersonwin,editpersonicon_USERDESC3,database[0].file.userdesc[2]);	
+/*	Desk_Icon_GetText(editpersonwin,editpersonicon_DOB,database[editingperson].person.data.);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_DOD,database[editingperson].person.data.);
+*/	Desk_Icon_GetText(editpersonwin,editpersonicon_BIRTHPLACE,database[editingperson].person.data.placeofbirth);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_USER1,database[editingperson].person.data.userdata[0]);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_USER2,database[editingperson].person.data.userdata[1]);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_USER3,database[editingperson].person.data.userdata[2]);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_USERDESC1,database[0].file.userdesc[0]);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_USERDESC2,database[0].file.userdesc[1]);
+	Desk_Icon_GetText(editpersonwin,editpersonicon_USERDESC3,database[0].file.userdesc[2]);
 	editingperson=none;
-	if (block->data.mouse.button.data.select) Window_Hide(editpersonwin);
-	return TRUE;
+	if (block->data.mouse.button.data.select) Desk_Window_Hide(editpersonwin);
+	return Desk_TRUE;
 }
 
 void Database_EditMarriage(elementptr marriage)
@@ -450,11 +451,11 @@ void Database_EditMarriage(elementptr marriage)
 		/*Cancel previous edit*/
 	}
 	if (marriage!=none) {
-		Icon_SetText(editmarriagewin,2,database[database[marriage].marriage.principal].person.data.surname); /*temp*/
-		Icon_SetText(editmarriagewin,3,database[database[marriage].marriage.spouse].person.data.surname); /*temp*/
+		Desk_Icon_SetText(editmarriagewin,2,database[database[marriage].marriage.principal].person.data.surname); /*temp*/
+		Desk_Icon_SetText(editmarriagewin,3,database[database[marriage].marriage.spouse].person.data.surname); /*temp*/
 	}
-	Window_Show(editmarriagewin,editingmarriage ? open_WHEREVER : open_CENTERED);
-	editingmarriage=TRUE;
+	Desk_Window_Show(editmarriagewin,editingmarriage ? Desk_open_WHEREVER : Desk_open_CENTERED);
+	editingmarriage=Desk_TRUE;
 }
 
 void Database_Delete(elementptr person)
@@ -465,12 +466,12 @@ void Database_Delete(elementptr person)
 	Modules_ChangedStructure();
 }
 
-BOOL Database_Add(void)
+Desk_bool Database_Add(void)
 {
 	elementptr newperson;
 	static int newpersonnumber=1;
 	if ((newperson=database[0].file.freeelement)==none) {
-		Check(Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1)),"NO MEMORY ERROR",FALSE);
+		AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1));
 		newperson=database[0].file.numberofelements++;
 	} else {
 		database[0].file.freeelement=database[newperson].freeelement.next;
@@ -497,20 +498,20 @@ BOOL Database_Add(void)
     strcpy(database[newperson].person.data.userdata[2],"");
     strcpy(database[newperson].person.data.notes,"");
     Modules_ChangedStructure();
-    return TRUE;
+    return Desk_TRUE;
 }
 
 void Database_SexMenuClick(int entry,void *ref)
 {
 	switch (entry) {
 		case sexmenu_M:
-			Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.M:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.M:");
 			break;
 		case sexmenu_F:
-			Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.F:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.F:");
 			break;
 		case sexmenu_U:
-			Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.U:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.U:");
 			break;
 	}
 }
@@ -519,19 +520,19 @@ void Database_TitleMenuClick(int entry,void *ref)
 {
 	switch (entry) {
 		case titlemenu_Mr:
-			Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Mr:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Mr:");
 			break;
 		case titlemenu_Mrs:
-			Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Mrs:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Mrs:");
 			break;
 		case titlemenu_Miss:
-			Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Miss:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Miss:");
 			break;
 		case titlemenu_Ms:
-			Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Ms:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Ms:");
 			break;
 		case titlemenu_Dr:
-			Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Dr:");
+			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Dr:");
 			break;
 	}
 }
@@ -539,30 +540,28 @@ void Database_TitleMenuClick(int entry,void *ref)
 void Database_Save(char *filename)
 {
 /*Remove free elements?*/
-	file_handle savefile;
-	savefile=File_Open(filename,file_WRITE);
-	if (savefile==0) { Error_Check(file_lasterror); return; }
-	Error_Check(File_WriteBytes(savefile,database,(database[0].file.numberofelements)*sizeof(element)));
-	Error_Check(File_Close(savefile));
+	Desk_file_handle savefile;
+	savefile=Desk_File_Open(filename,Desk_file_WRITE);
+	Desk_File_WriteBytes(savefile,database,(database[0].file.numberofelements)*sizeof(element));
+	Desk_File_Close(savefile);
 }
 
 void Database_Load(char *filename)
 {
-	file_handle loadfile;
+	Desk_file_handle loadfile;
 	int size;
-	size=File_Size(filename);
-	Flex_Extend((flex_ptr)&database,size);
-	loadfile=File_Open(filename,file_READ);
-	if (loadfile==0) { Error_Check(file_lasterror); return; }
+	size=Desk_File_Size(filename);
+	AJWLib_Flex_Extend((flex_ptr)&database,size);
+	loadfile=Desk_File_Open(filename,Desk_file_READ);
 	/*Check file has correct ID*/
-	File_ReadBytes(loadfile,database,size);
-	Error_Check(File_Close(loadfile));
+	Desk_File_ReadBytes(loadfile,database,size);
+	Desk_File_Close(loadfile);
 	Modules_ChangedStructure();
 }
 
-BOOL Database_Init(void)
+Desk_bool Database_Init(void)
 {
-	Check(Flex_Alloc((flex_ptr)&database,sizeof(element)),"NO MEMORY ERROR",FALSE);
+	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element));
 	strcpy(database[0].file.fileidentifier,FILEID);
 	database[0].file.versionnumber=VERSIONNUM;
 	strcpy(database[0].file.filetitle,"<Untitled>");
@@ -575,15 +574,15 @@ BOOL Database_Init(void)
 	strcpy(database[0].file.userdesc[1],"Other2");
 	strcpy(database[0].file.userdesc[2],"Other3");
 
-	editpersonwin=Window_Create("EditPerson",template_TITLEMIN);
-	editmarriagewin=Window_Create("EditMarriage",template_TITLEMIN);
-	Event_Claim(event_CLICK,editpersonwin,editpersonicon_OK,Database_OkEditWindow,NULL);
-	Event_Claim(event_CLICK,editpersonwin,editpersonicon_CANCEL,Database_CancelEditWindow,NULL);
+	editpersonwin=Desk_Window_Create("EditPerson",Desk_template_TITLEMIN);
+	editmarriagewin=Desk_Window_Create("EditMarriage",Desk_template_TITLEMIN);
+	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_OK,Database_OkEditWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_CANCEL,Database_CancelEditWindow,NULL);
 	/*Register handlers*/
-	sexmenu=Menu_CreateFromMsgs("Title.Sex:","Menu.Sex:M,F,U",Database_SexMenuClick,NULL);
-	Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,button_MENU | button_SELECT);
-	titlemenu=Menu_CreateFromMsgs("Title.Title:","Menu.Title:",Database_TitleMenuClick,NULL);
-	Menu_AttachPopup(editpersonwin,editpersonicon_TITLEMENU,editpersonicon_TITLE,titlemenu,button_MENU | button_SELECT);
+	sexmenu=AJWLib_Menu_CreateFromMsgs("Title.Sex:","Menu.Sex:M,F,U",Database_SexMenuClick,NULL);
+	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,Desk_button_MENU | Desk_button_SELECT);
+	titlemenu=AJWLib_Menu_CreateFromMsgs("Title.Title:","Menu.Title:",Database_TitleMenuClick,NULL);
+	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_TITLEMENU,editpersonicon_TITLE,titlemenu,Desk_button_MENU | Desk_button_SELECT);
 
-	return TRUE;
+	return Desk_TRUE;
 }
