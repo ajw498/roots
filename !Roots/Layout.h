@@ -31,6 +31,8 @@ Desk_bool Layout_GetSelect(elementptr person);
 elementtype Layout_AnyoneSelected(void);
 void Layout_Init(void);
 void Layout_RemoveTransients(layout *layout);
+void Layout_CalcAllGridFromPositions(layout *layout);
+void Layout_CalcAllPositionsFromGrid(layout *layout);
 
 #endif
 

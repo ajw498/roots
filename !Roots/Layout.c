@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.51 2000/11/06 23:45:55 AJW Exp $
+	$Id: Layout.c,v 1.52 2000/11/12 13:53:14 AJW Exp $
 
 */
 
@@ -68,6 +68,30 @@ int Layout_NearestGeneration(int y)
 	}
 	y-=y%h;
 	return y*neg;
+}
+
+void Layout_CalcAllGridFromPositions(layout *layout)
+{
+	int i;
+
+	for (i=0;i<layout->numpeople;i++) {
+		layout->person[i].xgrid=layout->person[i].x;
+		layout->person[i].ygrid=layout->person[i].y/(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
+		if (layout->person[i].width==Graphics_PersonWidth()) layout->person[i].width=0;
+		if (layout->person[i].height==Graphics_PersonHeight()) layout->person[i].height=0;
+	}
+}
+
+void Layout_CalcAllPositionsFromGrid(layout *layout)
+{
+	int i;
+
+	for (i=0;i<layout->numpeople;i++) {
+		layout->person[i].x=layout->person[i].xgrid;
+		layout->person[i].y=layout->person[i].ygrid*(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
+		if (layout->person[i].width==0) layout->person[i].width=Graphics_PersonWidth();
+		if (layout->person[i].height==0) layout->person[i].height=Graphics_PersonHeight();
+	}
 }
 
 void Layout_AddElement(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid,flags flags)
@@ -293,7 +317,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.51 2000/11/06 23:45:55 AJW Exp $
+	$Id: Layout.c,v 1.52 2000/11/12 13:53:14 AJW Exp $
 
 */
 
@@ -1155,6 +1179,7 @@ void Layout_SaveGEDCOM(layout *layout,FILE *file)
 /*Save a GEDCOM layout to the given file ptr*/
 {
 	int i;
+	int *temp;
 	
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(file!=NULL);
@@ -1164,6 +1189,10 @@ void Layout_SaveGEDCOM(layout *layout,FILE *file)
 		fprintf(file,"1 _PERSON @%d@\n",layout->person[i].element);
 		fprintf(file,"2 _X %d\n",layout->person[i].x);
 		fprintf(file,"2 _Y %d\n",layout->person[i].y);
+		fprintf(file,"2 _W %d\n",layout->person[i].width);
+		fprintf(file,"2 _H %d\n",layout->person[i].height);
+		temp=(int *)&(layout->person[i].flags);
+		fprintf(file,"2 _F %d\n",*temp);
 	}
 }
 
@@ -1171,6 +1200,14 @@ layout *Layout_GetGEDCOMLayout(void)
 /* Return the GEDCOM layout used while loading, then reset it ready for the next load*/
 {
 	layout *returnvalue=gedcomlayout;
+	int i;
+
+	for (i=0;i<gedcomlayout->numpeople;i++) {
+		if (gedcomlayout->person[i].width==0 && gedcomlayout->person[i].height==0) {
+			gedcomlayout->person[i].width=Graphics_PersonWidth();
+			gedcomlayout->person[i].height=Graphics_PersonHeight();
+		}
+	}
 	gedcomlayout=NULL;
 	return returnvalue;
 }
@@ -1178,14 +1215,23 @@ layout *Layout_GetGEDCOMLayout(void)
 void Layout_GEDCOMNewPerson(elementptr person)
 /* Add a new person to the GEDCOM layout*/
 {
+	flags defaultflags;
+
 	if (gedcomlayout==NULL) gedcomlayout=Layout_New();
 	AJWLib_Flex_Extend((flex_ptr)&(gedcomlayout->person),(gedcomlayout->numpeople+1)*sizeof(elementlayout));
 	gedcomlayout->person[gedcomlayout->numpeople].element=person;
 	gedcomlayout->person[gedcomlayout->numpeople].x=0;
 	gedcomlayout->person[gedcomlayout->numpeople].y=0;
-	{
-		int FIXME; /*add flags, width etc here*/
-	}
+	gedcomlayout->person[gedcomlayout->numpeople].width=0;
+	gedcomlayout->person[gedcomlayout->numpeople].height=0;
+	defaultflags.editable=1;
+	defaultflags.moveable=1;
+	defaultflags.linkable=1;
+	defaultflags.snaptogrid=1;
+	defaultflags.selectable=1;
+	gedcomlayout->person[gedcomlayout->numpeople].flags=defaultflags;
+	gedcomlayout->person[gedcomlayout->numpeople].xgrid=0;
+	gedcomlayout->person[gedcomlayout->numpeople].ygrid=0;
 	gedcomlayout->numpeople++;
 }
 
@@ -1201,6 +1247,26 @@ void Layout_GEDCOMNewPersonY(int pos)
 {
 	AJWLib_Assert(gedcomlayout!=NULL);
 	gedcomlayout->person[gedcomlayout->numpeople-1].y=Layout_NearestGeneration(pos);
+}
+
+void Layout_GEDCOMNewPersonWidth(int width)
+/* Add the width coord to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].width=width;
+}
+void Layout_GEDCOMNewPersonHeight(int height)
+/* Add the height coord to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].height=height;
+}
+
+void Layout_GEDCOMNewPersonFlags(flags flags)
+/* Add the flags to a new person to the GEDCOM layout*/
+{
+	AJWLib_Assert(gedcomlayout!=NULL);
+	gedcomlayout->person[gedcomlayout->numpeople-1].flags=flags;
 }
 
 void Layout_Init(void)
