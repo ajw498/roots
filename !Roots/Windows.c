@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.41 2000/02/23 21:32:59 uid1 Exp $
+	$Id: Windows.c,v 1.42 2000/02/23 22:40:51 uid1 Exp $
 
 */
 
@@ -492,35 +492,59 @@ void Windows_GetOffset(dragdata *dragdata)
 
 void Windows_DragFn(void *ref)
 {
+	/*Called every null poll when dragging*/
 	dragdata *dragdata=ref;
 	Desk_mouse_block mouseblk;
 	Desk_window_state blk;
+	Desk_window_info infoblk;
 	int mousex;
 	if (dragdata->windowdata->type!=wintype_NORMAL) return;
 	if (!dragdata->plotted) {
+		/*Plot drag box if not already plotted*/
 		Windows_GetOffset(dragdata);
 		Windows_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_TRUE;
 	}
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Wimp_GetWindowState(dragdata->windowdata->handle,&blk);
+	Desk_Window_GetInfo3(dragdata->windowdata->handle,&infoblk);
 	mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 	if (mousex!=dragdata->oldmousex) {
+		/*Unplot drag box if it has moved*/
 		Windows_PlotDragBox(dragdata);
 		dragdata->oldmousex=mousex;
 		Windows_GetOffset(dragdata);
+		/*Replot it in new position*/
 		Windows_PlotDragBox(dragdata);
 	}
 	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<Config_ScrollDistance()) {
+		/*We are near left edge of window*/
 		Windows_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_FALSE;
+		if (infoblk.block.scroll.x<=infoblk.block.workarearect.min.x) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.min.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
 		blk.openblock.scroll.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
 		Desk_Wimp_OpenWindow(&blk.openblock);
 		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 		dragdata->oldmousex=mousex;
 	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<Config_ScrollDistance()) {
+		/*We are near right edge of window*/
 		Windows_PlotDragBox(dragdata);
 		dragdata->plotted=Desk_FALSE;
+		if (infoblk.block.scroll.x-infoblk.block.workarearect.min.x+(infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x)>=infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.max.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
 		blk.openblock.scroll.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
 		Desk_Wimp_OpenWindow(&blk.openblock);
 		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
