@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.9  1999/10/27 16:47:47  AJW
+	Got Database_Info partially working
+
 	Revision 1.8  1999/10/25 16:50:11  AJW
 	Added Database_GetName etc functions
 
@@ -99,6 +102,13 @@
 #define titlemenu_Ms 3
 #define titlemenu_Dr 4
 
+#define infoicon_MODIFIED 1
+#define infoicon_TYPE 2
+#define infoicon_FILENAME 0
+#define infoicon_SIZE 3
+#define infoicon_PEOPLE 4
+#define infoicon_DATE 10
+#define infoicon_ICON 5
 
 static element *database;
 static elementptr editingperson=none,editingmarriage=none;
@@ -625,17 +635,25 @@ void Database_TitleMenuClick(int entry,void *ref)
 	Desk_Icon_SetText(editpersonwin,editpersonicon_TITLE,Desk_Menu_GetText(titlemenu,entry));
 }
 
-/*void Database_Info(Desk_window_handle infowin)
+void Database_Info(Desk_window_handle infowin)
 {
 	char people[10];
-	sprintf(people,"%.9d",numpeople);
-	Desk_Icon_SetText(infowin,infoicon_NUMPEOPLE,people);
-	Desk_Wimp_OpenSubMenu
-} */
+	sprintf(people,"%d",numpeople);
+	Desk_Icon_SetText(infowin,infoicon_PEOPLE,people);
+	Desk_Icon_SetText(infowin,infoicon_FILENAME,database[0].file.filetitle);
+	Desk_Icon_SetText(infowin,infoicon_MODIFIED,modified ? "YES" : "NO"); /*Use messages*/
+/*	Desk_Icon_SetText(infowin,infoicon_SIZE,calc size);
+	Desk_Icon_SetText(infowin,infoicon_DATE,calc date);*/
+}
 
 char *Database_GetFilename(void)
 {
-	return database[0].file.filetitle;
+	return database[0].file.filetitle; /*This is not the file name??*/
+}
+
+void Database_Modified(void)
+{
+	modified=Desk_TRUE;
 }
 
 void Database_Save(char *filename)
@@ -674,6 +692,7 @@ void Database_New(void)
 	strcpy(database[0].file.userdesc[0],"Other1"); /*??*/
 	strcpy(database[0].file.userdesc[1],"Other2");
 	strcpy(database[0].file.userdesc[2],"Other3");
+	modified=Desk_FALSE;
 }
 
 void Database_Init(void)
