@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.3  2000/01/13 18:07:36  AJW
+	Added handling of modified flag, and stroing current filename
+
 	Revision 1.2  2000/01/13 17:02:09  AJW
 	Altered to be a SaveHandler for Desk_Save_* fns
 
@@ -58,12 +61,15 @@
 #define FILEID "Root"
 #define FILEVERSION 100
 
+static char currentfilename[256],newfilename[256];
+static Desk_bool modified=Desk_FALSE;
 
 Desk_bool File_SaveFile(char *filename,void *ref)
 {
 	FILE *file;
 	char fileid[]=FILEID;
 	int fileversion=FILEVERSION;
+	strcpy(newfilename,filename);
 	file=AJWLib_File_fopen(filename,"w");
 	AJWLib_File_fwrite(fileid,1,4,file);
 	AJWLib_File_fwrite(&fileversion,4,1,file);
@@ -74,3 +80,31 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	return Desk_TRUE;
 }
 
+void File_NewFile(void)
+{
+	modified=Desk_FALSE;
+	strcpy(currentfilename,"<Untitled>");
+}
+
+void File_Modified(void)
+{
+	modified=Desk_TRUE;
+}
+
+char *File_GetFilename(void)
+{
+	return currentfilename;
+}
+
+void File_Result(Desk_save_result result,void *ref)
+{
+	switch (result) {
+		case Desk_save_SAVEOK:
+			strcpy(currentfilename,newfilename);
+			modified=Desk_FALSE;
+			break;
+		case Desk_save_RECEIVERFAILED:
+			Desk_Error_Report(1,"Data transfer failed: reciever died"); /*msgs, Error2?*/
+			break;
+	}
+}
