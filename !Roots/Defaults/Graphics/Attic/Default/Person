@@ -42,5 +42,5 @@
 FilledBox,0,0,40,15,F5F5F5
 Box,0,0,40,15,0,000000
 ChildLine,20,15,20,25,0,000000
-CentredField,20,7,12,FF0000,FFFFFF,Corpus.Medium,FullName
+CentredField,20,7,12,FF0000,FFFFFF,Trinity.Medium,FullName
 
