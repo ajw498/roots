@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.19  1999/10/27 15:50:20  AJW
+	Handled closing of normal windows
+
 	Revision 1.18  1999/10/25 19:06:58  AJW
 	Modified DEBUG handling
 
@@ -1010,8 +1013,26 @@ void Graphics_Relayout(void)
 
 Desk_bool Graphics_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
+	int i,found=0;
+	for (i=0;i<MAXWINDOWS;i++)
+		if (windows[i].handle!=0)
+			if (windows[i].type==wintype_NORMAL || windows[i].type==wintype_CLOSERELATIVES) found++;
+	AJWLib_Assert(found>0);
 	switch (windowdata->type) {
 		case wintype_NORMAL:
+			if (found<=1) {
+				/*Warn - unsaved data*/
+				/*Close all other windows*/
+				for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle!=0) {
+					if (windows[i].layout!=NULL) Layout_Free(windows[i].layout);
+					Desk_Window_Delete(windows[i].handle);
+					windows[i].handle=0;
+				}
+			} else {
+				Desk_Window_Delete(windowdata->handle);
+				windowdata->handle=0;
+			}
+			break;
 		case wintype_CLOSERELATIVES:
 			/*d*/
 			break;
@@ -1027,6 +1048,8 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 {
 	int newwindow;
 	char str[256]="";
+	layout *layoutnormal=NULL;
+	int i;
 	if (numwindows>MAXWINDOWS) {
 		Desk_Error2_HandleText("Too many windows");
 		return;
@@ -1036,6 +1059,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 		Desk_Error2_HandleText("Too many windows");
 		return;
 	}
+	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle!=0 && windows[i].type==wintype_NORMAL) layoutnormal=windows[i].layout;
 	windows[newwindow].handle=Desk_Window_CreateAndShow("Main",Desk_template_TITLEMIN,Desk_open_CENTERED);
 	windows[newwindow].type=type;
 	windows[newwindow].person=person;
@@ -1047,7 +1071,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
-			windows[newwindow].layout=Layout_LayoutNormal();
+			if (layoutnormal==NULL) windows[newwindow].layout=Layout_LayoutNormal(); else windows[newwindow].layout=layoutnormal;
 		break;
 		case wintype_DESCENDENTS:
 			Desk_Msgs_Lookup("Win.Desc:",str,255);
@@ -1072,6 +1096,8 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 			windows[newwindow].layout=Layout_LayoutUnlinked();
 		break;
+		default:
+			windows[newwindow].layout=NULL;
 	}
 	Graphics_ResizeWindow(&windows[newwindow]);
 	/*Register handlers for this window*/
