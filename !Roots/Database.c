@@ -3,10 +3,14 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.14  2000/02/20 19:45:18  uid1
+	Added creation of new database and removal of old database when necessary
+	Added setting of normal window title properly (including modified flag)
+
 	Revision 1.13  2000/01/14 19:42:18  AJW
 	Added Database_Load and Remove
 	Added Asserts
-
+	
 	Revision 1.12  2000/01/13 23:33:02  AJW
 	Added GetNumPeople and GetSize
 	Moved InfoWin handling to Graphics.c
@@ -703,8 +707,8 @@ char *Database_GetDescription(void)
 
 int Database_GetSize(void)
 {
-	AJWLib_Assert(database!=NULL);
-	return database[0].file.numberofelements*sizeof(element);
+	if (database) return database[0].file.numberofelements*sizeof(element);
+	return 0;
 }
 
 void Database_Save(FILE *file)
@@ -752,7 +756,6 @@ void Database_Remove(void)
 void Database_Init(void)
 {
 	AJWLib_Assert(database==NULL);
-	Database_New();
 	editpersonwin=Desk_Window_Create("EditPerson",Desk_template_TITLEMIN);
 	editmarriagewin=Desk_Window_Create("EditMarriage",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_OK,Database_OkEditWindow,NULL);

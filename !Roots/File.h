@@ -9,7 +9,7 @@ Desk_bool File_SaveFile(char *filename,void *ref);
 
 void File_LoadFile(char *filename);
 
-void File_NewFile(void);
+void File_New(void);
 
 void File_Modified(void);
 

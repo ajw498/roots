@@ -1,126 +1,10 @@
 /*
-	FT - Graphics
+	FT - Graphics routines
 	© Alex Waugh 1999
 
-	$Log: Windows.c,v $
-	Revision 1.37  2000/02/20 18:23:05  uid1
-	Changed plotting order so newest people are on top
-
-	Revision 1.36  2000/02/12 21:26:03  root
-	Checkin for CVS
-	
-	Revision 1.35  2000/01/17 16:57:58  AJW
-	Added Windows_Load
-
-	Revision 1.34  2000/01/14 13:49:00  AJW
-	Changed Graphics.h to Windows.h etc
-
-	Revision 1.33  2000/01/14 13:16:16  AJW
-	Moved Graphics_Redraw to GraphicsConfig
-	Renamed Graphics_* to Windows_*
-
-	Revision 1.32  2000/01/13 23:31:53  AJW
-	Moved handling of Info window here from Database.c
-
-	Revision 1.31  2000/01/13 22:59:49  AJW
-	Added Graphics_Save and GetSize
-
-	Revision 1.30  2000/01/13 18:08:40  AJW
-	Added proper save boxes
-
-	Revision 1.29  2000/01/11 17:13:50  AJW
-	Changed to use File_SaveFile rather than Database_Save
-
-	Revision 1.28  2000/01/11 13:44:40  AJW
-	Removed EOR plots and matrix to Draw.c
-
-	Revision 1.27  2000/01/10 15:49:21  AJW
-	menuoverwindow is now valid even when mouse was not clicked over a person
-
-	Revision 1.26  2000/01/09 12:27:23  AJW
-	Passes font name and size to Graphics_PlotText
-
-	Revision 1.25  2000/01/08 20:01:14  AJW
-	Made Redraw code more generic
-
-	Revision 1.24  2000/01/06 17:19:14  AJW
-	Calls Draw_Save
-
-	Revision 1.23  1999/10/30 20:08:56  AJW
-	Added Graphics_ChangedLayout
-
-	Revision 1.22  1999/10/27 16:53:23  AJW
-	Shade menu items when deleting of unlinking so you cannot delete a deleted person
-
-	Revision 1.21  1999/10/27 16:48:08  AJW
-	Calls Database_Info to set info win when needed
-
-	Revision 1.20  1999/10/27 16:10:49  AJW
-	Now frees memeory when re laying out
-
-	Revision 1.19  1999/10/27 15:50:20  AJW
-	Handled closing of normal windows
-
-	Revision 1.18  1999/10/25 19:06:58  AJW
-	Modified DEBUG handling
-
-	Revision 1.17  1999/10/25 17:24:04  AJW
-	Moved Font_GetWidth to AJWLib
-
-	Revision 1.16  1999/10/25 16:50:36  AJW
-	Altered to use Database_GetName and related functions
-
-	Revision 1.15  1999/10/25 16:08:48  AJW
-	Added centering of fields
-
-	Revision 1.14  1999/10/24 23:16:38  AJW
-	Added person to layout when adding a second marriage
-	Added person to layout in a better position when adding a child
-
-	Revision 1.13  1999/10/24 18:38:22  AJW
-	Set title of windows
-
-	Revision 1.12  1999/10/24 18:15:39  AJW
-	Added extra field types
-
-	Revision 1.11  1999/10/24 13:16:32  AJW
-	Disabled dragging on all but normal windows
-
-	Revision 1.10  1999/10/12 16:30:08  AJW
-	Added Debug code for Ancestor layout
-
-	Revision 1.9  1999/10/12 14:26:32  AJW
-	Modified to use Config
-
-	Revision 1.8  1999/10/11 22:15:36  AJW
-	Modified to use Error2
-
-	Revision 1.7  1999/10/10 20:54:56  AJW
-	Modified to use Desk
-
-	Revision 1.6  1999/10/02 18:46:15  AJW
-	Added unlinking of people
-
-	Revision 1.5  1999/09/29 17:31:05  AJW
-	Add people to layout when linking/marrying etc
-
-	Revision 1.4  1999/09/28 15:43:07  AJW
-	Added Graphics_RedrawPerson and Graphics_RedrawMarriage
-	Added dragging a box to select people
-
-	Revision 1.3  1999/09/28 14:16:10  AJW
-	Added centering marriage over children when dragging
-
-	Revision 1.2  1999/09/27 16:56:43  AJW
-	Added centering siblings under marriage when dragging
-
-	Revision 1.1  1999/09/27 15:33:01  AJW
-	Initial revision
-
+	$Id: Windows.c,v 1.38 2000/02/20 19:45:22 uid1 Exp $
 
 */
-
-/*	Includes  */
 
 #include "Desk.Window.h"
 #include "Desk.Error2.h"
@@ -388,6 +272,20 @@ void Windows_ResizeWindow(windowdata *windowdata)
 	Desk_wimp_rect box;
 	box=Layout_FindExtent(windowdata->layout,Desk_FALSE);
 	Desk_Window_SetExtent(windowdata->handle,box.min.x-Graphics_WindowBorder(),box.min.y-Graphics_WindowBorder(),box.max.x+Graphics_WindowBorder(),box.max.y+Graphics_WindowBorder());
+}
+
+Desk_bool Windows_BringToFront(void)
+{
+	int i;
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle) {
+			if (windows[i].type==wintype_NORMAL || windows[i].type==wintype_CLOSERELATIVES) {
+				Desk_Window_BringToFront(windows[i].handle);
+				return Desk_TRUE;
+			}
+		}
+	}
+	return Desk_FALSE;
 }
 
 void Windows_ChangedLayout(void)
@@ -1031,6 +929,7 @@ Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata
 					Desk_Window_Delete(windows[i].handle);
 					windows[i].handle=0;
 				}
+				Database_Remove();
 			} else {
 				Desk_Window_Delete(windowdata->handle);
 				windowdata->handle=0;
@@ -1045,6 +944,29 @@ Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata
 			windowdata->handle=0;
 	}
 	return Desk_TRUE;
+}
+
+void Windows_FilenameChanged(char *filename)
+{
+	int i;
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle) {
+			if (windows[i].type==wintype_NORMAL) Desk_Window_SetTitle(windows[i].handle,filename);
+		}
+	}
+}
+
+void Windows_FileModified(void)
+{
+	int i;
+	char title[256+2];
+	strcpy(title,File_GetFilename());
+	strcat(title," *");
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle) {
+			if (windows[i].type==wintype_NORMAL) Desk_Window_SetTitle(windows[i].handle,title);
+		}
+	}
 }
 
 void Windows_OpenWindow(wintype type,elementptr person,int generations,layout *uselayout)
