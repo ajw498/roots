@@ -36,6 +36,9 @@ Menu.Person:Edit,Delete,Unlink
 
 Title.Config:Styles
 
+Title.Shape:Shape type
+Menu.Shape:Line,Rectangle,Filled rectangle
+
 Style.Default:Default
 
 Scale.1:33
