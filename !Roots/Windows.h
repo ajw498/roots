@@ -1,7 +1,9 @@
 #ifndef WINDOWS_H
 #define WINDOWS_H
 
-#include "Database.h"
+#include "DatabaseStruct.h"
+#include "LayoutStruct.h"
+#include "WindowsStruct.h"
 
 #define INFINITY 999999
 
@@ -13,26 +15,6 @@
 #define fieldconfig_USERMARRIAGEBASE 24
 #define fieldconfig_OK 2
 #define fieldconfig_CANCEL 3
-
-
-typedef enum wintype {
-	wintype_UNKNOWN=0,
-	wintype_NORMAL,
-	wintype_DESCENDENTS,
-	wintype_ANCESTORS,
-	wintype_CLOSERELATIVES
-} wintype;
-
-typedef struct windowdata {
-	Desk_window_handle handle;
-	wintype type;
-	elementptr person;
-	int generations;
-	layout *layout;
-	int scale;
-} windowdata;
-
-#include "Layout.h"
 
 extern Desk_window_handle fieldconfigwin;
 

@@ -3,11 +3,15 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.16 2000/10/14 16:32:11 AJW Exp $
+	$Id: Modules.c,v 1.17 2000/10/20 19:37:33 AJW Exp $
 
 */
 
 #include "Desk.Core.h"
+#include "Desk.Wimp.h"
+#include "Desk.Coord.h"
+
+#include <stdio.h>
 
 #include "Modules.h"
 #include "Database.h"
@@ -17,6 +21,7 @@
 #include "Config.h"
 #include "Print.h"
 #include "Layout.h"
+
 
 static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayout=Desk_FALSE;
 

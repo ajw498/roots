@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.30 2000/10/05 12:59:43 AJW Exp $
+	$Id: Main.c,v 1.31 2000/10/20 19:37:30 AJW Exp $
 	
 */
 
@@ -66,10 +66,6 @@ static Desk_window_handle proginfowin,quitwin;
 static Desk_menu_ptr iconbarmenu;
 static char *taskname=NULL,*errbad=NULL;
 
-#ifdef DEBUG
-extern Desk_bool halt;
-#endif
-
 static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 {
 	Desk_UNUSED(ref);
@@ -112,9 +108,6 @@ static Desk_bool IconBarClick(Desk_event_pollblock *block, void *ref)
 		if (!Windows_BringToFront()) File_New();
 		return Desk_TRUE;
 	}
-#ifdef DEBUG
-	if (block->data.mouse.button.data.adjust==1) halt=Desk_FALSE;
-#endif
 	return Desk_FALSE;
 }
 
