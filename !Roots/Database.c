@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.11  2000/01/13 17:52:00  AJW
+	Moved modified flag into File.c
+
 	Revision 1.10  2000/01/11 17:12:55  AJW
 	Changed Database_Save to work with File.c functions
 
@@ -60,12 +63,10 @@
 
 #include "Database.h"
 #include "Modules.h"
+#include "File.h"
 
 
 /*	Macros  */
-
-#define FILEID "FT"
-#define VERSIONNUM 001
 
 #define editpersonicon_SURNAME 1
 #define editpersonicon_FORENAME 9
@@ -118,7 +119,6 @@ static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin;
 Desk_menu_ptr sexmenu,titlemenu;
 static int numpeople=0;
-Desk_bool modified=Desk_FALSE;
 
 void Database_FudgeLinked(elementptr person)
 {
@@ -644,19 +644,19 @@ void Database_Info(Desk_window_handle infowin)
 	sprintf(people,"%d",numpeople);
 	Desk_Icon_SetText(infowin,infoicon_PEOPLE,people);
 	Desk_Icon_SetText(infowin,infoicon_FILENAME,database[0].file.filetitle);
-	Desk_Icon_SetText(infowin,infoicon_MODIFIED,modified ? "YES" : "NO"); /*Use messages*/
+	Desk_Icon_SetText(infowin,infoicon_MODIFIED,1 ? "YES" : "NO"); /*Use messages*/ /*Put in File.c*/
 /*	Desk_Icon_SetText(infowin,infoicon_SIZE,calc size);
 	Desk_Icon_SetText(infowin,infoicon_DATE,calc date);*/
 }
 
-char *Database_GetFilename(void)
+char *Database_GetTitle(void)
 {
-	return database[0].file.filetitle; /*This is not the file name??*/
+	return database[0].file.filetitle;
 }
 
-void Database_Modified(void)
+char *Database_GetDescription(void)
 {
-	modified=Desk_TRUE;
+	return database[0].file.filedescription;
 }
 
 void Database_Save(FILE *file)
@@ -664,7 +664,6 @@ void Database_Save(FILE *file)
 /*Remove free elements?*/
 /*Consistency check?*/
 	AJWLib_File_fwrite(database,sizeof(element),database[0].file.numberofelements,file);
-	modified=Desk_FALSE; /*What if an error occours later on in the save?*/
 }
 
 void Database_Load(FILE *file)
@@ -682,7 +681,7 @@ void Database_Load(FILE *file)
 void Database_New(void)
 {
 	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element));
-	strcpy(database[0].file.filetitle,"<Untitled>");
+	strcpy(database[0].file.filetitle,"Fred"); /**/
 	strcpy(database[0].file.filedescription,"");
 	database[0].file.numberofelements=1;
 	database[0].file.unlinkedpeople=0;
@@ -691,7 +690,7 @@ void Database_New(void)
 	strcpy(database[0].file.userdesc[0],"Other1"); /*??*/
 	strcpy(database[0].file.userdesc[1],"Other2");
 	strcpy(database[0].file.userdesc[2],"Other3");
-	modified=Desk_FALSE;
+	File_NewFile(); /*This shouldn't be here*/
 }
 
 void Database_Init(void)
