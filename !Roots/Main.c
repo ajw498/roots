@@ -3,10 +3,11 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.19 2000/06/26 19:43:55 AJW Exp $
+	$Id: Main.c,v 1.20 2000/06/28 22:04:12 AJW Exp $
 	
 */
 
+#include "MemCheck:MemCheck.h"
 
 #include "Desk.Window.h"
 #include "Desk.Error2.h"
@@ -36,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <signal.h>
 
 #include "Modules.h"
 #include "Windows.h"
@@ -117,7 +119,12 @@ static void IconBarMenuClick(int entry, void *ref)
 
 int main(int argc,char *argv[])
 {
+	MemCheck_Init();
+	MemCheck_RegisterArgs(argc,argv);
+	MemCheck_InterceptSCLStringFunctions();
+	MemCheck_SetStoreMallocFunctions(1);
 	Desk_Error2_Init_JumpSig();
+	signal(SIGABRT,SIG_DFL);
 	Desk_Error2_Try {
 		Desk_Resource_Initialise(DIRPREFIX);
 		Desk_Msgs_LoadFile("Messages");
