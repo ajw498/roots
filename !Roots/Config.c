@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.7 2000/02/27 00:47:52 uid1 Exp $
+	$Id: Config.c,v 1.8 2000/02/27 13:29:35 uid1 Exp $
 
 */
 
@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #include "Config.h"
+#include "Modules.h"
 
 #define GRAPHICSDIR "<Roots$Dir>.Graphic"
 
@@ -136,7 +137,8 @@ static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 			AJWLib_Menu_FullDispose(configmenu);
 			configmenu=NULL;
 		}
-	}		
+	}
+	Modules_ChangedLayout();
 	return Desk_TRUE;
 }
 

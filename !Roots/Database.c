@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.22 2000/02/26 21:17:05 uid1 Exp $
+	$Id: Database.c,v 1.23 2000/02/27 13:29:36 uid1 Exp $
 
 */
 
@@ -54,6 +54,10 @@
 /*#define editpersonicon_TITLEMENU 13*/
 #define editpersonicon_SEXMENU 22
 
+#define edittitleicon_TEXT 0
+#define edittitleicon_CANCEL 1
+#define edittitleicon_OK 2
+
 #define editmarriageicon_PRINCIPAL 2
 #define editmarriageicon_SPOUSE 3
 #define editmarriageicon_PLACE 6
@@ -75,7 +79,7 @@
 
 static databaseelement *database=NULL;
 static elementptr editingperson=none,editingmarriage=none;
-static Desk_window_handle editpersonwin,editmarriagewin;
+static Desk_window_handle editpersonwin,editmarriagewin,edittitlewin;
 Desk_menu_ptr sexmenu,titlemenu;
 
 void Database_FudgeLinked(elementptr person)
@@ -533,6 +537,29 @@ void Database_EditPerson(elementptr person)
 	editingperson=person;
 }
 
+void Database_EditTitle(void)
+{
+	Desk_Icon_SetText(edittitlewin,edittitleicon_TEXT,database[0].element.file.filetitle);
+	Desk_Window_Show(edittitlewin,Desk_open_CENTERED); /*Under pointer?*/
+	Desk_Icon_SetCaret(edittitlewin,edittitleicon_TEXT);
+}
+
+Desk_bool Database_OkEditTitleWindow(Desk_event_pollblock *block,void *ref)
+{
+	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	Desk_Icon_GetText(edittitlewin,edittitleicon_TEXT,database[0].element.file.filetitle);
+	if (block->data.mouse.button.data.select) Desk_Window_Hide(edittitlewin);
+	Modules_ChangedData(none);
+	return Desk_TRUE;
+}
+
+Desk_bool Database_CancelEditTitleWindow(Desk_event_pollblock *block,void *ref)
+{
+	if (!block->data.mouse.button.data.select) return Desk_FALSE;
+	Desk_Window_Hide(edittitlewin);
+	return Desk_TRUE;
+}
+
 Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref)
 {
 	AJWLib_Assert(database!=NULL);
@@ -731,11 +758,13 @@ void Database_Init(void)
 	AJWLib_Assert(database==NULL);
 	editpersonwin=Desk_Window_Create("EditPerson",Desk_template_TITLEMIN);
 	editmarriagewin=Desk_Window_Create("EditMarriage",Desk_template_TITLEMIN);
+	edittitlewin=Desk_Window_Create("EditTitle",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_OK,Database_OkEditWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_CANCEL,Database_CancelEditWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,editmarriagewin,editmarriageicon_OK,Database_OkEditMarriageWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,editmarriagewin,editmarriageicon_CANCEL,Database_CancelEditMarriageWindow,NULL);
-	/*Register handlers*/
+	Desk_Event_Claim(Desk_event_CLICK,edittitlewin,edittitleicon_OK,Database_OkEditTitleWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,edittitlewin,edittitleicon_CANCEL,Database_CancelEditTitleWindow,NULL);
 	sexmenu=AJWLib_Menu_CreateFromMsgs("Title.Sex:","Menu.Sex:M,F,U",Database_SexMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,Desk_button_MENU | Desk_button_SELECT);
 /*	titlemenu=AJWLib_Menu_CreateFromMsgs("Title.Title:","Menu.Title:",Database_TitleMenuClick,NULL);
