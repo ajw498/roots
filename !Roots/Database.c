@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.6  1999/10/11 19:28:59  AJW
+	Changed Database_Add and _Init to return void - they now use Error2
+
 	Revision 1.5  1999/10/11 17:56:04  AJW
 	Handles Edit marriage window now
 
@@ -24,10 +27,11 @@
 /*	Includes  */
 
 #include "Desk.Window.h"
-#include "Desk.Error.h"
+#include "Desk.Error2.h"
 #include "Desk.Event.h"
 #include "Desk.Template.h"
 #include "Desk.File.h"
+#include "Desk.Menu.h"
 #include "Desk.DeskMem.h"
 #include "Desk.Filing.h"
 
@@ -37,7 +41,6 @@
 #include "AJWLib.Menu.h"
 
 #include "AJWLib.Flex.h"
-#include "AJWLib.DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -327,12 +330,12 @@ void Database_Marry(elementptr linked,elementptr unlinked)
 	if (Database_IsUnlinked(linked)) return;
 	if (!Database_IsUnlinked(unlinked)) return;
 	if (Database_GetMarriage(linked) && Database_GetPrincipalFromMarriage(Database_GetMarriage(linked))!=linked) {
-		Desk_Error_Report(1,"You are not marrying the principal person.");
+		Desk_Error2_HandleText("You are not marrying the principal person.");
 		/*swap principal and spouse if only one marriage*/
 		return;
 	}
 	if ((marriage=database[0].file.freeelement)==none) {
-		AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1));
+		if (!AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1))) Desk_Error2_HandleText("Error.NoMem:Out of memory");
 		marriage=database[0].file.numberofelements++;
 	} else {
 		database[0].file.freeelement=database[marriage].freeelement.next;
@@ -496,12 +499,12 @@ void Database_Delete(elementptr person)
 	Modules_ChangedStructure();
 }
 
-Desk_bool Database_Add(void)
+void Database_Add(void)
 {
 	elementptr newperson;
 	static int newpersonnumber=1;
 	if ((newperson=database[0].file.freeelement)==none) {
-		AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1));
+		if (!AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*(database[0].file.numberofelements+1))) Desk_Error2_HandleText("Error.NoMem:Out of memory");
 		newperson=database[0].file.numberofelements++;
 	} else {
 		database[0].file.freeelement=database[newperson].freeelement.next;
@@ -518,53 +521,26 @@ Desk_bool Database_Add(void)
 	strcpy(database[newperson].person.data.middlenames,"");
 	strcpy(database[newperson].person.data.title,"");
 	database[newperson].person.data.sex=unknown;
-    strcpy(database[newperson].person.data.dob.data.day,"");
-    strcpy(database[newperson].person.data.dob.data.month,"");
-    strcpy(database[newperson].person.data.dob.data.year,"");
-    database[newperson].person.data.dob.data.zero='\0';
-    strcpy(database[newperson].person.data.placeofbirth,"");
-    strcpy(database[newperson].person.data.userdata[0],"");
-    strcpy(database[newperson].person.data.userdata[1],"");
-    strcpy(database[newperson].person.data.userdata[2],"");
-    strcpy(database[newperson].person.data.notes,"");
-    Modules_ChangedStructure();
-    return Desk_TRUE;
+	strcpy(database[newperson].person.data.dob.data.day,"");
+	strcpy(database[newperson].person.data.dob.data.month,"");
+	strcpy(database[newperson].person.data.dob.data.year,"");
+	database[newperson].person.data.dob.data.zero='\0';
+	strcpy(database[newperson].person.data.placeofbirth,"");
+	strcpy(database[newperson].person.data.userdata[0],"");
+	strcpy(database[newperson].person.data.userdata[1],"");
+	strcpy(database[newperson].person.data.userdata[2],"");
+	strcpy(database[newperson].person.data.notes,"");
+	Modules_ChangedStructure();
 }
 
 void Database_SexMenuClick(int entry,void *ref)
 {
-	switch (entry) {
-		case sexmenu_M:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.M:");
-			break;
-		case sexmenu_F:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.F:");
-			break;
-		case sexmenu_U:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_SEX,"Sex.U:");
-			break;
-	}
+	Desk_Icon_SetText(editpersonwin,editpersonicon_SEX,Desk_Menu_GetText(sexmenu,entry));
 }
 
 void Database_TitleMenuClick(int entry,void *ref)
 {
-	switch (entry) {
-		case titlemenu_Mr:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Mr:");
-			break;
-		case titlemenu_Mrs:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Mrs:");
-			break;
-		case titlemenu_Miss:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Miss:");
-			break;
-		case titlemenu_Ms:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Ms:");
-			break;
-		case titlemenu_Dr:
-			AJWLib_Msgs_SetText(editpersonwin,editpersonicon_TITLE,"Title.Dr:");
-			break;
-	}
+	Desk_Icon_SetText(editpersonwin,editpersonicon_TITLE,Desk_Menu_GetText(titlemenu,entry));
 }
 
 void Database_Save(char *filename)
@@ -589,9 +565,9 @@ void Database_Load(char *filename)
 	Modules_ChangedStructure();
 }
 
-Desk_bool Database_Init(void)
+void Database_Init(void)
 {
-	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element));
+	if (!AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element))) Desk_Error2_HandleText("Error:NoMem:Out of memory");
 	strcpy(database[0].file.fileidentifier,FILEID);
 	database[0].file.versionnumber=VERSIONNUM;
 	strcpy(database[0].file.filetitle,"<Untitled>");
@@ -615,5 +591,4 @@ Desk_bool Database_Init(void)
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,Desk_button_MENU | Desk_button_SELECT);
 	titlemenu=AJWLib_Menu_CreateFromMsgs("Title.Title:","Menu.Title:",Database_TitleMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_TITLEMENU,editpersonicon_TITLE,titlemenu,Desk_button_MENU | Desk_button_SELECT);
-	return Desk_TRUE;
 }
