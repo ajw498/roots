@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.15  1999/10/27 14:41:59  AJW
+	Fixed bug in allocating memory for a layout - changed sizeof(layout) to sizeof(struct layout)
+
 	Revision 1.14  1999/10/25 19:07:21  AJW
 	Removed global layouts
 	Altered DEBUG handling to cope with above
@@ -90,7 +93,7 @@ layout *Layout_LayoutUnlinked(void)
 {
 	elementptr person=none;
 	layout *layout;
-	layout=Desk_DeskMem_Malloc(sizeof(layout));
+	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),sizeof(personlayout));
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
@@ -563,7 +566,7 @@ layout *Layout_LayoutNormal(void)
 {
 	elementptr person=none;
 	layout *layout;
-	layout=Desk_DeskMem_Malloc(sizeof(layout));
+	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
@@ -589,7 +592,7 @@ layout *Layout_LayoutNormal(void)
 layout *Layout_LayoutDescendents(elementptr person,int generations)
 {
 	layout *layout;
-	layout=Desk_DeskMem_Malloc(sizeof(layout));
+	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
@@ -615,7 +618,7 @@ layout *Layout_LayoutDescendents(elementptr person,int generations)
 layout *Layout_LayoutAncestors(elementptr person,int generations)
 {
 	layout *layout;
-	layout=Desk_DeskMem_Malloc(sizeof(layout));
+	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
@@ -641,6 +644,8 @@ layout *Layout_LayoutAncestors(elementptr person,int generations)
 
 void Layout_Free(layout *layout)
 {
+	AJWLib_Assert(layout!=NULL);
+	if (layout==NULL) return;
 	AJWLib_Flex_Free((flex_ptr)&(layout->person));
 	AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
 	AJWLib_Flex_Free((flex_ptr)&(layout->children));
