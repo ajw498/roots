@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.23 2000/02/28 23:00:50 uid1 Exp $
+	$Id: Graphics.c,v 1.24 2000/02/29 19:52:19 uid1 Exp $
 
 */
 
@@ -175,26 +175,32 @@ static unsigned int Graphics_RGBToPalette(char *str)
 
 static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 {
+	if (numvalues!=2) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
+	if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
+	else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
+	else Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
+}
+
+static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
+{
 	if (!strcmp(values[0],"filetitle")) {
-		if (numvalues!=6) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
-		graphicsdata.titleheight=Graphics_ConvertToOS(values[1]);
-		graphicsdata.title.size=(int)strtol(values[2],NULL,10);
-		graphicsdata.title.colour=Graphics_RGBToPalette(values[3]);
-		graphicsdata.title.bgcolour=Graphics_RGBToPalette(values[4]);
-		strcpy(graphicsdata.title.fontname,values[5]);
-	} else {
-		if (numvalues!=2) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
-		if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
-		else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
-		else Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
-	}
+		if (numvalues!=6) {
+			Desk_Msgs_Report(1,"Error.SynT:Syntax error %d",linenum);
+		} else {
+			graphicsdata.titleheight=Graphics_ConvertToOS(values[1]);
+			graphicsdata.title.size=(int)strtol(values[2],NULL,10);
+			graphicsdata.title.colour=Graphics_RGBToPalette(values[3]);
+			graphicsdata.title.bgcolour=Graphics_RGBToPalette(values[4]);
+			strcpy(graphicsdata.title.fontname,values[5]);
+		}
+	} else Desk_Msgs_Report(1,"Error.SynT:Syntax error %d",linenum);
 }
 
 static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
@@ -668,6 +674,7 @@ void Graphics_LoadStyle(char *style)
 		Graphics_ReadFile(style,"Person",Graphics_StorePersonDetails);
 		Graphics_ReadFile(style,"Dimensions",Graphics_StoreDimensionDetails);
 		Graphics_ReadFile(style,"Marriage",Graphics_StoreMarriageDetails);
+		Graphics_ReadFile(style,"Title",Graphics_StoreTitleDetails);
 		strcpy(currentstyle,style);
 		Graphics_ClaimFonts();
 	} Desk_Error2_Catch {

@@ -79,6 +79,7 @@ Error.BadDrag:Data transfer failed, reciever died
 Error.SynD:Syntax error in dimensions file, line %d
 Error.SynP:Syntax error in person file, line %d
 Error.SynM:Syntax error in marriage file, line %d
+Error.SynT:Syntax error in title file, line %d
 Error.NoDir:Cannot find graphics style %s
 Error.NoFile:Cannot find %s file in graphics style %s
 Error.NufWin:You cannot have more than %d windows open at once
