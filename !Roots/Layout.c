@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.56 2000/11/13 00:07:13 AJW Exp $
+	$Id: Layout.c,v 1.57 2000/11/13 20:26:13 AJW Exp $
 
 */
 
@@ -137,6 +137,18 @@ void Layout_RemoveTransients(layout *layout)
 	/*Flex block will be resized as soon as a transient is added*/
 }
 
+void Layout_DeleteSelected(layout *layout)
+/*Delete all selected elements from the layout and database*/
+{
+	int i;
+	for (i=0;i<layout->numpeople;i++) {
+		if (Layout_GetSelect(layout->person[i].element)) {
+			Database_RemoveElement(layout,layout->person[i].element);
+			Modules_ChangedStructure();
+			i--; /*This item in the layout has been removed, and so everyone above has moved down by one place*/
+		}
+	}
+}
 
 int Layout_FindXCoord(layout *layout,elementptr person)
 {
@@ -214,7 +226,7 @@ void Layout_RemoveElement(layout *layout,elementptr person)
 {
 	int i;
 	AJWLib_Assert(layout!=NULL);
-	AJWLib_Assert(person!=none);
+	if (person==none) return;
 	for (i=0;i<layout->numpeople;i++) {
 		if (layout->person[i].element==person) {
 			AJWLib_Flex_MidExtend((flex_ptr)&(layout->person),sizeof(elementlayout)*(i+1),-sizeof(elementlayout));
@@ -316,7 +328,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.56 2000/11/13 00:07:13 AJW Exp $
+	$Id: Layout.c,v 1.57 2000/11/13 20:26:13 AJW Exp $
 
 */
 
