@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.12 2000/02/21 23:58:38 uid1 Exp $
+	$Id: File.c,v 1.13 2000/02/23 21:22:48 uid1 Exp $
 
 */
 
@@ -51,8 +51,8 @@
 #define FILEID "Root"
 #define FILEVERSION 100
 
-static char currentfilename[256],newfilename[256],filedate[256];
-static Desk_bool modified=Desk_FALSE;
+static char currentfilename[256],oldfilename[256],filedate[256];
+static Desk_bool modified=Desk_FALSE,oldmodified;
 
 Desk_bool File_SaveFile(char *filename,void *ref)
 {
@@ -61,7 +61,6 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	int fileversion=FILEVERSION;
 	layout *normallayout=NULL,*layout=NULL;
 	int nextwindow=0;
-	strcpy(newfilename,filename);
 	file=AJWLib_File_fopen(filename,"wb");
 	AJWLib_File_fwrite(fileid,1,4,file);
 	AJWLib_File_fwrite(&fileversion,4,1,file);
@@ -73,7 +72,13 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	if (normallayout) Layout_Save(normallayout,file);
 	AJWLib_File_fclose(file);
 	/*Error handling*/
-	return Desk_TRUE;
+	strcpy(oldfilename,currentfilename);
+	strcpy(currentfilename,filename);
+	oldmodified=modified;
+	modified=Desk_FALSE; /*This is assumed to have been ok unless File_Result told otherwise, as File_result does not get called if all ok when save button is clicked on */
+	Windows_FilenameChanged(currentfilename);
+	/*update date*/
+    return Desk_TRUE;
 }
 
 void File_LoadFile(char *filename)
@@ -194,12 +199,12 @@ void File_Result(Desk_save_result result,void *ref)
 {
 	switch (result) {
 		case Desk_save_SAVEOK:
-			strcpy(currentfilename,newfilename);
-			modified=Desk_FALSE;
-			Windows_FilenameChanged(currentfilename);
-			/*update date*/
 			break;
 		case Desk_save_RECEIVERFAILED:
+			strcpy(currentfilename,oldfilename);
+			modified=oldmodified;
+			/*date=olddate;*/
+			Windows_FilenameChanged(currentfilename);
 			Desk_Error_Report(1,"Data transfer failed: reciever died"); /*msgs, Error2?*/
 			break;
 	}
