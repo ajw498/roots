@@ -1,8 +1,8 @@
 /*
-	FT - File loading and saving
+	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.30 2000/09/20 21:26:50 AJW Exp $
+	$Id: File.c,v 1.31 2000/09/22 10:06:04 AJW Exp $
 
 */
 
@@ -35,16 +35,15 @@
 #include "Layout.h"
 #include "File.h"
 
-#define FILEID "Root"
-#define FILEVERSION 200
-#define ID_NONE (-1)
 #define MAXLINELEN 256
+#define ID_NONE (-1)
 
 #define SWI_Territory_ConvertStandardDateAndTime 0x4304C
 
 static char currentfilename[256],oldfilename[256],filedate[256];
 static Desk_bool modified=Desk_FALSE,oldmodified;
-static int *idarray=NULL,idarraysize=0;
+static char **idarray=NULL;
+static int idarraysize=0;
 
 static void File_GetCurrentTime(void)
 {
@@ -66,7 +65,8 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"w");,AJWLib_Error2_ReportMsgs("Error.Save:%s"); return Desk_TRUE;)
 	/*file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
-		fprintf(file,"0 HEAD\n1 SOUR ROOTS\n2 VERS %s\n",ROOTS_VERSION);
+		fprintf(file,"0 HEAD\n1 SOUR Roots\n2 VERS %s\n2 CORP Alex Waugh\n3 ADDR http://www.ecs.soton.ac.uk/~ajw498/\n",ROOTS_VERSION);
+		fprintf(file,"1 CHAR ASCII\n1 GEDC\n2 VERS 5.5\n2 FORM LINEAGE-LINKED\n");
 		Database_SaveGEDCOM(file,plain);
 		if (!plain) {
 			Graphics_SaveGEDCOM(file);
@@ -75,7 +75,7 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 			}
 			if (normallayout) Layout_SaveGEDCOM(normallayout,file);
 		}
-		AJWLib_File_fclose(file);
+		fprintf(file,"0 TRLR\n");
 		if (!plain) {
 			strcpy(oldfilename,currentfilename);
 			strcpy(currentfilename,filename);
@@ -84,6 +84,7 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 			Windows_FileModified();
 			File_GetCurrentTime();
 		}
+		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
 		if (file) fclose(file);
 		AJWLib_Error2_ReportMsgs("Error.Save:%s");
@@ -91,14 +92,19 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
     return Desk_TRUE;
 }
 
-static elementptr File_GetElementFromID(int id,elementtype type)
-/* Translate from ID to elementptr, creating a new element if nessecery*/
+static elementptr File_GetElementFromID(char *id,elementtype type)
+/* Translate from ID to elementptr, creating a new element if necessary*/
 {
 	int i;
 	elementptr element=none;
 
 	for (i=0;i<idarraysize;i++) {
-		if (idarray[i]==id) element=i;
+		if (idarray[i]!=NULL) {
+			if (strcmp(idarray[i],id)==0) {
+				element=i;
+				break;
+			}
+		}
 	}
 	if (element==none) {
 		/* The element does not exist, so create it*/
@@ -112,14 +118,17 @@ static elementptr File_GetElementFromID(int id,elementtype type)
 			default:
 				AJWLib_Assert(0);
 		}
-		/* Increase array size if nessecery, in blocks of 20 to avoid reallocing to often*/
+		/* Increase array size if necessary, in blocks of 20 to avoid reallocing to often*/
 		if (idarraysize<=element) {
-			idarray=Desk_DeskMem_Realloc(idarray,(element+20)*sizeof(int));
-			for (i=idarraysize;i<element+20;i++) idarray[i]=ID_NONE;
+			int i;
+
+			idarray=Desk_DeskMem_Realloc(idarray,(element+20)*sizeof(char*));
+			for (i=idarraysize;i<(element+20);i++) idarray[i]=NULL;
 			idarraysize=element+20;
 		}
 		/* Add entry to array*/
-		idarray[element]=id;
+		idarray[element]=Desk_DeskMem_Malloc(strlen(id)+1);
+		strcpy(idarray[element],id);
 		return element;
 	}
 	return element;
@@ -132,10 +141,15 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 
 	if (tag==NULL) return;
 	if (!Desk_stricmp(tag,"HEAD.SOUR")) {
-		if (strcmp(data,"ROOTS") && !plain) AJWLib_Error2_HandleMsgs("Error.NotRoot:");
+		if (strcmp(data,"Roots") && !plain) AJWLib_Error2_HandleMsgs("Error.NotRoot:");
 
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.VERS")) {
 		/*Check version?*/
+	} else if (!Desk_stricmp(tag,"HEAD.SOUR.CORP")) {
+	} else if (!Desk_stricmp(tag,"HEAD.SOUR.CORP.ADDR")) {
+	} else if (!Desk_stricmp(tag,"HEAD.CHAR")) {
+	} else if (!Desk_stricmp(tag,"HEAD.GEDC.VERS")) {
+	} else if (!Desk_stricmp(tag,"HEAD.GEDC.FORM")) {
 	} else if (!Desk_stricmp(tag,"_FILEINFO._TITLE")) {
 		if (prescan) return;
 		Database_SetTitle(data);
@@ -168,34 +182,77 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 
 	} else if (!Desk_stricmp(tag,"INDI")) {
 		if (prescan) return;
-		File_GetElementFromID(atoi(data),element_PERSON);
+		File_GetElementFromID(data,element_PERSON);
 
 	} else if (!Desk_stricmp(tag,"INDI.NAME")) {
-		char *ptr=data;
+		char *ptr;
 		elementptr person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(id),element_PERSON);
-		/*Find end of forename*/
-		while (*ptr!='\0' && !isspace(*ptr)) ptr++;
-		*(ptr++)='\0';
-		Database_SetForename(person,data);
-		data=ptr;
-		/*Find end of middle names*/
-		while (*ptr!='\0' && *ptr!='/') ptr++;
-		*(ptr++)='\0';
-		Database_SetMiddleNames(person,data);
-		data=ptr;
-		/*Find end of surname*/
-		while (*ptr!='\0' && *ptr!='/') ptr++;
-		*(ptr++)='\0';
-		Database_SetSurname(person,data);
+		person=File_GetElementFromID(id,element_PERSON);
+		/* Skip leading whitespace*/
+		while (isspace(*data)) data++;
+		if ((ptr=strchr(data,'/'))!=NULL) {
+			char *seg;
+
+			/* Terminate end of forename/middlename*/
+			*ptr++='\0';
+			/* Find start of surname*/
+			while (isspace(*ptr)) ptr++;
+			seg=ptr;
+			/* Find end of surname*/
+			while (*ptr!='\0' && *ptr!='/') ptr++;
+			if (*ptr!='\0') {
+				*ptr++='\0';
+				/*Treat any remaining non whitespace as the middlename*/
+				while (isspace(*ptr)) ptr++;
+			}
+			Database_SetSurname(person,seg);
+			if (*ptr!='\0') {
+				/* The middlename is after the surname*/
+				Database_SetMiddleNames(person,ptr);
+			} else {
+				ptr=data;
+				/* Skip forname*/
+				while (*ptr!='\0' && !isspace(*ptr)) ptr++;
+				if (*ptr!='\0') *ptr++='\0';
+				while (isspace(*ptr)) ptr++;
+				Database_SetMiddleNames(person,ptr);
+			}
+			Database_SetForename(person,data);
+		} else {
+			/* Guess at the split points*/
+			/* Skip leading whitespace*/
+			while (isspace(*data)) data++;
+			ptr=data;
+			/* Find end of first word*/
+			while (*ptr!='\0' && !isspace(*ptr)) ptr++;
+			if (*ptr!='\0') *ptr++='\0';
+			while (isspace(*ptr)) ptr++;
+			if (*ptr!='\0') {
+				Database_SetForename(person,data);
+				data=ptr;
+				ptr=data+strlen(data);
+				/* Remove trailing whitespace*/
+				while (ptr>data && isspace(*(ptr-1))) ptr--;
+				*ptr='\0';
+				/* Find the beggining of the surname*/
+				while (ptr>data && !isspace(*(ptr-1))) ptr--;
+				Database_SetSurname(person,ptr);
+				*ptr='\0';
+				/* Anything remaining must be the middlenames*/
+				/* Remove trailing whitespace*/
+				while (ptr>data && isspace(*(ptr-1))) ptr--;
+				*ptr='\0';
+				Database_SetMiddleNames(person,data);
+			}
+		}
 
 	} else if (!Desk_stricmp(tag,"INDI.SEX")) {
 		elementptr person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(id),element_PERSON);
+		person=File_GetElementFromID(id,element_PERSON);
 		switch (data[0]) {
 			case 'm':
 			case 'M':
@@ -211,36 +268,36 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		elementptr marriage,person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(id),element_PERSON);
-		marriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		person=File_GetElementFromID(id,element_PERSON);
+		marriage=File_GetElementFromID(data,element_MARRIAGE);
 		Database_SetMarriage(person,marriage);
 		
 	} else if (!Desk_stricmp(tag,"INDI.FAMC")) {
 		elementptr marriage,person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(id),element_PERSON);
-		marriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		person=File_GetElementFromID(id,element_PERSON);
+		marriage=File_GetElementFromID(data,element_MARRIAGE);
 		Database_SetParentsMarriage(person,marriage);
 
 	} else if (!Desk_stricmp(tag,"FAM")) {
 		if (prescan) return;
-		File_GetElementFromID(atoi(id),element_MARRIAGE);
+		File_GetElementFromID(id,element_MARRIAGE);
 
 	} else if (!Desk_stricmp(tag,"FAM.HUSB")) {
 		elementptr marriage,person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(data),element_PERSON);
-		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		person=File_GetElementFromID(data,element_PERSON);
+		marriage=File_GetElementFromID(id,element_MARRIAGE);
 		Database_SetPrincipal(marriage,person);
 		
 	} else if (!Desk_stricmp(tag,"FAM.WIFE")) {
 		elementptr marriage,person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(data),element_PERSON);
-		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+		person=File_GetElementFromID(data,element_PERSON);
+		marriage=File_GetElementFromID(id,element_MARRIAGE);
 		Database_SetSpouse(marriage,person);
 		
 	} else if (!Desk_stricmp(tag,"FAM.CHIL")) {
@@ -298,7 +355,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		elementptr person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(data),element_PERSON);
+		person=File_GetElementFromID(data,element_PERSON);
 		Windows_SetPerson(person);
 
 	} else if (!Desk_stricmp(tag,"_WINDOWS._GENERATIONS")) {
@@ -313,7 +370,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		elementptr person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(atoi(data),element_PERSON);
+		person=File_GetElementFromID(data,element_PERSON);
 		Layout_GEDCOMNewPerson(person);
 
 	} else if (!Desk_stricmp(tag,"_LAYOUT._PERSON._X")) {
@@ -328,7 +385,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		elementptr marriage;
 
 		if (prescan) return;
-		marriage=File_GetElementFromID(atoi(data),element_MARRIAGE);
+		marriage=File_GetElementFromID(data,element_MARRIAGE);
 		Layout_GEDCOMNewMarriage(marriage);
 
 	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._X")) {
@@ -368,7 +425,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 				if (!Desk_stricmp(tag,Database_GetPersonGEDCOMDesc(i))) {
 					elementptr person;
 	
-					person=File_GetElementFromID(atoi(id),element_PERSON);
+					person=File_GetElementFromID(id,element_PERSON);
 					Database_SetPersonUser(i,person,data);
 					found=Desk_TRUE;
 					break;
@@ -379,7 +436,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 					if (!Desk_stricmp(tag,Database_GetMarriageGEDCOMDesc(i))) {
 						elementptr marriage;
 	
-						marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
+						marriage=File_GetElementFromID(id,element_MARRIAGE);
 						Database_SetMarriageUser(i,marriage,data);
 						found=Desk_TRUE;
 						break;
@@ -387,11 +444,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 				}
 	
 			}
-			if (!found && !plain) {
-				char temp[256]="Unknown Tag: ";
-				strcat(temp,tag);
-				Desk_Error2_HandleText(temp);
-			}
+			if (!found && !plain) AJWLib_AssertWarning(0);
 		}
 	}
 }
@@ -552,7 +605,14 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 		Windows_CloseAllWindows();
 		Database_Remove();
 	} Desk_Error2_EndCatch
-	if (idarray) free(idarray);
+	if (idarray) {
+		int i;
+
+		for (i=0;i<idarraysize;i++) {
+			if (idarray[i]) free(idarray[i]);
+		}
+		free(idarray);
+	}
 	idarray=NULL;
 	idarraysize=0;
 }

@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.43 2000/09/21 11:33:09 AJW Exp $
+	$Id: Graphics.c,v 1.44 2000/09/22 10:06:05 AJW Exp $
 
 */
 
@@ -56,9 +56,6 @@
 
 #define SWI_PDriver_DeclareFont 0x80155
 
-
-#define NUMPERSONFIELDS 15
-#define NUMMARRIAGEFIELDS 3
 
 #define PERSONWIDTH       "personwidth"
 #define PERSONHEIGHT      "personheight"
