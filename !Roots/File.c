@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.4  2000/01/13 22:58:36  AJW
+	Added call to Graphics_Save
+
 	Revision 1.3  2000/01/13 18:07:36  AJW
 	Added handling of modified flag, and stroing current filename
 
@@ -74,7 +77,8 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	AJWLib_File_fwrite(fileid,1,4,file);
 	AJWLib_File_fwrite(&fileversion,4,1,file);
 	Database_Save(file);
-	/*Layouts();*/
+/*	GraphicsConfig_Save(file);*/
+	Graphics_Save(file);
 	AJWLib_File_fclose(file);
 	/*Error handling*/
 	return Desk_TRUE;
@@ -83,7 +87,7 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 void File_NewFile(void)
 {
 	modified=Desk_FALSE;
-	strcpy(currentfilename,"<Untitled>");
+	strcpy(currentfilename,"Untitled");
 }
 
 void File_Modified(void)
