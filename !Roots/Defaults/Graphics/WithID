@@ -14,12 +14,12 @@ white=Colour(255,255,255);
 
 -- Define the default distances and sizes
 -- Roots will use these for newly created objects
-gapheightabove=50; -- Gap between the top of a person and the line joining their siblings
-gapheightbelow=50; -- Gap between the bottom of a person and the line joining their children
+gapheightabove=70; -- Gap between the top of a person and the line joining their siblings
+gapheightbelow=70; -- Gap between the bottom of a person and the line joining their children
 personwidth=280;   -- Width of a person
 personheight=100;  -- Height of a person
-gapwidth=100;      -- Horizontal gap between two unmarried people
-marriagewidth=84;  -- Width of a marriage
+gapwidth=35;       -- Horizontal gap between two unmarried people
+marriagewidth=140; -- Width of a marriage
 windowborder=30;   -- Gap between outermost person and the window edge
 titleheight=100;   -- Height of the title
 
@@ -34,11 +34,11 @@ function RedrawMarriage(marriage,x,y,width,height)
 PlotLine(x,y+30,x+width,y+30,linewidth,black);
 PlotLine(x,y+70,x+width,y+70,linewidth,black);
 -- Draw the place of marriage
-text=GetField(marriage,"place");
+text=GetField(marriage,"date");
 tx=GetTextDimensions(font,text);
 PlotText(x+(width-tx)/2,y+40,font,white,black,text);
 -- Draw the vertical line if there are any children of the marriage
-if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
+if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-70,linewidth,black) end
 end
 
 -- This function gets called by Roots whenever it needs to redraw a person
@@ -66,7 +66,7 @@ PlotText(x+90,y+40,font,white,black,GetField(person,"date of birth"));
 PlotText(x+90,y+15,font,white,black,GetField(person,"date of death"));
 PlotText(x+230,y+10,font,white,black,GetField(person,"id"));
 -- Draw the vertical line to connect to the sibling line if the person has parents
-if GetParentsMarriage(person) then PlotLine(x+width/2,y+height,x+width/2,y+height+50,linewidth,black) end
+if GetParentsMarriage(person) then PlotLine(x+width/2,y+height,x+width/2,y+height+70,linewidth,black) end
 end
 
 -- This function gets called by Roots whenever it needs to redraw a line joining siblings together
