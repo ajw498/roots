@@ -1,4 +1,3 @@
--- Default graphics style
 
 -- Let Roots know what fonts will want to use
 font=ClaimFont("Trinity.Medium",12);
@@ -34,16 +33,16 @@ function RedrawMarriage(marriage,x,y,width,height)
 -- Draw the two horizontal lines
 PlotLine(x,y+30,x+width,y+30,0,black);
 PlotLine(x,y+70,x+width,y+70,0,black);
+-- Draw the date of marriage
+text=GetField(marriage,"date");
+tx=GetTextDimensions(font,text);
+PlotText(x+(width-tx)/2,y+80,font,white,black,text);
 -- Draw the vertical line if there are any children of the marriage
 if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
 end
 
 -- This function gets called by Roots whenever it needs to redraw a person
 function RedrawPerson(person,x,y,width,height)
--- Draw the background (this must be done first otherwise it will overwrite what has already been drawn)
-PlotRectangleFilled(x,y,width,height,grey);
--- Draw the border
-PlotRectangle(x,y,width,height,linewidth,black);
 -- Work out what the full name of the person is
 name="";
 text=GetField(person,"forename");
@@ -53,9 +52,9 @@ if strlen(text)>0 then name=name..text.." " end
 name=name..GetField(person,"surname");
 tx=GetTextDimensions(font,name);
 -- Draw the name, centred horizontally
-PlotText(x+(width-tx)/2,y+50,font,grey,red,name);
+PlotText(x+(width-tx)/2,y+50,font,white,black,name);
 -- Draw the vertical line to connect to the sibling line if the person has parents
-if GetParentsMarriage(person) then PlotLine(x+width/2,y+height,x+width/2,y+height+50,linewidth,black) end
+if GetParentsMarriage(person) then PlotLine(x+width/2,y+80,x+width/2,y+height+50,linewidth,black) end
 end
 
 -- This function gets called by Roots whenever it needs to redraw a line joining siblings together
