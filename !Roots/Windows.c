@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.59 2000/02/28 21:36:47 uid1 Exp $
+	$Id: Windows.c,v 1.60 2000/02/28 23:00:52 uid1 Exp $
 
 */
 
@@ -62,11 +62,11 @@
 
 #define mainmenu_FILE 0
 #define mainmenu_PERSON 1
-#define mainmenu_NEWVIEW 3
-#define mainmenu_SEARCH 4
-#define mainmenu_REPORTS 5
 #define mainmenu_SELECT 2
-#define mainmenu_SCALE 6
+#define mainmenu_NEWVIEW 3
+#define mainmenu_SCALE 4
+#define mainmenu_SEARCH 5
+#define mainmenu_REPORTS 6
 
 #define filemenu_INFO 0
 #define filemenu_SAVE 1
@@ -1566,7 +1566,7 @@ void Windows_Init(void)
 	selectmenu=AJWLib_Menu_CreateFromMsgs("Title.Select:","Menu.Select:",Windows_SelectMenuClick,NULL);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_PERSON,personmenu);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_FILE,filemenu);
-	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);
+/*	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);*/
 	Desk_Menu_AddSubMenu(filemenu,filemenu_INFO,(Desk_menu_ptr)fileinfowin);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_SELECT,selectmenu);
 	Desk_Icon_Shade(newviewwin,newview_ANCESTOR);
@@ -1584,7 +1584,8 @@ void Windows_Init(void)
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);
 	savedrawwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
-	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);
+/*	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);*/
+	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);
 	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
 }
 

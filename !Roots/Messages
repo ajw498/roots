@@ -26,13 +26,13 @@ Menu.Title:<Title.Mr>,<Title.Mrs>,<Title.Miss>,<Title.Ms>,<Title.Dr>
 Title.Surname:Surnames
 
 Title.Main:<Task.Name>
-Menu.Main:File,Person,Select,New view...,~Search...,~Reports...,Scale view...
+Menu.Main:File,Person,Select,New view...,Scale view...
 
 Title.Select:Select
 Menu.Select:Descendents,~Ancestors,Siblings,Spouses
 
 Title.File:File
-Menu.File:Info,Save,Export,~Print...
+Menu.File:Info,Save,Export
 
 Title.Export:Export
 Menu.Export:~GEDCOM,Draw,~Text

@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.14 2000/02/28 17:07:17 uid1 Exp $
+	$Id: Drawfile.c,v 1.15 2000/02/28 23:00:48 uid1 Exp $
 
 */
 
@@ -151,8 +151,8 @@ static int Drawfile_AddFont(char *font)
 	if (fontnumber==0) {
 		fontarray[numberoffonts]=Desk_DeskMem_Malloc(strlen(font)+1);
 		/*freeing if an error?*/
-		strcpy(fontarray[numberoffonts++],font);
-		fontnumber=numberoffonts;
+		strcpy(fontarray[numberoffonts],font);
+		fontnumber=++numberoffonts;
 	}
 	return fontnumber;
 }
@@ -168,6 +168,7 @@ static void Drawfile_CreateTable(void)
 		sizeofentry=(sizeofentry+3)&~3; /*Word align*/
 		sizeoftable+=sizeofentry;
 	}
+	sizeoftable=(sizeoftable+3)&~3; /*Word align*/
 	AJWLib_Flex_MidExtend((flex_ptr)&drawfile,40,sizeoftable);
 	object=(int *)((char *)drawfile+40);
 	items=(char *)drawfile+48;
@@ -178,8 +179,8 @@ static void Drawfile_CreateTable(void)
 		*(items++)=i+1;
 		strcpy(items,fontarray[i]);
 		items+=sizeofentry;
-		items=(char *)(((unsigned int)items+3)&~3); /*Word align*/
 	}
+	while ((unsigned int)items & 3) *(items++)=0; /*Word align, pad with zeros*/
 }
 
 static void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
@@ -276,8 +277,8 @@ void Drawfile_Save(const char *filename,layout *layout)
 		drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
 		drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
 		Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
-		Drawfile_CreateTable();
 		Drawfile_CreateOptions(papersize,landscape);
+		Drawfile_CreateTable();
 		Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
 	} Desk_Error2_Catch {
 		AJWLib_Error2_ReportMsgs("Error.DrawS:%s");
