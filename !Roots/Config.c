@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.21 2000/11/21 20:04:19 AJW Exp $
+	$Id: Config.c,v 1.22 2000/11/21 20:33:31 AJW Exp $
 
 */
 
@@ -49,6 +49,7 @@
 #define FILECONFIG_FILE "FileChoices"
 
 typedef struct configdata {
+	Desk_bool joinmarriages;
 	Desk_bool separatemarriages;
 	Desk_bool importgraphicsstyle;
 	Desk_bool snap;
@@ -122,6 +123,7 @@ void Config_SaveFileConfig(void)
 			fprintf(file,"%s\n%s\n",Database_GetMarriageUserDesc(i),Database_GetMarriageGEDCOMDesc(i));
 		}
 		fprintf(file,"%d\n",Config_SeparateMarriages());
+		fprintf(file,"%d\n",Config_JoinMarriages());
 		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
 		AJWLib_Error2_ReportMsgs("Error.SChoice:%s");
@@ -175,6 +177,8 @@ void Config_LoadFileConfig(void)
 			}
 			fscanf(file,"%d",&i);
 			config.separatemarriages=(Desk_bool)i; /*Don't use Config_Set.. as this would cause layout to be changed, and a layout might not currently be loaded*/
+			fscanf(file,"%d",&i);
+			config.joinmarriages=(Desk_bool)i;
 			AJWLib_File_fclose(file);
 		}
 	} Desk_Error2_Catch {
@@ -194,6 +198,17 @@ static void Config_Default(void)
 	config.autoincreasealways=Desk_FALSE;
 	config.fontblend=Desk_FALSE;
 	config.separatemarriages=Desk_TRUE;
+	config.joinmarriages=Desk_FALSE;
+}
+
+void Config_SetJoinMarriages(Desk_bool join)
+{
+	config.joinmarriages=join;
+}
+
+Desk_bool Config_JoinMarriages(void)
+{
+	return config.joinmarriages;
 }
 
 void Config_SetSeparateMarriages(layout *layout,Desk_bool separate)

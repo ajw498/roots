@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.41 2000/11/21 20:04:20 AJW Exp $
+	$Id: File.c,v 1.42 2000/11/21 20:33:34 AJW Exp $
 
 */
 
@@ -588,19 +588,8 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 		if (fgets(line,MAXLINELEN,file)!=NULL) {
 			/* Get the first line, File_GEDCOMLine will get and process the rest*/
 			if (prescan) {
-				int i;
-	
-				Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
+				Windows_OpenFileConfig();
 				Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Imp:"));
-				for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,Database_GetPersonUserDesc(i));
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,Database_GetPersonGEDCOMDesc(i));
-				}
-				for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,Database_GetMarriageUserDesc(i));
-					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,Database_GetMarriageGEDCOMDesc(i));
-				}
-				Desk_Icon_SetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES,Config_SeparateMarriages());
 			} else {
 				File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
 			}
