@@ -7,7 +7,7 @@
 #define ROOTSDIR "<"DIRPREFIX"$Dir>"
 
 
-#define ROOTS_VERSION "1.12 (5-Mar-01)"
+#define ROOTS_VERSION "1.13 (2-Jul-01)"
 #define ROOTS_FILETYPE 0x197
 
 #endif
