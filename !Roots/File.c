@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.6  2000/01/14 13:08:22  AJW
+	Changed Graphics_ to Windows_
+
 	Revision 1.5  2000/01/13 23:30:36  AJW
 	Added Graphics_GetDate
 
@@ -80,8 +83,8 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	AJWLib_File_fwrite(fileid,1,4,file);
 	AJWLib_File_fwrite(&fileversion,4,1,file);
 	Database_Save(file);
-/*	GraphicsConfig_Save(file);*/
-	Graphics_Save(file);
+/*	Graphics_Save(file);*/
+	Windows_Save(file);
 	AJWLib_File_fclose(file);
 	/*Error handling*/
 	return Desk_TRUE;
@@ -109,7 +112,7 @@ int File_GetSize(void)
 	int size=4*sizeof(char)+sizeof(int);
 	size+=Database_GetSize();
 /*	size+=GraphicsConfig_GetSize();*/
-	size+=Graphics_GetSize();
+	size+=Windows_GetSize();
 	return size;
 }
 

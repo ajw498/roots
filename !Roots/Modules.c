@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Modules.c,v $
+	Revision 1.5  2000/01/14 13:08:50  AJW
+	Changed Graphics_ to Windows_
+
 	Revision 1.4  2000/01/13 17:55:34  AJW
 	Calls File_Modified
 
@@ -33,8 +36,8 @@ static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayou
 void Modules_Init(void)
 {
 	Database_Init();
+	Windows_Init();
 	Graphics_Init();
-	Graphics_Init2();
 
 	Database_Add();
 	Database_Add();
@@ -104,9 +107,9 @@ void Modules_ChangedLayout(void)
 
 void Modules_ReflectChanges(void)
 {
-	if (changedstructure) Graphics_Relayout();
-	/*if (changeddata) Graphics_ForceRedraw();*/
-	if (changedlayout) Graphics_ChangedLayout();
+	if (changedstructure) Windows_Relayout();
+	/*if (changeddata) Windows_ForceRedraw();*/
+	if (changedlayout) Windows_ChangedLayout();
 	changedstructure=Desk_FALSE;
 	changeddata=Desk_FALSE;
 	changedlayout=Desk_FALSE;
