@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.59 2000/11/21 23:52:28 AJW Exp $
+	$Id: Graphics.c,v 1.60 2000/11/27 23:36:22 AJW Exp $
 
 */
 
@@ -591,8 +591,6 @@ static void Graphics_ClaimFonts(void)
 /* Claim a font handle for each font used*/
 {
 	int i;
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	graphicsdata.title.font=NULL;
 	Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.title.font),graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.size));
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
@@ -1253,6 +1251,7 @@ void Graphics_LoadStyle(char *style)
 	} Desk_Error2_Catch {
 		Graphics_RemoveStyle();
 		Graphics_DefaultStyle();
+		Graphics_ClaimFonts();
 		Desk_Error2_ReThrow();
 	} Desk_Error2_EndCatch
 }
