@@ -4,6 +4,7 @@ HEADERS = \
 	Database.h\
 	Config.h\
 	Layout.h\
+	TreeLayout.h\
 	Drawfile.h\
 	Draw.h\
 	Modules.h\
@@ -22,6 +23,7 @@ OBJECTS = \
 	Modules.o\
 	Graphics.o\
 	Windows.o\
+	TreeLayout.o\
 	Config.o\
 	Layout.o\
 	Draw.o\
@@ -38,7 +40,7 @@ TARGET		=	!RunImage
 
 INCLUDE	=	C:
 
-CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -fah
+CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -fah -DDESK_DEBUG
 #CCFLAGS		=	$(CCEXTRA) -throwback -strict -Otime -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2 -fah
 LINKFLAGS	=	$(LINKEXTRA) -d
 

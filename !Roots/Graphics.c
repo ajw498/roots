@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.48 2000/10/11 16:18:31 AJW Exp $
+	$Id: Graphics.c,v 1.49 2000/10/13 19:25:47 AJW Exp $
 
 */
 
@@ -1036,7 +1036,7 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 			if ((originx+((layout->marriage[i].x+Graphics_MarriageWidth()+Graphics_PersonWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->marriage[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->marriage[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
+						Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].element,plotselection ? Layout_GetSelect(layout->marriage[i].element) : Desk_FALSE);
 					}
 				}
 			}
@@ -1047,7 +1047,7 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 			if ((originx+((layout->person[i].x+Graphics_PersonWidth()+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->person[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->person[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,plotselection ? Database_GetSelect(layout->person[i].person) : Desk_FALSE);
+						Graphics_PlotPerson(scale,originx,originy,layout->person[i].element,layout->person[i].x,layout->person[i].y,plotselection ? Layout_GetSelect(layout->person[i].element) : Desk_FALSE);
 					}
 				}
 			}
