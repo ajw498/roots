@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Drawfile.c,v $
+	Revision 1.9  2000/01/14 13:46:40  AJW
+	Changed Graphics to Windows.h
+
 	Revision 1.8  2000/01/11 13:45:48  AJW
 	Added some consts
 
@@ -72,7 +75,7 @@
 #include "Database.h"
 #include "Graphics.h"
 #include "Modules.h"
-#include "GConfig.h"
+#include "Windows.h"
 #include "Config.h"
 #include "Layout.h"
 #include "Drawfile.h"
