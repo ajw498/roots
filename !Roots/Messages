@@ -39,6 +39,12 @@ Title.Config:Styles
 Title.Shape:Shape type
 Menu.Shape:Line,Rectangle,Filled rectangle
 
+Title.Text:Text type
+Menu.Text:Label,Field
+
+Title.Just:Justification
+Menu.Just:Left,Right,Centred
+
 Style.Default:Default
 
 Scale.1:33
