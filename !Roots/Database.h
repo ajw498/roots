@@ -21,15 +21,7 @@ typedef enum sex {
 	sex_UNKNOWN='U'
 } sex;
 
-typedef union {
-	char string[9];
-	struct {
-		char day[2];
-		char month[2];
-		char year[4];
-		char zero;
-	} data;
-} date;
+typedef char date[20];
 
 typedef struct persondata {
 	char surname[20];
@@ -60,7 +52,7 @@ typedef struct freeelement {
 typedef struct marriagedata {
 	char place[20];
 	date date;
-	date end;
+	date divorce;
 } marriagedata;
 
 typedef struct marriage {
