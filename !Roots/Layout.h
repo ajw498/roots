@@ -1,3 +1,6 @@
+#ifndef LAYOUT_H
+#define LAYOUT_H
+
 #define DEBUG 0
 
 typedef struct personlayout {
@@ -54,4 +57,6 @@ void Layout_SelectSiblings(layout *layout,elementptr person);
 void Layout_SelectSpouses(layout *layout,elementptr person);
 void Layout_RemovePerson(layout *layout,elementptr person);
 void Layout_RemoveMarriage(layout *layout,elementptr marriage);
+
+#endif
 
