@@ -59,6 +59,7 @@ void Layout_RemovePerson(layout *layout,elementptr person);
 void Layout_RemoveMarriage(layout *layout,elementptr marriage);
 int Layout_GetSize(layout *layout);
 void Layout_Save(layout *layout,FILE *file);
+layout *Layout_Load(FILE *file);
 
 #endif
 
