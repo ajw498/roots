@@ -1,2 +1,3 @@
-Set Roots$Dir <Obey$Dir>
 IconSprites <Obey$Dir>.!Sprites
+Set Roots$Dir <Obey$Dir>
+Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0

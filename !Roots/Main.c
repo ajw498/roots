@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.15 2000/02/28 17:07:13 uid1 Exp $
+	$Id: Main.c,v 1.16 2000/02/28 17:53:43 uid1 Exp $
 	
 */
 
@@ -43,8 +43,9 @@
 #include "config.h"
 
 
-#define VERSION "0.50 (27-Oct-99)"
+#define VERSION "0.60 (28-Feb-00)"
 #define DIRPREFIX "Roots"
+#define TREEFILE 0x090
 
 #define iconbarmenu_INFO 0
 #define iconbarmenu_CHOICES 1
@@ -67,6 +68,21 @@ static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 	} else {
 		File_LoadFile(block->data.message.data.dataload.filename);
 	}
+	return Desk_TRUE;
+}
+
+static Desk_bool ReceiveDataOpen(Desk_event_pollblock *block, void *ref)
+{
+	Desk_UNUSED(ref);
+	/*Ignore if we already have a file loaded*/
+	if (Database_GetSize()) return Desk_FALSE;
+	/*Ignore if it isn't a treefile*/
+	if (block->data.message.data.dataopen.filetype!=TREEFILE) return Desk_FALSE;
+	/*Return message to say we'll load the file*/
+	block->data.message.header.action=Desk_message_DATAOPEN;
+	block->data.message.header.yourref=block->data.message.header.myref;
+	Desk_Wimp_SendMessage(Desk_event_USERMESSAGEACK,&(block->data.message),block->data.message.header.sender,0);
+	File_LoadFile(block->data.message.data.dataopen.filename);
 	return Desk_TRUE;
 }
 
@@ -96,7 +112,7 @@ static void IconBarMenuClick(int entry, void *ref)
 	}
 }
 
-int main(void)
+int main(int argc,char *argv[])
 {
 	Desk_Error2_Init_JumpSig();
 	Desk_Error2_Try {
@@ -120,12 +136,18 @@ int main(void)
 		AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
 		Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);
 		Desk_EventMsg_Claim(Desk_message_DATALOAD,Desk_event_ANY,ReceiveDrag,NULL);
+		Desk_EventMsg_Claim(Desk_message_DATAOPEN,Desk_event_ANY,ReceiveDataOpen,NULL);
 		AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
 		Modules_Init();
 	} Desk_Error2_Catch {
 		AJWLib_Error2_Report("Fatal error while initialising (%s)");
 		return EXIT_FAILURE;
 	} Desk_Error2_EndCatch
+	if (argc>2) {
+		Desk_Msgs_Report(1,"Error.CmdLine:Too many arguments");
+	} else if (argc==2) {
+		File_LoadFile(argv[1]);
+	}
 	while (Desk_TRUE) {
 		Desk_Error2_Try {
 			Modules_ReflectChanges();
