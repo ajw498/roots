@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.45 2000/10/14 23:28:25 AJW Exp $
+	$Id: TreeLayout.c,v 1.46 2000/10/16 11:45:07 AJW Exp $
 
 */
 
@@ -30,10 +30,6 @@
 
 
 #define LARGENUMBERINCREMENT 10000
-
-#define elementptr_CHILDLINE -1
-#define elementptr_MARRIAGE -1
-#define elementptr_TITLE -1
 
 /*typedef enum direction {
 	direction_RTOL,
@@ -91,6 +87,7 @@ static void Layout_ExtendGeneration(int generation)
 
 static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 {
+	flags flags;
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
 
@@ -110,11 +107,16 @@ static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 			leftpos+=Graphics_PersonWidth()/2;
 			rightpos+=Graphics_PersonWidth()/2;
 			/*See if parents marriage is further left or right than the siblings*/
-			marriagepos=Layout_FindMarriageXCoord(layout,marriage)+Graphics_MarriageWidth()/2;
+			marriagepos=Layout_FindXCoord(layout,marriage)+Graphics_MarriageWidth()/2;
 			if (marriagepos<leftpos) leftpos=marriagepos;
 			if (marriagepos>rightpos) rightpos=marriagepos;
 			/*Create the line*/
-			Layout_AddTransient(layout,elementptr_CHILDLINE,leftpos,y,rightpos-leftpos,0,0,0);
+			flags.editable=0;
+			flags.moveable=0;
+			flags.linkable=0;
+			flags.snaptogrid=0;
+			flags.selectable=0;
+			Layout_AddTransient(layout,element_CHILDLINE,leftpos,y,rightpos-leftpos,0,0,0,flags);
 		}
 	}
 }
@@ -122,6 +124,7 @@ static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 static void Layout_PlotPerson(layout *layout,elementptr person,int generation)
 {
 	elementptr marriage;
+	flags flags;
 
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
@@ -132,7 +135,12 @@ static void Layout_PlotPerson(layout *layout,elementptr person,int generation)
 	} else {
 		spaces[generation-mingeneration].maxx+=Graphics_GapWidth();
 	}
-	Layout_AddPerson(layout,person,spaces[generation-mingeneration].maxx,Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_PersonWidth(),Graphics_PersonHeight(),0,generation);
+	flags.editable=1;
+	flags.moveable=1;
+	flags.linkable=1;
+	flags.snaptogrid=1;
+	flags.selectable=1;
+	Layout_AddElement(layout,person,spaces[generation-mingeneration].maxx,Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_PersonWidth(),Graphics_PersonHeight(),0,generation,flags);
 	spaces[generation-mingeneration].maxx+=Graphics_PersonWidth();
 }
 
@@ -152,7 +160,7 @@ static void Layout_PlotBodgedMarriages(layout *layout)
 
 				generation=Layout_FindYGridCoord(layout,Database_GetPrincipalFromMarriage(marriage));
 			
-				Layout_AddMarriage(layout,marriage,spaces[generation-mingeneration].maxx+Graphics_SecondMarriageGap(),Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_MarriageWidth(),Graphics_PersonHeight(),0,generation);
+/*				Layout_AddMarriage(layout,marriage,spaces[generation-mingeneration].maxx+Graphics_SecondMarriageGap(),Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_MarriageWidth(),Graphics_PersonHeight(),0,generation);*/
 				spaces[generation-mingeneration].maxx+=Graphics_MarriageWidth()+Graphics_SecondMarriageGap();
 				Database_SetFlag(marriage);
 			}
@@ -160,7 +168,7 @@ static void Layout_PlotBodgedMarriages(layout *layout)
 	} while (index);
 }
 
-static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y)
+/*static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y)
 {
 	elementptr marriage;
 
@@ -173,6 +181,32 @@ static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y)
 	x-=Graphics_MarriageWidth();
 	Layout_AddMarriage(layout,marriage,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),0,0);
 	Database_SetFlag(marriage);
+}*/
+
+static void Layout_PlotMarriage(layout *layout,elementptr marriage)
+{
+	elementptr person;
+	flags flags;
+	int leftx,rightx;
+
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(marriage!=none);
+	
+	person=Database_GetSpouseFromMarriage(marriage);
+	leftx=Layout_FindXCoord(layout,person);
+	person=Database_GetPrincipalFromMarriage(marriage);
+	rightx=Layout_FindXCoord(layout,person);
+	if (leftx>rightx) {
+		int temp=leftx;
+		leftx=rightx;
+		rightx=temp;
+	}
+	flags.editable=1;
+	flags.moveable=0;
+	flags.linkable=1;
+	flags.snaptogrid=1;
+	flags.selectable=1;
+	Layout_AddTransient(layout,marriage,leftx,Layout_FindYCoord(layout,person),rightx-leftx,Graphics_PersonHeight(),0,0,flags);
 }
 
 static int Layout_FindChildCoords(layout *layout,elementptr marriage)
@@ -399,15 +433,21 @@ void Layout_LayoutMarriages(layout *layout)
 {
 	int i;
 	AJWLib_Assert(layout!=NULL);
-	layout->nummarriages=0;
-	for (i=0;i<layout->numpeople;i++) Layout_PlotMarriage(layout,layout->person[i].element,layout->person[i].x,layout->person[i].y);
+/*	layout->nummarriages=0;*/
+/*	for (i=0;i<layout->numpeople;i++) Layout_PlotMarriage(layout,layout->person[i].element,layout->person[i].x,layout->person[i].y);*/
 }
 
 void Layout_LayoutLines(layout *layout)
 {
-	int i;
+	int i=0;
 	AJWLib_Assert(layout!=NULL);
 	Layout_RemoveTransients(layout);
+	do {
+		elementptr marriage=Database_GetLinkedMarriages(&i);
+
+		if (marriage) Layout_PlotMarriage(layout,marriage);
+		/*FIXME: assumes everyone is on the layout*/
+	} while (i);
 	for (i=0;i<layout->numpeople;i++) Layout_PlotChildLine(layout,layout->person[i].element,layout->person[i].y);
 }
 

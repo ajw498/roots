@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.50 2000/10/14 23:28:19 AJW Exp $
+	$Id: Graphics.c,v 1.51 2000/10/16 11:45:00 AJW Exp $
 
 */
 
@@ -997,7 +997,33 @@ static void Graphics_PlotChildren(int scale,int originx,int originy,int leftx,in
 	Graphics_PlotLine(scale,originx,originy,leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
 }
 
-void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
+void Graphics_SetFunctions(plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
+{
+	Graphics_PlotLine=plotline;
+	Graphics_PlotRectangle=plotrect;
+	Graphics_PlotRectangleFilled=plotrectfilled;
+	Graphics_PlotText=plottext;
+}
+
+void Graphics_PlotElement(elementptr element,int scale,int originx,int originy,int x,int y,int width,int height,Desk_bool plotselection)
+{
+	switch (Database_GetElementType(element)) {
+		case element_CHILDLINE:
+			Graphics_PlotChildren(scale,originx,originy,x,x+width,y);
+			break;
+		case element_TITLE:
+			/*Graphics_PlotText(scale,originx,originy,x,y,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+			*/break;
+		case element_PERSON:
+			Graphics_PlotPerson(scale,originx,originy,element,x,y,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
+			break;
+		case element_MARRIAGE:
+			Graphics_PlotMarriage(scale,originx,originy,x+Graphics_PersonWidth()/*temp*/,y,element,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
+			break;
+	}
+}
+
+/*void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -1053,5 +1079,5 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 			}
 		}
 	}
-}
+} */
 

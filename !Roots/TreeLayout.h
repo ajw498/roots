@@ -19,9 +19,6 @@ layout *Layout_GetGEDCOMLayout(void);
 void Layout_GEDCOMNewPerson(elementptr person);
 void Layout_GEDCOMNewPersonX(int pos);
 void Layout_GEDCOMNewPersonY(int pos);
-void Layout_GEDCOMNewMarriage(elementptr marriage);
-void Layout_GEDCOMNewMarriageX(int pos);
-void Layout_GEDCOMNewMarriageY(int pos);
 
 #endif
 
