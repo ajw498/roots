@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.7  1999/09/29 17:42:49  AJW
+	Added Layout_AlterChildline
+
 	Revision 1.6  1999/09/29 17:12:11  AJW
 	Corrected childline status in Layout_AddMarriage
 
@@ -98,6 +101,12 @@ return layouts;
 		layouts->numpeople++;
 	}
 	return layouts;
+}
+
+void Layout_AlterChildline(layout *layout,elementptr person,BOOL on)
+{
+	int i;
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) layout->person[i].child=on;
 }
 
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
