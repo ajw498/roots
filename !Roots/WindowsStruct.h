@@ -1,5 +1,5 @@
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef WINDOWS_H
+#define WINDOWS_H
 
 #ifndef DATABASE_H
 #include "Database.h"
