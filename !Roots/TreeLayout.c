@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.9  1999/10/02 17:48:24  AJW
+	Added Layout_RemoveMarriage
+
 	Revision 1.8  1999/09/29 17:51:38  AJW
 	Added Layout_AlterMarriageChildLine
 
@@ -401,6 +404,18 @@ void Layout_RemovePerson(layout *layout,elementptr person)
 		if (layout->person[i].person==person) {
 			Flex_MidExtend((flex_ptr)&(layout->person),sizeof(personlayout)*(i+1),-sizeof(personlayout));/*errors*/
 			layout->numpeople--;
+			return;
+		}
+	}
+}
+
+void Layout_RemoveMarriage(layout *layout,elementptr marriage)
+{
+	int i;
+	for (i=0;i<layout->nummarriages;i++) {
+		if (layout->marriage[i].marriage==marriage) {
+			Flex_MidExtend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(i+1),-sizeof(marriagelayout));/*errors*/
+			layout->nummarriages--;
 			return;
 		}
 	}
