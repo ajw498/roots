@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Layout.c,v $
+	Revision 1.18  2000/01/14 13:48:41  AJW
+	Changed Graphics_ to Windows_
+
 	Revision 1.17  2000/01/13 22:59:17  AJW
 	Added Layout_Save and GetSize
 
@@ -74,7 +77,7 @@
 #include "Database.h"
 #include "Graphics.h"
 #include "Modules.h"
-#include "GConfig.h"
+#include "Windows.h"
 #include "Layout.h"
 
 
