@@ -28,7 +28,8 @@ typedef enum elementtype {
 typedef enum sex {
 	sex_MALE='M',
 	sex_FEMALE='F',
-	sex_UNKNOWN='U'
+	sex_UNKNOWN='U',
+	sex_ANY='A'
 } sex;
 
 typedef char date[20];
@@ -138,6 +139,8 @@ int Database_GetSize(void);
 void Database_StopEditing(void);
 char *Database_GetUserDesc(int num);
 void Database_SetUserDesc(int num,char *desc);
+sex Database_GetSex(elementptr person);
+
 
 #endif
 

@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.34 2000/06/26 19:43:59 AJW Exp $
+	$Id: Graphics.c,v 1.35 2000/06/29 21:53:10 AJW Exp $
 
 */
 
@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "Database.h"
 #include "Graphics.h"
@@ -170,12 +171,15 @@ typedef union details {
 
 typedef struct object {
 	graphictype type;
+	sex sex;
 	details details;
 } object;
 
 typedef struct fieldproperties {
-	Desk_bool plot;
-    graphictype type;
+	graphictype type;
+    personfieldtype personfieldtype;
+    marriagefieldtype marriagefieldtype;
+	sex sex;
 	textproperties textproperties;
 } fieldproperties;
 
@@ -197,8 +201,10 @@ typedef struct graphics {
 	object *person;
 	int nummarriageobjects;
 	object *marriage;
-	fieldproperties personfields[NUMPERSONFIELDS];
-	fieldproperties marriagefields[NUMMARRIAGEFIELDS];
+	fieldproperties *personfields;
+	int numpersonfields;
+	fieldproperties *marriagefields;
+	int nummarriagefields;
 } graphics;
 
 static graphics graphicsdata;
@@ -246,8 +252,13 @@ static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
 static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype=graphictype_INVALID;
+	sex sex=sex_ANY;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	if (values[0][1]=='_') {
+		sex=toupper(values[0][0]);
+		values[0]+=2;
+	}
 	if (!strcmp(values[0],LINE)) graphictype=graphictype_LINE;
 	else if (!strcmp(values[0],CHILDLINE)) graphictype=graphictype_CHILDLINE;
 	else if (!strcmp(values[0],BOX)) graphictype=graphictype_RECTANGLE;
@@ -271,6 +282,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
 			}
 			break;
 		case graphictype_RECTANGLE:
@@ -285,6 +297,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.thickness=Graphics_ConvertToOS(values[5]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[6]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
 			}
 			break;
 		case graphictype_FILLEDRECTANGLE:
@@ -298,6 +311,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.x1=Graphics_ConvertToOS(values[3]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.y1=Graphics_ConvertToOS(values[4]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.linebox.colour=Graphics_RGBToPalette(values[5]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
 			}
 			break;
 		case graphictype_CENTREDTEXTLABEL:
@@ -316,6 +330,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				size=(int)strtol(values[3],NULL,10);
 				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.fontname,values[6]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.size=size;
+				graphicsdata.person[graphicsdata.numpersonobjects-1].sex=sex;
 			}
 			break;
 		case graphictype_CENTREDFIELD:
@@ -342,15 +357,17 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 					Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 					break;
 				}
-				graphicsdata.personfields[field].plot=Desk_TRUE;
-				graphicsdata.personfields[field].type=graphictype;
-				graphicsdata.personfields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
-				graphicsdata.personfields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
-				graphicsdata.personfields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
-				graphicsdata.personfields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.personfields),(++graphicsdata.numpersonfields)*sizeof(fieldproperties));
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].type=graphictype;
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].personfieldtype=field;
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.x=Graphics_ConvertToOS(values[1]);
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.y=Graphics_ConvertToOS(values[2]);
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.colour=Graphics_RGBToPalette(values[4]);
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
-				strcpy(graphicsdata.personfields[field].textproperties.fontname,values[6]);
-				graphicsdata.personfields[field].textproperties.size=size;
+				strcpy(graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.fontname,values[6]);
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].textproperties.size=size;
+				graphicsdata.personfields[graphicsdata.numpersonfields-1].sex=sex;
 			}
 			break;
 	}
@@ -450,15 +467,16 @@ static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linen
 					Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 					break;
 				}
-				graphicsdata.marriagefields[field].plot=Desk_TRUE;
-				graphicsdata.marriagefields[field].type=graphictype;
-				graphicsdata.marriagefields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
-				graphicsdata.marriagefields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
-				graphicsdata.marriagefields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
-				graphicsdata.marriagefields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
+				AJWLib_Flex_Extend((flex_ptr)&(graphicsdata.marriagefields),(++graphicsdata.nummarriagefields)*sizeof(fieldproperties));
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].type=graphictype;
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].marriagefieldtype=field;
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.x=Graphics_ConvertToOS(values[1]);
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.y=Graphics_ConvertToOS(values[2]);
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.colour=Graphics_RGBToPalette(values[4]);
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
-				strcpy(graphicsdata.marriagefields[field].textproperties.fontname,values[6]);
-				graphicsdata.marriagefields[field].textproperties.size=size;
+				strcpy(graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.fontname,values[6]);
+				graphicsdata.marriagefields[graphicsdata.nummarriagefields-1].textproperties.size=size;
 			}
 			break;
 	}
@@ -574,11 +592,9 @@ static void Graphics_ClaimFonts(void)
 			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,16*graphicsdata.person[i].details.textlabel.properties.size,16*graphicsdata.person[i].details.textlabel.properties.size));
 		}
 	}
-	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			graphicsdata.personfields[i].textproperties.font=NULL;
-			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,16*graphicsdata.personfields[i].textproperties.size,16*graphicsdata.personfields[i].textproperties.size));
-		}
+	for (i=0;i<graphicsdata.numpersonfields;i++) {
+		graphicsdata.personfields[i].textproperties.font=NULL;
+		Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,16*graphicsdata.personfields[i].textproperties.size,16*graphicsdata.personfields[i].textproperties.size));
 	}
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
@@ -586,11 +602,9 @@ static void Graphics_ClaimFonts(void)
 			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriage[i].details.textlabel.properties.font),graphicsdata.marriage[i].details.textlabel.properties.fontname,16*graphicsdata.marriage[i].details.textlabel.properties.size,16*graphicsdata.marriage[i].details.textlabel.properties.size));
 		}
 	}
-	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
-		if (graphicsdata.marriagefields[i].plot) {
-			graphicsdata.marriagefields[i].textproperties.font=NULL;
-			Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,16*graphicsdata.marriagefields[i].textproperties.size,16*graphicsdata.marriagefields[i].textproperties.size));
-		}
+	for (i=0;i<graphicsdata.nummarriagefields;i++) {
+		graphicsdata.marriagefields[i].textproperties.font=NULL;
+		Desk_Error2_CheckOS(Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,16*graphicsdata.marriagefields[i].textproperties.size,16*graphicsdata.marriagefields[i].textproperties.size));
 	}
 }
 
@@ -603,26 +617,21 @@ static void Graphics_ReleaseFonts(void)
 			Desk_Font2_ReleaseFont(&(graphicsdata.person[i].details.textlabel.properties.font));
 		}
 	}
-	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			Desk_Font2_ReleaseFont(&(graphicsdata.personfields[i].textproperties.font));
-		}
+	for (i=0;i<graphicsdata.numpersonfields;i++) {
+		Desk_Font2_ReleaseFont(&(graphicsdata.personfields[i].textproperties.font));
 	}
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
 			Desk_Font2_ReleaseFont(&(graphicsdata.marriage[i].details.textlabel.properties.font));
 		}
 	}
-	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			Desk_Font2_ReleaseFont(&(graphicsdata.marriagefields[i].textproperties.font));
-		}
+	for (i=0;i<graphicsdata.nummarriagefields;i++) {
+		Desk_Font2_ReleaseFont(&(graphicsdata.marriagefields[i].textproperties.font));
 	}
 }
 
 static void Graphics_DefaultStyle(void)
 {
-	int i;
 	graphicsdata.personwidth=200;
 	graphicsdata.personheight=100;
 	graphicsdata.gapheightabove=40;
@@ -640,8 +649,8 @@ static void Graphics_DefaultStyle(void)
 	strcpy(graphicsdata.title.fontname,"Homerton.Bold");
 	graphicsdata.numpersonobjects=0;
 	graphicsdata.nummarriageobjects=0;
-	for (i=0;i<NUMPERSONFIELDS;i++) graphicsdata.personfields[i].plot=Desk_FALSE;
-	for (i=0;i<NUMMARRIAGEFIELDS;i++) graphicsdata.marriagefields[i].plot=Desk_FALSE;
+	graphicsdata.numpersonfields=0;
+	graphicsdata.nummarriagefields=0;
 }
 
 static void Graphics_ParseStyle(void)
@@ -649,6 +658,8 @@ static void Graphics_ParseStyle(void)
 	Graphics_DefaultStyle();
     AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
+    AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.personfields),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriagefields),1);
 	Graphics_ParseFile(&personfile,Graphics_StorePersonDetails);
 	Graphics_ParseFile(&dimensionsfile,Graphics_StoreDimensionDetails);
 	Graphics_ParseFile(&marriagefile,Graphics_StoreMarriageDetails);
@@ -743,8 +754,12 @@ void Graphics_RemoveStyle(void)
 	Graphics_ReleaseFonts();
 	graphicsdata.numpersonobjects=0;
 	graphicsdata.nummarriageobjects=0;
+	graphicsdata.numpersonfields=0;
+	graphicsdata.nummarriagefields=0;
 	if (graphicsdata.person!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
 	if (graphicsdata.marriage!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
+	if (graphicsdata.personfields!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.personfields));
+	if (graphicsdata.marriagefields!=NULL) AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriagefields));
 	if (personfile!=NULL) AJWLib_Flex_Free((flex_ptr)&personfile);
 	if (marriagefile!=NULL) AJWLib_Flex_Free((flex_ptr)&marriagefile);
 	if (dimensionsfile!=NULL) AJWLib_Flex_Free((flex_ptr)&dimensionsfile);
@@ -805,30 +820,32 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 	AJWLib_Assert(person>0);
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		int xcoord=0;
-		switch (graphicsdata.person[i].type) {
-			case graphictype_RECTANGLE:
-				Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-				break;
-			case graphictype_FILLEDRECTANGLE:
-				Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-				break;
-			case graphictype_CHILDLINE:
-				if (!Database_GetMother(person)) break;
-			case graphictype_LINE:
-				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-				break;
-			case graphictype_CENTREDTEXTLABEL:
-				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
-			case graphictype_TEXTLABEL:
-				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
-				break;
+		if (graphicsdata.person[i].sex==sex_ANY || graphicsdata.person[i].sex==Database_GetSex(person)) {
+			switch (graphicsdata.person[i].type) {
+				case graphictype_RECTANGLE:
+					Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+					break;
+				case graphictype_FILLEDRECTANGLE:
+					Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+					break;
+				case graphictype_CHILDLINE:
+					if (!Database_GetMother(person)) break;
+				case graphictype_LINE:
+					Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+					break;
+				case graphictype_CENTREDTEXTLABEL:
+					xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
+				case graphictype_TEXTLABEL:
+					Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
+					break;
+			}
 		}
 	}
-	for (i=0;i<NUMPERSONFIELDS;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			char fieldtext[256]=""; /*what is max field length?*/
-			int xcoord=0;
-			switch (i) {
+	for (i=0;i<graphicsdata.numpersonfields;i++) {
+		char fieldtext[256]=""; /*what is max field length?*/
+		int xcoord=0;
+		if (graphicsdata.personfields[i].sex==sex_ANY || graphicsdata.personfields[i].sex==Database_GetSex(person)) {
+			switch (graphicsdata.personfields[i].personfieldtype) {
 				case personfieldtype_SURNAME:
 					strcpy(fieldtext,Database_GetPersonData(person)->surname);
 					break;
@@ -901,25 +918,23 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 				break;
 		}
 	}
-	for (i=0;i<NUMMARRIAGEFIELDS;i++) {
-		if (graphicsdata.marriagefields[i].plot) {
-			char fieldtext[256]=""; /*what is max field length?*/
-			switch (i) {
-				case marriagefieldtype_PLACE:
-					strcpy(fieldtext,Database_GetMarriageData(marriage)->place);
-					break;
-				case marriagefieldtype_DATE:
-					strcpy(fieldtext,Database_GetMarriageData(marriage)->date);
-					break;
-				case marriagefieldtype_DIVORCE:
-					strcpy(fieldtext,Database_GetMarriageData(marriage)->divorce);
-					break;
-				default:
-					strcpy(fieldtext,"Unimplemented");
-			}
-			if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriagefields[i].textproperties.font->handle,fieldtext)/2;
-			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
+	for (i=0;i<graphicsdata.nummarriagefields;i++) {
+		char fieldtext[256]=""; /*what is max field length?*/
+		switch (graphicsdata.marriagefields[i].marriagefieldtype) {
+			case marriagefieldtype_PLACE:
+				strcpy(fieldtext,Database_GetMarriageData(marriage)->place);
+				break;
+			case marriagefieldtype_DATE:
+				strcpy(fieldtext,Database_GetMarriageData(marriage)->date);
+				break;
+			case marriagefieldtype_DIVORCE:
+				strcpy(fieldtext,Database_GetMarriageData(marriage)->divorce);
+				break;
+			default:
+				strcpy(fieldtext,"Unimplemented");
 		}
+		if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriagefields[i].textproperties.font->handle,fieldtext)/2;
+		Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 	}
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
