@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.19  2000/01/17 16:58:59  AJW
+	Added Layout_Load
+
 	Revision 1.18  2000/01/14 13:48:41  AJW
 	Changed Graphics_ to Windows_
 
@@ -685,4 +688,20 @@ void Layout_Save(layout *layout,FILE *file)
 	AJWLib_File_fwrite(layout->marriage,sizeof(marriagelayout),layout->nummarriages,file);
 	AJWLib_File_fwrite(&(layout->numchildren),sizeof(layout->numchildren),1,file);
 	AJWLib_File_fwrite(layout->children,sizeof(childlinelayout),layout->numchildren,file);
+}
+
+layout *Layout_Load(FILE *file)
+{
+	layout *layout;
+	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
+	AJWLib_File_fread(&(layout->numpeople),sizeof(layout->numpeople),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),layout->numpeople);
+	AJWLib_File_fread(layout->person,sizeof(personlayout),layout->numpeople,file);
+	AJWLib_File_fread(&(layout->nummarriages),sizeof(layout->nummarriages),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),layout->nummarriages);
+	AJWLib_File_fread(layout->marriage,sizeof(marriagelayout),layout->nummarriages,file);
+	AJWLib_File_fread(&(layout->numchildren),sizeof(layout->numchildren),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),layout->numchildren);
+	AJWLib_File_fread(layout->children,sizeof(childlinelayout),layout->numchildren,file);
+	return layout;
 }
