@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.14 2000/05/14 22:34:03 AJW Exp $
+	$Id: Config.c,v 1.15 2000/06/17 22:17:48 AJW Exp $
 
 */
 
@@ -21,6 +21,7 @@
 #include "AJWLib.Assert.h"
 #include "AJWLib.Error2.h"
 #include "AJWLib.File.h"
+#include "AJWLib.Str.h"
 #include "AJWLib.Window.h"
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Menu.h"
@@ -42,6 +43,7 @@
 #define config_CANCEL 15
 #define config_SAVE 14
 #define config_OK 13
+#define config_FONTBLEND 16
 
 typedef struct configdata {
 	Desk_bool importgraphicsstyle;
@@ -52,6 +54,7 @@ typedef struct configdata {
 	int scrolldistance;
 	Desk_bool autoincreasesize;
 	Desk_bool autoincreasealways;
+	Desk_bool fontblend;
 } configdata;
 
 static configdata config;
@@ -107,6 +110,7 @@ static void Config_Default(void)
 	config.scrolldistance=30;
 	config.autoincreasesize=Desk_TRUE;
 	config.autoincreasealways=Desk_FALSE;
+	config.fontblend=Desk_FALSE;
 }
 
 Desk_bool Config_ImportGraphicsStyle(void)
@@ -117,6 +121,11 @@ Desk_bool Config_ImportGraphicsStyle(void)
 Desk_bool Config_Title(void)
 {
 	return config.title;
+}
+
+Desk_bool Config_FontBlend(void)
+{
+	return config.fontblend;
 }
 
 Desk_bool Config_Snap(void)
@@ -158,6 +167,7 @@ static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 	config.importgraphicsstyle=Desk_Icon_GetSelect(configwin,config_IMPORTSTYLE);
 	config.snap=Desk_Icon_GetSelect(configwin,config_SNAP);
 	config.title=Desk_Icon_GetSelect(configwin,config_DISPLAYTITLE);
+	config.fontblend=Desk_Icon_GetSelect(configwin,config_FONTBLEND);
 	config.autoincreasesize=Desk_Icon_GetSelect(configwin,config_AUTOINCREASE);
 	config.autoincreasealways=(Desk_bool)!Desk_Icon_GetSelect(configwin,config_AUTOINCREASEONLY);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(configwin);
@@ -173,8 +183,17 @@ static Desk_bool Config_Save(Desk_event_pollblock *block,void *ref)
 	Desk_Error2_Try {
 		if (!Desk_File_IsDirectory(choiceswrite)) Desk_File_EnsureDirectory(choiceswrite);
 		sprintf(filename,"%s.%s",choiceswrite,CONFIGFILE);
-		file=AJWLib_File_fopen(filename,"wb");
-		AJWLib_File_fwrite(&config,sizeof(config),1,file);
+		file=AJWLib_File_fopen(filename,"w");
+		fprintf(file,"Choices file for Roots\n\n");
+		fprintf(file,"ImportGraphicsStyle:%d\n",config.importgraphicsstyle);
+		fprintf(file,"SnapToPlace:%d\n",config.snap);
+		fprintf(file,"SnapDistance:%d\n",config.snapdistance);
+		fprintf(file,"DisplayTitle:%d\n",config.title);
+		fprintf(file,"ScrollSpeed:%d\n",config.scrollspeed);
+		fprintf(file,"ScrollDistance:%d\n",config.scrolldistance);
+        fprintf(file,"AutoIncreaseWindowSize:%d\n",config.autoincreasesize);
+        fprintf(file,"AlwaysAutoIncrease:%d\n",config.autoincreasealways);
+        fprintf(file,"FontBackgroundBlending:%d\n",config.fontblend);
 		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
 		AJWLib_Error2_ReportMsgs("Error.ConfigS:%s");
@@ -190,8 +209,29 @@ static void Config_Load(void)
 	sprintf(filename,"%s.%s",choicesread,CONFIGFILE);
 	Desk_Error2_Try {
 		if (Desk_File_Exists(filename)) {
-			file=AJWLib_File_fopen(filename,"rb");
-			AJWLib_File_fread(&config,sizeof(config),1,file);
+			file=AJWLib_File_fopen(filename,"r");
+			while (!feof(file)) {
+				char line[256]="";
+				char *brk;
+				fscanf(file,"%255[^\n]\n",line);
+				brk=strchr(line,':');
+				if (brk) {
+					int val;
+					char *end;
+					*(brk++)='\0';
+					val=(int)strtol(brk,&end,10);
+					AJWLib_Str_LowerCase(line);
+					if (!strcmp(line,"importgraphicsstyle")) config.importgraphicsstyle=(Desk_bool)val;
+					else if (!strcmp(line,"snaptoplace")) config.snap=(Desk_bool)val;
+					else if (!strcmp(line,"snapdistance")) config.snapdistance=val;
+					else if (!strcmp(line,"displaytitle")) config.title=(Desk_bool)val;
+					else if (!strcmp(line,"scrollspeed")) config.scrollspeed=val;
+					else if (!strcmp(line,"scrolldistance")) config.scrolldistance=val;
+			        else if (!strcmp(line,"autoincreasewindowsize")) config.autoincreasesize=(Desk_bool)val;
+			        else if (!strcmp(line,"alwaysautoincrease")) config.autoincreasealways=(Desk_bool)val;
+			        else if (!strcmp(line,"fontbackgroundblending")) config.fontblend=(Desk_bool)val;
+				}
+			}
 			AJWLib_File_fclose(file);
 		}
 	} Desk_Error2_Catch {
@@ -229,6 +269,7 @@ void Config_Open(void)
 	Desk_Icon_SetSelect(configwin,config_IMPORTSTYLE,config.importgraphicsstyle);
 	Desk_Icon_SetSelect(configwin,config_SNAP,config.snap);
 	Desk_Icon_SetSelect(configwin,config_DISPLAYTITLE,config.title);
+	Desk_Icon_SetSelect(configwin,config_FONTBLEND,config.fontblend);
 	Desk_Icon_SetSelect(configwin,config_AUTOINCREASE,config.autoincreasesize);
 	Desk_Icon_SetSelect(configwin,config_AUTOINCREASEONLY,!config.autoincreasealways);
 	Config_SnapClick(NULL,NULL);
