@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.42 2000/02/23 22:40:51 uid1 Exp $
+	$Id: Windows.c,v 1.43 2000/02/23 22:45:02 uid1 Exp $
 
 */
 
@@ -967,14 +967,11 @@ void Windows_FileModified(void)
 void Windows_LayoutNormal(layout *layout)
 {
 	int i;
+	if (layout==NULL) layout=Layout_LayoutNormal();
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle && windows[i].type==wintype_NORMAL) {
 			AJWLib_Assert(windows[i].layout==NULL);
-			if (layout==NULL) {
-				windows[i].layout=Layout_LayoutNormal();
-			} else {
-				windows[i].layout=layout;
-			}
+			windows[i].layout=layout;
 			Windows_ResizeWindow(&windows[i]);
 		}
 	}
