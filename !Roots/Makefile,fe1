@@ -8,6 +8,7 @@ HEADERS = \
 	Draw.h\
 	Modules.h\
 	File.h\
+	Shareware.h\
 	Print.h
 
 LIBS = \
@@ -28,6 +29,7 @@ OBJECTS = \
 	Print.o\
 	Drawfile.o\
 	Database.o\
+	Shareware.o\
 	Main.o
 
 SOURCES = $(OBJECTS:.o=.c)

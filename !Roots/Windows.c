@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.83 2000/09/21 11:33:12 AJW Exp $
+	$Id: Windows.c,v 1.84 2000/09/22 13:11:03 AJW Exp $
 
 */
 
@@ -548,7 +548,7 @@ static void Windows_LinkDragEnd(void *ref)
 				Desk_Error2_ReThrow();
 			} Desk_Error2_EndCatch
 		} Desk_Error2_Catch {
-			AJWLib_Error2_ReportMsgs("Error.Marrd:%s");
+			AJWLib_Error2_Report("%s");
 		} Desk_Error2_EndCatch
 	} else if (marriage) {
 		Database_AddChild(marriage,dragdata->person);
