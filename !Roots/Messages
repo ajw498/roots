@@ -126,5 +126,12 @@ Error.NoFile:Cannot find %s file in graphics style %s
 Error.NufWin:You cannot have more than %d windows open at once
 Error.CmdLine:Too many command line arguments
 Error.Print:Error whilst printing (%s)
+Error.Lua1:Error while trying to run Lua code (%s)
+Error.Lua2:Unable to open file
+Error.Lua3:Syntax error in Lua code (%s)
+Error.Lua4:Unknown error in Lua code (%s)
+Error.Lua5:Incorrect number of arguments to function %s
+Error.Lua6:Argument %d to function %s is the wrong type of data
+Error.Lua7:Too many fonts
 Error.Bad:Sorry, <Task.Name> has suffered an error (%s). Click Ok to continue or Cancel to quit.
 Error.Fatal:Sorry, <Task.Name> has suffered an internal error (%s) and must exit immediately.
