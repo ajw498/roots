@@ -38,7 +38,7 @@ Title.Export:Export
 Menu.Export:~GEDCOM,Draw,~Text
 
 Title.Person:Person
-Menu.Person:Add,Delete,Unlink
+Menu.Person:Add,Delete
 
 Title.Config:Styles
 

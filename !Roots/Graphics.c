@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.31 2000/06/17 18:45:34 AJW Exp $
+	$Id: Graphics.c,v 1.32 2000/06/22 19:07:27 AJW Exp $
 
 */
 
@@ -998,10 +998,10 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 		Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
 	}
 	for (i=0;i<layout->nummarriages;i++) {
-		Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
+		Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
 	}
 	for (i=0;i<layout->numpeople;i++) {
-		Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
+		Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,layout->person[i].child,plotselection ? Database_GetSelect(layout->person[i].person) : Desk_FALSE);
 	}
 }
 

@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.30 2000/03/04 23:52:31 uid1 Exp $
+	$Id: Layout.c,v 1.31 2000/06/22 19:07:28 AJW Exp $
 
 */
 
@@ -56,44 +56,6 @@ static Desk_bool selectmarriages;
 static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn);
 static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int generation,callfn fn);
 
-layout *Layout_LayoutUnlinked(void)
-{
-	elementptr person=none;
-	layout *layout=NULL;
-	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
-	layout->person=NULL;
-	layout->marriage=NULL;
-	layout->children=NULL;
-	layout->nummarriages=0;
-	layout->numchildren=0;
-	layout->numpeople=0;
-	layout->title.x=INFINITY;
-	layout->title.y=INFINITY;
-	Desk_Error2_Try {
-		AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
-		AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
-		AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
-		person=Database_GetUnlinked(person);
-		while (person!=none) {
-			AJWLib_Flex_Extend((flex_ptr)&(layout->person),sizeof(personlayout)*(layout->numpeople+1));
-			layout->person[layout->numpeople].x=0;
-			layout->person[layout->numpeople].y=-(Graphics_UnlinkedGapHeight()+Graphics_PersonHeight())*(layout->numpeople-1);
-			layout->person[layout->numpeople].person=person;
-			layout->person[layout->numpeople].child=Desk_FALSE;
-			layout->person[layout->numpeople].selected=Desk_FALSE;
-			person=Database_GetUnlinked(person);
-			layout->numpeople++;
-		}
-	} Desk_Error2_Catch {
-		if (layout->person) AJWLib_Flex_Free((flex_ptr)&(layout->person));
-		if (layout->marriage) AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
-		if (layout->children) AJWLib_Flex_Free((flex_ptr)&(layout->children));
-		free(layout);
-		Desk_Error2_ReThrow();
-	} Desk_Error2_EndCatch
-	return layout;
-}
-
 void Layout_AlterChildline(layout *layout,elementptr person,Desk_bool on)
 {
 	int i;
@@ -119,6 +81,17 @@ void Layout_LayoutTitle(layout *layout)
 	layout->title.y=bbox.max.y+Graphics_TitleHeight()/2;
 }
 
+int Layout_NearestGeneration(int y)
+{
+	int neg;
+	int h=(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
+	neg=y<0 ? -1 : 1;
+	y*=neg;
+	y-=y%h;
+	y+=Graphics_GapHeightBelow()+Graphics_PersonHeight()/2;
+	return y*neg;
+}
+
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 {
 	AJWLib_Assert(layout!=NULL);
@@ -128,8 +101,8 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 	layout->person[layout->numpeople].y=y;
 	layout->person[layout->numpeople].person=person;
 	layout->person[layout->numpeople].child=(Database_GetMother(person)==none ? Desk_FALSE : Desk_TRUE);
-	layout->person[layout->numpeople].selected=Desk_FALSE;
 	layout->numpeople++;
+	Database_DeSelect(person);
 	Modules_ChangedLayout();
 }
 
@@ -142,18 +115,9 @@ void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
 	layout->marriage[layout->nummarriages].y=y;
 	layout->marriage[layout->nummarriages].marriage=marriage;
 	layout->marriage[layout->nummarriages].childline=(Database_GetLeftChild(marriage)==none ? Desk_FALSE : Desk_TRUE);
-	layout->marriage[layout->nummarriages].selected=Desk_FALSE;
+	Database_DeSelect(marriage);
 	layout->nummarriages++;
 	Modules_ChangedLayout();
-}
-
-Desk_bool Layout_Selected(layout *layout,elementptr person)
-{
-	int i;
-	AJWLib_Assert(layout!=NULL);
-	AJWLib_Assert(person!=none);
-	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) return layout->person[i].selected;
-	return Desk_FALSE;
 }
 
 int Layout_FindXCoord(layout *layout,elementptr person)
@@ -270,7 +234,7 @@ static void Layout_PlotPerson(layout *layout,elementptr person,int generation,De
 	layout->person[layout->numpeople-1].y=(generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight());
 	layout->person[layout->numpeople-1].person=person;
 	if (child && Database_GetFather(person)) layout->person[layout->numpeople-1].child=Desk_TRUE; else layout->person[layout->numpeople-1].child=Desk_FALSE;
-	layout->person[layout->numpeople-1].selected=Desk_FALSE;
+	Database_DeSelect(person);
 #ifdef DEBUG
 halt=Desk_TRUE;
 debuglayout=layout;
@@ -293,7 +257,7 @@ static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y,Des
 	layout->marriage[layout->nummarriages-1].y=y;
 	layout->marriage[layout->nummarriages-1].marriage=marriage;
 	layout->marriage[layout->nummarriages-1].childline=(Database_GetLeftChild(marriage) ? children : Desk_FALSE);
-	layout->marriage[layout->nummarriages-1].selected=Desk_FALSE;
+	Database_DeSelect(marriage);
 }
 
 static int Layout_FindChildCoords(layout *layout,elementptr marriage)
@@ -319,6 +283,8 @@ static void Layout_Add(layout *layout,elementptr person,int generation,Desk_bool
 	elementptr marriage;
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
+	Desk_UNUSED(dummy1);
+	Desk_UNUSED(dummy2);
 	marriage=Database_GetMarriage(person);
 	for (i=0;i<layout->numpeople;i++) {
 		if (layout->person[i].person==person) {
@@ -340,24 +306,16 @@ static void Layout_Add(layout *layout,elementptr person,int generation,Desk_bool
 
 static void Layout_Select(layout *layout,elementptr person,int dummy0,Desk_bool dummy1,Desk_bool dummy2)
 {
-	int i;
 	elementptr marriage;
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(person!=none);
-	for (i=0;i<layout->numpeople;i++) {
-		if (layout->person[i].person==person) {
-			layout->person[i].selected=Desk_TRUE;
-			i=layout->numpeople;
-		}
-	}
+	Desk_UNUSED(dummy0);
+	Desk_UNUSED(dummy1);
+	Desk_UNUSED(dummy2);
+	Database_Select(person);
 	marriage=Database_GetMarriage(person);
 	if (Database_GetPrincipalFromMarriage(marriage)!=person) {
-		for (i=0;i<layout->nummarriages;i++) {
-			if (layout->marriage[i].marriage==marriage) {
-				layout->marriage[i].selected=Desk_TRUE;
-				i=layout->nummarriages;
-			}
-		}
+		Database_Select(marriage);
 	}
 }
 
@@ -501,7 +459,7 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 	box.max.y=-INFINITY;
 	if (layout) {
 		for (i=0;i<layout->numpeople;i++) {
-			if (layout->person[i].selected || !selection) {
+			if (Database_GetSelect(layout->person[i].person) || !selection) {
 				if (layout->person[i].x<box.min.x) box.min.x=layout->person[i].x;
 				if (layout->person[i].x+Graphics_PersonWidth()>box.max.x) box.max.x=layout->person[i].x+Graphics_PersonWidth();
 				if (layout->person[i].y<box.min.y) box.min.y=layout->person[i].y;
@@ -509,7 +467,7 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 			}
 		}
 		for (i=0;i<layout->nummarriages;i++) {
-			if (layout->marriage[i].selected || !selection) {
+			if (Database_GetSelect(layout->marriage[i].marriage) || !selection) {
 				if (layout->marriage[i].x<box.min.x) box.min.x=layout->marriage[i].x;
 				if (layout->marriage[i].x+Graphics_MarriageWidth()>box.max.x) box.max.x=layout->marriage[i].x+Graphics_MarriageWidth();
 				if (layout->marriage[i].y<box.min.y) box.min.y=layout->marriage[i].y;
@@ -667,8 +625,8 @@ layout *Layout_LayoutNormal(void)
 			layout->title.x=INFINITY;
 			layout->title.y=INFINITY;
 		}
-		person=Database_GetLinked();
-		while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
+/*		person=Database_GetLinked();
+*/		while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
 		firstplot=2;
 		Layout_TraverseTree(layout,person,2,2,Desk_TRUE,Desk_TRUE,Desk_TRUE,0,Layout_Plot);
 		AJWLib_Flex_Free((flex_ptr)&spaces);

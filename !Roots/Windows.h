@@ -12,7 +12,6 @@
 typedef enum wintype {
 	wintype_UNKNOWN=0,
 	wintype_NORMAL,
-	wintype_UNLINKED,
 	wintype_DESCENDENTS,
 	wintype_ANCESTORS,
 	wintype_CLOSERELATIVES
@@ -45,8 +44,6 @@ void Windows_Load(FILE *file);
 void Windows_FileModified(void);
 
 void Windows_LayoutNormal(layout *layout,Desk_bool opencentred);
-
-void Windows_CloseAddParentsWindow(void);
 
 void Windows_CloseAllWindows(void);
 

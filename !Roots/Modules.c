@@ -3,7 +3,7 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.14 2000/05/16 22:23:00 AJW Exp $
+	$Id: Modules.c,v 1.15 2000/06/22 19:07:41 AJW Exp $
 
 */
 
@@ -45,7 +45,6 @@ void Modules_ReflectChanges(void)
 		Windows_Relayout();
 		Windows_CloseNewView();
 		Database_StopEditing();
-		Windows_CloseAddParentsWindow();
 	}
 	if (changeddata) Windows_ForceRedraw();
 	if (changedlayout) Windows_ChangedLayout();

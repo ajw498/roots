@@ -1,3 +1,5 @@
-IconSprites <Obey$Dir>.!Sprites
+IconSprites <Obey$Dir>.!Sprites4
+RMEnsure UtilityModule 4.00 IconSprites <Obey$Dir>.!Sprites
+
 Set Roots$Dir <Obey$Dir>
 Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0

@@ -2,17 +2,26 @@
 #define DATABASE_H
 
 #include "Desk.Window.h"
+#include "Layout.h"
 
 #define none 0
 
 
+#ifndef ELEMENTPTR
+#define ELEMENTPTR
+
 typedef int elementptr;
+
+#endif
+
 
 typedef enum elementtype {
 	element_FILE,
 	element_PERSON,
 	element_MARRIAGE,
-	element_FREE
+	element_FREE,
+	element_TITLE,
+	element_NONE
 } elementtype;
 
 typedef enum sex {
@@ -41,7 +50,7 @@ typedef struct person {
 	elementptr siblingsrtol;
 	elementptr siblingsltor;
 	elementptr marriage;
-	elementptr nextunlinked;
+	elementptr reserved;
 	persondata data;
 } person;
 
@@ -69,9 +78,9 @@ typedef struct file {
 	int numberofelements;
 	int newpersonnumber;
 	char filetitle[40];
-	elementptr unlinkedpeople;
+	elementptr reserved0;
 	elementptr freeelement;
-	elementptr linkedpeople;
+	elementptr reserved1;
     char userdesc[3][20];
 } file;
 
@@ -85,15 +94,19 @@ typedef union element {
 typedef struct databaseelement {
 	elementtype type;
 	element element;
+	Desk_bool selected;
 } databaseelement;
 
+void Database_Select(elementptr person);
+void Database_DeSelect(elementptr person);
+void Database_DeSelectAll(void);
+Desk_bool Database_GetSelect(elementptr person);
+void Database_UnlinkSelected(layout *layout);
 persondata *Database_GetPersonData(elementptr person);
 elementptr Database_GetMarriage(elementptr person);
 elementptr Database_GetMarriageLtoR(elementptr person);
 elementptr Database_GetMarriageRtoL(elementptr person);
 marriagedata *Database_GetMarriageData(elementptr marriage);
-elementptr Database_GetUnlinked(elementptr person);
-elementptr Database_GetLinked(void);
 char *Database_GetName(elementptr person);
 char *Database_GetFullName(elementptr person);
 char *Database_GetTitledName(elementptr person);
@@ -118,14 +131,13 @@ char *Database_GetDescription(void);
 void Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
 void Database_AddParents(elementptr child,elementptr mother,elementptr father);
-void Database_LinkPerson(elementptr person);
 void Database_EditTitle(void);
 void Database_EditPerson(elementptr person);
 void Database_EditMarriage(elementptr marriage);
 void Database_RemoveChild(elementptr child);
 void Database_RemoveSpouse(elementptr person);
 void Database_RemoveParents(elementptr person);
-void Database_Add(void);
+elementptr Database_Add(void);
 void Database_Delete(elementptr person);
 int Database_GetNumPeople(void);
 int Database_GetSize(void);
