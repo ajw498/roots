@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.23 2001/02/03 13:37:23 AJW Exp $
+	$Id: Config.c,v 1.24 2001/02/03 15:55:46 AJW Exp $
 
 */
 
@@ -76,17 +76,15 @@ static void Config_SetChoicesPath(void)
 			/*We are running a new boot structure*/
 			if (Desk_File_IsDirectory("<Roots$Dir>.Choices")) {
 				/*We already have a directory inside !Roots*/
-				if (Desk_File_IsDirectory("Choices:Roots")) {
-					/*We also have a directory in Choices: so remove the one inside !Roots*/
-					Desk_SWI(4,0,Desk_SWI_OS_FSControl,27,"<Roots$Dir>.Choices",NULL,0x03);
-				} else {
+				if (!Desk_File_IsDirectory("Choices:Roots")) {
 					/*Move the directory from inside !Roots to Choices:*/
 					Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,"<Roots$Dir>.Choices","<Choices$Write>.Roots",0x83));
 				}
 			} else {
 				if (!Desk_File_IsDirectory("Choices:Roots")) {
-					/*We have no choices anywhere, so copy defaults to Choices:*/
-					Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,"<Roots$Dir>.Defaults","<Choices$Write>.Roots",0x03));
+					/*We have no choices directory so create one */
+					Desk_File_CreateDirectory("<Choices$Write>.Roots");
+					Desk_File_CreateDirectory("<Choices$Write>.Roots.Graphics");
 				}
 			}
 			strcpy(choicesread,"Choices:Roots");
@@ -94,8 +92,9 @@ static void Config_SetChoicesPath(void)
 		} else {
 			/*We have no new boot structure*/
 			if (!Desk_File_IsDirectory("<Roots$Dir>.Choices")) {
-				/*We don't have a directory inside !Roots, so copy defaults*/
-				Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,"<Roots$Dir>.Defaults","<Roots$Dir>.Choices",0x03));
+				/*We have no choices directory so create one */
+				Desk_File_CreateDirectory("<Roots$Dir>.Choices");
+				Desk_File_CreateDirectory("<Roots$Dir>.Choices.Graphics");
 			}
 			strcpy(choicesread,"<Roots$Dir>.Choices");
 			strcpy(choiceswrite,"<Roots$Dir>.Choices");

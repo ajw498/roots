@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.105 2001/02/03 13:37:36 AJW Exp $
+	$Id: Windows.c,v 1.106 2001/02/03 15:55:54 AJW Exp $
 
 */
 
@@ -224,13 +224,61 @@ static void Windows_StyleMenuClick(int entry,void *ref)
 	Modules_ChangedStructure();
 }
 
+static void Windows_GraphicsStylesMenu(char *dirname)
+{
+	static int i=0;
+	Desk_filing_dirdata dir;
+	char *name=NULL;
+
+	if (Desk_File_IsDirectory(dirname)) {
+		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY); /*Does this cope with long filenames?*/
+		do {
+			name=Desk_Filing_ReadDir(&dir);
+			if (name) {
+				Desk_bool found;
+
+				if (fileconfigmenu) {
+					/*Check that the style is not already in the menu*/
+					int j=-1;
+					Desk_menu_item *menu;
+
+					menu=Desk_Menu_FirstItem(fileconfigmenu);
+					found=Desk_FALSE;
+					do {
+						j++;
+						if (menu[j].iconflags.data.indirected) {
+							if (strcmp(menu[j].icondata.indirecttext.buffer,name)==0) found=Desk_TRUE;
+						} else {
+							if (strncmp(menu[j].icondata.text,name,Desk_wimp_MAXNAME)==0) found=Desk_TRUE;
+						}
+					}
+					while (!found && !menu[j].menuflags.data.last);
+					if (!found) {
+						fileconfigmenu=Desk_Menu_Extend(fileconfigmenu,name);
+						i++;
+					}
+				} else {
+					fileconfigmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
+					found=Desk_FALSE;
+					i=0;
+				}
+				if (!found) {
+					if (Desk_stricmp(name,Graphics_GetCurrentStyle())) {
+						Desk_Menu_SetFlags(fileconfigmenu,i,0,0);
+					} else {
+						Desk_Menu_SetFlags(fileconfigmenu,i,1,0);
+					}
+				}
+			}
+		} while (name);
+		Desk_Filing_CloseDir(&dir);
+	}
+}
+
 void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 {
 	char buffer[20];
-	Desk_filing_dirdata dir;
-	char *name=NULL;
 	char dirname[256];
-	int i=0;
 
 	Desk_UNUSED(windowdata);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_ADDPERSON);
@@ -284,27 +332,9 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 		fileconfigmenu=NULL;
 	}
 	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
-	if (Desk_File_IsDirectory(dirname)) {
-		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY); /*Does this cope with long filenames?*/
-		do {
-			name=Desk_Filing_ReadDir(&dir);
-			if (name) {
-				if (fileconfigmenu) {
-					fileconfigmenu=Desk_Menu_Extend(fileconfigmenu,name);
-					i++;
-				} else {
-					fileconfigmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
-					i=0;
-				}
-				if (Desk_stricmp(name,Graphics_GetCurrentStyle())) {
-					Desk_Menu_SetFlags(fileconfigmenu,i,0,0);
-				} else {
-					Desk_Menu_SetFlags(fileconfigmenu,i,1,0);
-				}
-			}
-		} while (name);
-		Desk_Filing_CloseDir(&dir);
-	}
+	Windows_GraphicsStylesMenu(dirname);
+	sprintf(dirname,"%s.%s",DEFAULTS,GRAPHICSDIR);
+	Windows_GraphicsStylesMenu(dirname);
 	AJWLib_Menu_Register(fileconfigmenu,Windows_StyleMenuClick,NULL);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_GRAPHICSSTYLE,fileconfigmenu);
 

@@ -98,6 +98,7 @@ Error.ConfigL:Error loading the choices file (%s)
 Error.ConfigS:Error saving the choices file (%s)
 Error.Choices:Error creating choices directory (%s)
 Error.GraphS:Error importing the graphics style (%s)
+Error.NoSty:Cannot find graphics style
 Error.Load:Unable to load file (%s)
 Error.DrawS:Unable to save drawfile (%s)
 Error.Save:Unable to save file (%s)
