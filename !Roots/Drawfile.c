@@ -3,30 +3,80 @@
 	© Alex Waugh 1999
 
 	$Log: Drawfile.c,v $
+	Revision 1.2  2000/01/06 17:17:47  AJW
+	Saves Child lines (but coords currently wrong)
+
 	Revision 1.1  1999/10/24 13:36:22  AJW
 	Initial revision
 
 
 */
 
-void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
+/*	Includes  */
+
+#include "Desk.Window.h"
+#include "Desk.Error2.h"
+#include "Desk.Event.h"
+#include "Desk.EventMsg.h"
+#include "Desk.Handler.h"
+#include "Desk.Hourglass.h"
+#include "Desk.Icon.h"
+#include "Desk.Menu.h"
+#include "Desk.Msgs.h"
+#include "Desk.Drag.h"
+#include "Desk.Resource.h"
+#include "Desk.Screen.h"
+#include "Desk.Template.h"
+#include "Desk.File.h"
+#include "Desk.Filing.h"
+#include "Desk.Sprite.h"
+#include "Desk.Screen.h"
+#include "Desk.GFX.h"
+#include "Desk.Font2.h"
+#include "Desk.ColourTran.h"
+
+#include "AJWLib.Window.h"
+#include "AJWLib.Menu.h"
+#include "AJWLib.Assert.h"
+#include "AJWLib.Msgs.h"
+#include "AJWLib.Icon.h"
+#include "AJWLib.Flex.h"
+#include "AJWLib.Font.h"
+#include "AJWLib.Str.h"
+#include "AJWLib.Draw.h"
+#include "AJWLib.DrawFile.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+#include "Database.h"
+#include "Graphics.h"
+#include "Modules.h"
+#include "GConfig.h"
+#include "Config.h"
+#include "Layout.h"
+
+extern graphics graphicsdata;
+
+/*void Draw_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
 {
 	int i;
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		switch (graphicsdata.person[i].type) {
 			case graphictype_RECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
+				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0or 1<<8 to use ECFs ?,0);
 				AJWLib_Draw_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,&matrix);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
+				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0or 1<<8 to use ECFs ?,0);
 				AJWLib_Draw_PlotRectangleFilled(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,&matrix);
 				break;
 			case graphictype_CHILDLINE:
 				if (!child) break;
-				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
+				A line that is only plotted if there is a child and child==Desk_FALSE ?
 			case graphictype_LINE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
+				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0or 1<<8 to use ECFs ?,0);
 				AJWLib_Draw_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,&matrix);
 				break;
 			case graphictype_TEXTLABEL:
@@ -38,9 +88,9 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 	}
 	for (i=0;i<NUMPERSONFIELDS;i++) {
 		if (graphicsdata.personfields[i].plot) {
-			char fieldtext[256]=""; /*what is max field length?*/
+			char fieldtext[256]=""; what is max field length?
 			switch (i) {
-			/*A centered field?*/
+			A centered field?
 				case personfieldtype_SURNAME:
 					strcpy(fieldtext,Database_GetPersonData(person)->surname);
 					break;
@@ -78,23 +128,23 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 	}
 }
 
-void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
+void Draw_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
 {
 	int i;
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		switch (graphicsdata.marriage[i].type) {
 			case graphictype_RECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
+				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0or 1<<8 to use ECFs ?,0);
 				AJWLib_Draw_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,&matrix);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
+				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0or 1<<8 to use ECFs ?,0);
 				AJWLib_Draw_PlotRectangleFilled(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,&matrix);
 				break;
 			case graphictype_CHILDLINE:
 				if (!childline) break;
 			case graphictype_LINE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
+				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0or 1<<8 to use ECFs ?,0);
 				AJWLib_Draw_PlotLine(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,&matrix);
 				break;
 			case graphictype_TEXTLABEL:
@@ -106,7 +156,7 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 	}
 	for (i=0;i<NUMMARRIAGEFIELDS;i++) {
 		if (graphicsdata.marriagefields[i].plot) {
-			char fieldtext[256]=""; /*what is max field length?*/
+			char fieldtext[256]=""; what is max field length?
 			switch (i) {
 				case marriagefieldtype_PLACE:
 					strcpy(fieldtext,Database_GetMarriageData(marriage)->place);
@@ -123,45 +173,80 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 
 	}
 }
-
-void Graphics_PlotChildren(int leftx,int rightx,int y)
+void Draw_CreateRectanglePath(int x,int y,int width,int height,int *block)
 {
-	Desk_ColourTrans_SetGCOL(graphicsdata.siblinglinecolour,0/*or 1<<8 to use ECFs ?*/,0);
-	AJWLib_Draw_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,&matrix);
+	block[0]=2;
+	block[1]=x;
+	block[2]=y;
+	block[3]=8;
+	block[4]=x+width;
+	block[5]=y;
+	block[6]=8;
+	block[7]=x+width;
+	block[8]=y+height;
+	block[9]=8;
+	block[10]=x;
+	block[11]=y+height;
+	block[12]=5;
+	block[13]=0;
+	block[14]=1;
 }
 
-static Desk_bool Graphics_Redraw(Desk_event_pollblock *block,windowdata *windowdata)
+*/
+void Draw_PlotLine(drawfile_diagram **drawfile,int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour)
 {
-	Desk_window_redrawblock blk;
-	Desk_bool more=Desk_FALSE;
-	blk.window=block->data.openblock.window;
-	Desk_Wimp_RedrawWindow(&blk,&more);
-	while (more) {
-		int i=0;
-#if DEBUG
-Desk_ColourTrans_SetGCOL(0x00000000,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Desk_ColourTrans_SetGCOL(0xFF000000,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Desk_ColourTrans_SetGCOL(0x00FF0000,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-#endif
-		for (i=0;i<windowdata->layout->numchildren;i++) {
-			Graphics_PlotChildren(blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].leftx,blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].rightx,blk.rect.max.y-blk.scroll.y+windowdata->layout->children[i].y);
-		}
-		for (i=windowdata->layout->nummarriages-1;i>=0;i--) {
-			Graphics_PlotMarriage(blk.rect.min.x-blk.scroll.x+windowdata->layout->marriage[i].x,blk.rect.max.y-blk.scroll.y+windowdata->layout->marriage[i].y,windowdata->layout->marriage[i].marriage,windowdata->layout->marriage[i].childline,windowdata->layout->marriage[i].selected);
+	int *object;
+	const int sizeofpath=68;
+	int currentsize=AJWLib_Flex_Size((flex_ptr)drawfile);
+	AJWLib_Flex_Extend((flex_ptr)drawfile,currentsize+sizeofpath);
+	object=(int *)((char*)(*drawfile)+currentsize);
+	object[0]=2; /*Path object*/
+	object[1]=sizeofpath;
+	object[2]=minx; /*Boundingbox*/
+	object[2]=miny;
+	object[2]=maxx;
+	object[2]=maxy;
+	object[6]=-1; /*Fill colour*/
+	object[7]=colour;
+	object[8]=linethickness;
+	object[9]=0; /*? Path style*/
+	object[10]=2; /*Move*/
+	object[11]=minx;
+	object[12]=miny;
+	object[13]=8; /*Line*/
+	object[14]=maxx;
+	object[15]=maxy;
+	object[16]=0; /*End path*/
+}
+
+void Draw_PlotChildren(drawfile_diagram **drawfile,int leftx,int rightx,int y)
+{
+	Draw_PlotLine(drawfile,leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
+}
+
+void Draw_Save(char *filename,layout *layout)
+{
+	int i=0;
+	drawfile_diagram *drawfile;
+	Desk_SWI(0,0,0x107);
+	AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
+	strcpy(drawfile->tag,"Draw");
+	drawfile->major_version=201;
+	drawfile->minor_version=0;
+	strcpy(drawfile->source,"FT          "); /*Padded with spaces*/
+	drawfile->bbox.min.x=-1000;
+	drawfile->bbox.min.y=-1000;
+	drawfile->bbox.max.x=1000;
+	drawfile->bbox.max.y=1000;
+	for (i=0;i<layout->numchildren;i++) {
+		Draw_PlotChildren(&drawfile,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
+	}
+/*		for (i=layout->nummarriages-1;i>=0;i--) {
+			Draw_PlotMarriage(drawfile,Layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline);
 		}
 		for (i=windowdata->layout->numpeople-1;i>=0;i--) {
-			Graphics_PlotPerson(windowdata->layout->person[i].person,blk.rect.min.x-blk.scroll.x+windowdata->layout->person[i].x,blk.rect.max.y-blk.scroll.y+windowdata->layout->person[i].y,windowdata->layout->person[i].child,windowdata->layout->person[i].selected);
+			Graphics_PlotPerson(drawfile,layout->person[i].person,layout->person[i].x,layout->person[i].y,layout->person[i].child);
 		}
-		Desk_Wimp_GetRectangle(&blk,&more);
-		/*Use clip rectangle??*/
-	}
-	return Desk_TRUE;
+*/	Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
+	AJWLib_Flex_Free((flex_ptr)&drawfile);
 }
