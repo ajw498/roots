@@ -2,38 +2,9 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Log: Drawfile.c,v $
-	Revision 1.9  2000/01/14 13:46:40  AJW
-	Changed Graphics to Windows.h
-
-	Revision 1.8  2000/01/11 13:45:48  AJW
-	Added some consts
-
-	Revision 1.7  2000/01/11 13:07:45  AJW
-	Added options and centering on page
-
-	Revision 1.6  2000/01/09 17:50:08  AJW
-	Added text functions
-
-	Revision 1.5  2000/01/08 20:00:38  AJW
-	Removed custom PlotPerson etc.
-
-	Revision 1.4  2000/01/08 16:09:05  AJW
-	Changed to Drawfile
-
-	Revision 1.3  2000/01/07 17:52:27  AJW
-	Got Lines and boxes outputting to a drawfile correctly
-
-	Revision 1.2  2000/01/06 17:17:47  AJW
-	Saves Child lines (but coords currently wrong)
-
-	Revision 1.1  1999/10/24 13:36:22  AJW
-	Initial revision
-
+	$Id: Drawfile.c,v 1.10 2000/02/25 16:59:22 uid1 Exp $
 
 */
-
-/*	Includes  */
 
 #include "Desk.Window.h"
 #include "Desk.Error2.h"
@@ -123,17 +94,17 @@ void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int h
 	object[23]=0; /*End path*/
 }
 
-void Drawfile_PlotRectangle(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
+void Drawfile_PlotRectangle(const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
 {
-	Drawfile_PlotRectangle2(x,y,width,height,linethickness,colour,Desk_FALSE);
+	Drawfile_PlotRectangle2(originx+x,originy+y,width,height,linethickness,colour,Desk_FALSE);
 }
 
-void Drawfile_PlotRectangleFilled(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
+void Drawfile_PlotRectangleFilled(const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
 {
-	Drawfile_PlotRectangle2(x,y,width,height,linethickness,colour,Desk_TRUE);
+	Drawfile_PlotRectangle2(originx+x,originy+y,width,height,linethickness,colour,Desk_TRUE);
 }
 
-void Drawfile_PlotLine(const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour)
+void Drawfile_PlotLine(const int originx,const int originy,const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour)
 {
 	int *object;
 	const int sizeofpath=68;
@@ -142,20 +113,20 @@ void Drawfile_PlotLine(const int minx,const int miny,const int maxx,const int ma
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=2; /*Path object*/
 	object[1]=sizeofpath;
-	object[2]=minx<<8; /*Boundingbox*/
-	object[3]=miny<<8;
-	object[4]=maxx<<8;
-	object[5]=maxy<<8;
+	object[2]=originx+minx<<8; /*Boundingbox*/
+	object[3]=originy+miny<<8;
+	object[4]=originx+maxx<<8;
+	object[5]=originy+maxy<<8;
 	object[6]=-1; /*Fill colour*/
 	object[7]=colour;
 	object[8]=linethickness;
 	object[9]=0; /*? Path style*/
 	object[10]=2; /*Move*/
-	object[11]=minx<<8;
-	object[12]=miny<<8;
+	object[11]=originx+minx<<8;
+	object[12]=originy+miny<<8;
 	object[13]=8; /*Line*/
-	object[14]=maxx<<8;
-	object[15]=maxy<<8;
+	object[14]=originx+maxx<<8;
+	object[15]=originy+maxy<<8;
 	object[16]=0; /*End path*/
 }
 
@@ -242,7 +213,7 @@ void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 	object[21]=0; /*Bytes in undo buffer*/
 }
 
-void Drawfile_PlotText(const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
+void Drawfile_PlotText(const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
 {
 	int fontnumber=Drawfile_AddFont((char *)font);
 	int *object;
@@ -256,17 +227,17 @@ void Drawfile_PlotText(const int x,const int y,const int handle,const char *font
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=1; /*Text object*/
 	object[1]=sizeofpath;
-	object[2]=x<<8; /*Boundingbox*/
-	object[3]=y<<8;
-	object[4]=(x+bbox->x)<<8;
-	object[5]=(y+bbox->y)<<8;
+	object[2]=originx+x<<8; /*Boundingbox*/
+	object[3]=originy+y<<8;
+	object[4]=(originx+x+bbox->x)<<8;
+	object[5]=(originy+y+bbox->y)<<8;
 	object[6]=fgcolour; /*unsigned???*/
 	object[7]=bgcolour;
 	object[8]=fontnumber;
 	object[9]=size*640; /*X size*/
 	object[10]=size*640; /*Y size*/
-	object[11]=x<<8;
-	object[12]=y<<8;
+	object[11]=originx+x<<8;
+	object[12]=originy+y<<8;
 	strcpy(((char *)object)+52,text);
 }
 
