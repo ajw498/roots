@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Layout.c,v $
+	Revision 1.4  1999/09/29 15:56:32  AJW
+	Added Layout_AddMarriage
+
 	Revision 1.3  1999/09/29 15:51:40  AJW
 	Added Layout_AddPerson
 
@@ -100,6 +103,17 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 		layout->person[layout->numpeople].child=(Database_GetMother(person)==none ? FALSE : TRUE);
 		layout->person[layout->numpeople].selected=FALSE;
 		layout->numpeople++;
+}
+
+void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
+{
+		Flex_Extend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(layout->nummarriages+1)); /*errors*/
+		layout->marriage[layout->nummarriages].x=x;
+		layout->marriage[layout->nummarriages].y=y;
+		layout->marriage[layout->nummarriages].marriage=marriage;
+		layout->marriage[layout->nummarriages].childline=FALSE;
+		layout->marriage[layout->nummarriages].selected=FALSE;
+		layout->nummarriages++;
 }
 
 BOOL Layout_Selected(layout *layout,elementptr person)
