@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.18 2000/02/26 21:17:07 uid1 Exp $
+	$Id: Graphics.c,v 1.19 2000/02/27 00:47:53 uid1 Exp $
 
 */
 
@@ -490,7 +490,7 @@ void Graphics_Load(FILE *file)
 	AJWLib_File_fread(&size,sizeof(int),1,file);
 	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
 	sprintf(filename,"%s.%s",GRAPHICSDIR,currentstyle);
-	if (!Config_LoadGraphicsStyle() && Desk_File_IsDirectory(filename)) {
+	if (Desk_File_IsDirectory(filename)) {
 		AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
 		AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
 		Graphics_LoadStyle(currentstyle);

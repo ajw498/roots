@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.12 2000/02/21 23:58:36 uid1 Exp $
+	$Id: Main.c,v 1.13 2000/02/27 00:47:51 uid1 Exp $
 	
 */
 
@@ -40,6 +40,7 @@
 #include "Modules.h"
 #include "Windows.h"
 #include "File.h"
+#include "config.h"
 
 
 #define VERSION "0.50 (27-Oct-99)"
@@ -82,6 +83,9 @@ Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 void IconBarMenuClick(int entry, void *r)
 {
 	switch (entry) {
+		case iconbarmenu_CHOICES:
+			Config_Open();
+			break;
 		case iconbarmenu_QUIT:
 			Desk_Event_CloseDown();
 			break;

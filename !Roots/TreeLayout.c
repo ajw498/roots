@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.23 2000/02/26 21:17:09 uid1 Exp $
+	$Id: TreeLayout.c,v 1.24 2000/02/27 00:47:55 uid1 Exp $
 
 */
 
@@ -25,6 +25,7 @@
 #include "Windows.h"
 #include "Layout.h"
 #include "File.h"
+#include "Config.h"
 
 
 #define LARGENUMBERINCREMENT 10000
@@ -93,6 +94,7 @@ void Layout_AddTitle(layout *layout)
 {
 	Desk_wimp_rect bbox;
 	AJWLib_Assert(layout!=NULL);
+	if (!Config_Title()) return;
 	if (layout->title.x==INFINITY && layout->title.y==INFINITY) return;
 	bbox=Layout_FindExtent(layout,Desk_FALSE);
 	layout->title.x=(bbox.max.x+bbox.min.x)/2;
@@ -603,8 +605,13 @@ layout *Layout_LayoutNormal(void)
 	layout->numpeople=0;
 	layout->nummarriages=0;
 	layout->numchildren=0;
-	layout->title.x=0;
-	layout->title.y=0;
+	if (Config_Title()) {
+		layout->title.x=0;
+		layout->title.y=0;
+	} else {
+		layout->title.x=INFINITY;
+		layout->title.y=INFINITY;
+	}
 	person=Database_GetLinked();
 	while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
 	firstplot=2;
