@@ -11,6 +11,7 @@ typedef int elementptr;
 typedef struct personlayout {
 	int x;
 	int y;
+	int generation;
 	elementptr person;
 } personlayout;
 
@@ -40,7 +41,6 @@ typedef struct layout {
 	childlinelayout *children;
 	int numchildren;
 } layout;
-
 
 layout *Layout_LayoutNormal(void);
 layout *Layout_LayoutDescendents(elementptr person, int generations);
