@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.35  2000/01/17 16:57:58  AJW
+	Added Windows_Load
+
 	Revision 1.34  2000/01/14 13:49:00  AJW
 	Changed Graphics.h to Windows.h etc
 
@@ -948,6 +951,19 @@ int Windows_GetSize(void)
 	return size;
 }
 
+void Windows_Load(FILE *file)
+{
+	int i;
+	savedata data;
+	for (i=0;i<MAXWINDOWS;i++) AJWLib_Assert(windows[i].handle==0);
+	while (fread(&data,sizeof(savedata),1,file)) {
+		layout *layout=NULL;
+		AJWLib_Assert(data.size>=sizeof(savedata));
+		if (data.size>sizeof(savedata)) layout=Layout_Load(file);
+		Windows_OpenWindow(data.type,data.person,data.generations,layout);
+	}
+}
+
 void Windows_Save(FILE *file)
 {
 	int i;
@@ -959,7 +975,7 @@ void Windows_Save(FILE *file)
 			data.generations=windows[i].generations;
 			data.size=sizeof(savedata)+Layout_GetSize(windows[i].layout);
 			AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
-			Layout_Save(windows[i].layout,file);
+			Layout_Save(windows[i].layout,file); /*Don't save if second or more normal or closerel layouts*/
 		}
 	}
 }
@@ -997,6 +1013,74 @@ Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata
 	return Desk_TRUE;
 }
 
+void Windows_OpenWindow(wintype type,elementptr person,int generations,layout *uselayout)
+{
+	int newwindow;
+	char str[256]="";
+	layout *layoutnormal=NULL;
+	int i;
+	if (numwindows>MAXWINDOWS) {
+		Desk_Error2_HandleText("Too many windows");
+		return;
+	}
+	for (newwindow=0;windows[newwindow].handle!=0 && newwindow<MAXWINDOWS;newwindow++);
+	if (newwindow==MAXWINDOWS) {
+		Desk_Error2_HandleText("Too many windows");
+		return;
+	}
+	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle!=0 && windows[i].type==wintype_NORMAL) layoutnormal=windows[i].layout;
+	windows[newwindow].handle=Desk_Window_CreateAndShow("Main",Desk_template_TITLEMIN,Desk_open_CENTERED);
+	windows[newwindow].type=type;
+	windows[newwindow].person=person;
+	windows[newwindow].generations=generations;
+	switch (type) {
+		case wintype_NORMAL:
+			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
+#if DEBUG
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
+			windows[newwindow].layout=debuglayout;
+#endif
+			if (uselayout==NULL) {
+				if (layoutnormal==NULL) windows[newwindow].layout=Layout_LayoutNormal(); else windows[newwindow].layout=layoutnormal;
+			} else {
+				windows[newwindow].layout=uselayout;
+			}
+			break;
+		case wintype_DESCENDENTS:
+			Desk_Msgs_Lookup("Win.Desc:",str,255);
+			strcat(str," ");
+			strcat(str,Database_GetName(person));
+			Desk_Window_SetTitle(windows[newwindow].handle,str);
+			windows[newwindow].layout=uselayout==NULL ? Layout_LayoutDescendents(person,generations) : uselayout;
+			break;
+		case wintype_ANCESTORS:
+			Desk_Msgs_Lookup("Win.Anc:",str,255);
+			strcat(str," ");
+			strcat(str,Database_GetName(person));
+			Desk_Window_SetTitle(windows[newwindow].handle,str);
+#if DEBUG
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
+			windows[newwindow].layout=debuglayout;
+#endif
+			windows[newwindow].layout=uselayout==NULL ? Layout_LayoutAncestors(person,generations) : uselayout;
+			break;
+		case wintype_UNLINKED:
+			Desk_Msgs_Lookup("Win.Unlkd:Unlinked",str,255);
+			Desk_Window_SetTitle(windows[newwindow].handle,str);
+			windows[newwindow].layout=uselayout==NULL ? Layout_LayoutUnlinked() : uselayout;
+			break;
+		default:
+			windows[newwindow].layout=NULL;
+			AJWLib_Assert(0);
+	}
+	Windows_ResizeWindow(&windows[newwindow]);
+	/*Register handlers for this window*/
+	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Windows_MouseClick,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
+}
+
+#if 0
 void Windows_OpenWindow(wintype type,elementptr person,int generations)
 {
 	int newwindow;
@@ -1058,6 +1142,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations)
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
 }
+#endif
 
 void Windows_MainMenuClick(int entry,void *ref)
 {
@@ -1126,7 +1211,7 @@ Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 			wintype=wintype_CLOSERELATIVES;
 			break;
 	}
-	Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)));
+	Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),NULL);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(newviewwin);
 	return Desk_TRUE;
 }

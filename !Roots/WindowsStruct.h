@@ -28,13 +28,15 @@ void Windows_Edit(void);
 
 void Windows_ChangedLayout(void);
 
-void Windows_OpenWindow(wintype type,elementptr person,int generations);
+void Windows_OpenWindow(wintype type,elementptr person,int generations,layout *layout);
 
 void Windows_Relayout(void);
 
 int Windows_GetSize(void);
 
 void Windows_Save(FILE *file);
+
+void Windows_Load(FILE *file);
 
 
 #endif
