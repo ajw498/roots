@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.7 2001/07/02 20:04:36 AJW Exp $
+	$Id: EditGraphics.c,v 1.8 2001/07/02 20:47:31 AJW Exp $
 
 */
 
@@ -1273,6 +1273,8 @@ static Desk_bool EditGraphics_SetUpMenu(Desk_event_pollblock *block,void *ref)
 	AJWLib_Menu_Register(deletemenu,EditGraphics_StyleMenuClick,(void *)1);
 	Desk_Menu_AddSubMenu(editgsmenu,ibarmenu_EDIT,editmenu);
 	Desk_Menu_AddSubMenu(editgsmenu,ibarmenu_DELETE,deletemenu);
+	Desk_Menu_SetFlags(editgsmenu,ibarmenu_EDIT,0,editmenu==NULL);
+	Desk_Menu_SetFlags(editgsmenu,ibarmenu_DELETE,0,deletemenu==NULL);
 	Desk_Wimp_CreateSubMenu(editgsmenu,block->data.message.data.menuwarn.openpos.x,block->data.message.data.menuwarn.openpos.y);
 	return Desk_TRUE;
 }
@@ -1339,7 +1341,7 @@ static Desk_bool EditGraphics_SaveStyle(Desk_event_pollblock *block,void *ref)
 
 	sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,Desk_Icon_GetTextPtr(mainwin,mainwin_NAME));
 	file=AJWLib_File_fopen(filename,"w");
-	fprintf(file,"-- Roots style file\n-- Saved by the Roots style editor\n\n--*M");
+	fprintf(file,"-- Roots style file\n-- Saved by the Roots style editor\n\n--If you edit this by hand, then your changes may be lost when it is next loaded into the style editor\n\n--*M");
 	fprintf(file,"A%d",style.misc.gapabove);
 	fprintf(file,"B%d",style.misc.gapbelow);
 	fprintf(file,"H%d",style.misc.gapbetween);
