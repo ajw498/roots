@@ -1,5 +1,5 @@
 Remove <Obey$Dir>.roots/zip
 Remove <Obey$Dir>.manual/zip
 Dir <Obey$Dir>
-zip -r -9 <Obey$Dir>.roots/zip !Roots HTMLManual Images Example -x */o/* */c/* */h/* *CVS* CreateZip *zip* *stderr *Makefile *Debug* *Clean *ToDo *include*
+zip -r -9 <Obey$Dir>.roots/zip !Roots HTMLManual Images Example -x *.o.* *.c.* *.h.* *CVS* CreateZip *zip* *stderr *Makefile *Debug* *Clean *ToDo *include*
 zip -r -9 <Obey$Dir>.manual/zip Manual
