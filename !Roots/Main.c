@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.8  2000/01/14 19:43:04  AJW
+	Enabled file loading
+
 	Revision 1.7  2000/01/14 13:45:57  AJW
 	Renamed Graphics.h to Windows.h
 
@@ -61,7 +64,7 @@
 
 #include "Modules.h"
 #include "Windows.h"
-#include "Layout.h"
+#include "File.h"
 
 /*	Macros  */
 
@@ -86,7 +89,7 @@ extern Desk_bool halt;
 
 Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 {
-/*	Database_Load(block->data.message.data.dataload.filename);*/
+	File_LoadFile(block->data.message.data.dataload.filename);
 	return Desk_TRUE;
 }
 
