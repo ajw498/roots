@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.3 2000/06/17 18:45:36 AJW Exp $
+	$Id: Print.c,v 1.4 2000/06/17 21:25:49 AJW Exp $
 
 */
 
@@ -25,6 +25,7 @@
 #include "Desk.Filing.h"
 #include "Desk.Sprite.h"
 #include "Desk.Screen.h"
+#include "Desk.Keycodes.h"
 #include "Desk.GFX.h"
 #include "Desk.Save.h"
 #include "Desk.Str.h"
@@ -103,10 +104,6 @@ typedef struct printdata {
 static Desk_window_handle printwin;
 static printdata data;
 
-static void Print_PlotText(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
-{
-}
-
 static Desk_bool Print_CalcValues(Desk_event_pollblock *block,void *ref)
 {
 	int total;
@@ -119,6 +116,8 @@ static Desk_bool Print_CalcValues(Desk_event_pollblock *block,void *ref)
 	if (data.copies<1) data.copies=1;
 	data.overlap=Graphics_ConvertToOS(Desk_Icon_GetTextPtr(printwin,print_OVERLAP));
 	Desk_Font_ConvertToOS(data.printablearea.max.x-data.printablearea.min.x,data.printablearea.max.y-data.printablearea.min.y,&data.pagesizeos.x,&data.pagesizeos.y);
+	data.pagesizeos.x-=20; /*So edges of output don't get clipped*/
+	data.pagesizeos.y-=20;
 	if (!data.portrait) SWAP(data.pagesizeos.x,data.pagesizeos.y);
 	data.pages.x=0;
 	total=((data.treeextent.max.x-data.treeextent.min.x)*data.scale)/100;
@@ -167,16 +166,14 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 		Drawfile_Print(ref->layout);
 		for (pagey=data.pages.y-1;pagey>=0;pagey--) {
 			for (pagex=0;pagex<data.pages.x;pagex++) {
-				rect.min.x=0; /*Minus a point as in the PRMS?*/
-				rect.min.y=0;
-				rect.max.x=rect.min.x+ref->pagesizeos.x;
-				rect.max.y=rect.min.y+ref->pagesizeos.y;
+				rect.min.x=-10; /*So edges of output don't get clipped*/
+				rect.min.y=-10;
+				rect.max.x=rect.min.x+ref->pagesizeos.x+10;
+				rect.max.y=rect.min.y+ref->pagesizeos.y+10;
 				Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
 				Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
 				while (more) {
-/*					Desk_ColourTrans_SetGCOL(0x0,0,0);
-					Desk_GFX_Rectangle(0,0,100,100);
-*/					Drawfile_Redraw(ref->scale,ref->offset.x/*-(ref->treeextent.min.x*ref->scale)/100*/-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y/*-(ref->treeextent.min.y*ref->scale)/100*/-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect);
+					Drawfile_Redraw(ref->scale,ref->offset.x-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect);
 					Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
 				}
 			}
@@ -194,59 +191,6 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 	return Desk_TRUE;
 }
 
-/*static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
-{
-	Desk_wimp_point position;
-	Desk_wimp_rect rect,cliprect;
-	Desk_print_transformation matrix;
-	int more,rectid,pagex,pagey;
-	printdata *ref=printblk->reference;
-
-	if (ref->portrait) {
-		matrix.xx=1<<16;
-		matrix.xy=0;
-		matrix.yy=1<<16;
-		matrix.yx=0;
-	} else {
-		matrix.xx=0;
-		matrix.xy=1<<16;
-		matrix.yy=0;
-		matrix.yx=1<<16;
-	}
-	printing=Desk_TRUE;
-	Desk_Error2_Try {
-		Desk_printer_info infoblk;
-		Desk_PDriver_Info(&infoblk);
-		if (infoblk.features.data.declarefont) Graphics_DeclareFonts();
-		for (pagey=data.pages.y-1;pagey>=0;pagey--) {
-			for (pagex=0;pagex<data.pages.x;pagex++) {
-				rect.min.x=0; Minus a point as in the PRMS?
-				rect.min.y=0;
-				rect.max.x=rect.min.x+ref->pagesizeos.x;
-				rect.max.y=rect.min.y+ref->pagesizeos.y;
-				position.x=ref->printablearea.min.x;
-				position.y=ref->printablearea.min.y;
-				Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
-				Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
-				while (more) {
-					Desk_ColourTrans_SetGCOL(0x0,0,0);
-					Desk_GFX_Rectangle(0,0,100,100);
-					Graphics_Redraw(ref->layout,ref->scale,ref->offset.x-(ref->treeextent.min.x*ref->scale)/100-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-(ref->treeextent.min.y*ref->scale)/100-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect,Desk_FALSE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText Print_PlotText);
-					Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
-				}
-			}
-		}
-	} Desk_Error2_Catch {
-		printing=Desk_FALSE;
-		Desk_PDriver_AbortJob(printblk->job);
-		Desk_File_Close(printblk->job);
-		AJWLib_Error2_ReportMsgs("Error.Print:%s");
-		Desk_Error2_ReThrow();
-	} Desk_Error2_EndCatch
-	printing=Desk_FALSE;
-	return Desk_TRUE;
-}
-*/
 static void Print_Result(Desk_print_block *printblk,Desk_print_result result)
 {
 	/**/
@@ -254,6 +198,7 @@ static void Print_Result(Desk_print_block *printblk,Desk_print_result result)
 
 static Desk_bool Print_Ok(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	Print_CalcValues(NULL,NULL);
 	Desk_Print_StartPrint(Print_StartPrinting,NULL,Print_Result,&data,0,0,NULL,"Roots file");
@@ -281,13 +226,44 @@ void Print_CloseWindow(void)
 	Desk_Window_Hide(printwin);
 }
 
+static Desk_bool Print_KeyPressed(Desk_event_pollblock *block,void *ref)
+{
+	Desk_caret_block caret;
+	switch (block->data.key.code) {
+		case Desk_keycode_RETURN:
+			block->data.mouse.button.value=Desk_button_SELECT;
+			Desk_Wimp_GetCaretPosition(&caret);
+			switch (caret.icon) {
+				case print_COPIES:
+					Desk_Icon_SetCaret(printwin,print_SCALE);
+					break;
+				case print_SCALE:
+					Desk_Icon_SetCaret(printwin,print_OVERLAP);
+					break;
+				case print_OVERLAP:
+					Print_Ok(block,ref);
+					return Desk_TRUE;
+					break;
+			}
+			break;
+		case Desk_keycode_ESCAPE:
+			Print_CloseWindow();
+			return Desk_TRUE;
+			break;
+		default:
+			Print_CalcValues(block,ref);
+	}
+	return Desk_FALSE;
+}
+
 void Print_Init(void)
 {
 	printwin=Desk_Window_Create("Print",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,printwin,Desk_event_ANY,Print_CalcValues,NULL);
-	Desk_Event_Claim(Desk_event_KEY,printwin,Desk_event_ANY,Print_CalcValues,NULL);
+	Desk_Event_Claim(Desk_event_KEY,printwin,Desk_event_ANY,Print_KeyPressed,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,printwin,print_OK,Print_Ok,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,printwin,print_CANCEL,Windows_Cancel,NULL);
+	Desk_Icon_Select(printwin,print_CENTRE);
 	Desk_Icon_SetRadios(printwin,print_UPRIGHT,print_SIDEWAYS,print_UPRIGHT);
 	AJWLib_Icon_RegisterCheckAdjust(printwin,print_UPRIGHT);
 	AJWLib_Icon_RegisterCheckAdjust(printwin,print_SIDEWAYS);
