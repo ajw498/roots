@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.81 2000/09/18 15:58:21 AJW Exp $
+	$Id: Windows.c,v 1.82 2000/09/21 10:08:14 AJW Exp $
 
 */
 
@@ -137,10 +137,9 @@
 #define unsaved_CANCEL 3
 #define unsaved_SAVE 0
 
+#define SWI_OS_SpriteOp 0x2E
 #define SWI_Wimp_SpriteOp 0x400E9
 #define SWI_Wimp_DragBox 0x400D0
-
-#define Windows_SetPointerShape(name,num) Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_Wimp_SpriteOp,36,NULL,name,num | 0x20,num==1 ? 0 : 8,num==1 ? 0 : 8,0,NULL))
 
 
 typedef struct windowdata {
@@ -206,8 +205,19 @@ static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconf
 static elementptr newviewperson;
 static mouseclickdata mousedata;
 static savedata nextloadwindowdata;
+static Desk_sprite_area ptrsprites=NULL;
 
 Desk_window_handle fieldconfigwin;
+
+static void Windows_SetPointerShape(char *name,int num)
+/* Set the pointer shape*/
+{
+	if (num==1) {
+		Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_Wimp_SpriteOp,36,NULL,name,num | 0x20,0,0,0,NULL));
+	} else {
+		Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_OS_SpriteOp,36+256,ptrsprites,name,num | 0x20,8,8,0,NULL));
+	}
+}
 
 static void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 {
@@ -1766,5 +1776,6 @@ void Windows_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_KeyHandler(fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
+	ptrsprites=Desk_Sprite_LoadFile(ROOTSDIR".Sprites");
 }
 

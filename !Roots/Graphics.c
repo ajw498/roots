@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.41 2000/09/18 15:58:10 AJW Exp $
+	$Id: Graphics.c,v 1.42 2000/09/21 10:08:05 AJW Exp $
 
 */
 
@@ -214,12 +214,14 @@ static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRe
 static plottextfn Graphics_PlotText=NULL;
 
 static unsigned int Graphics_RGBToPalette(char *str)
+/* Convert RRGGBB hex colour to a palette format 0xBBGGRR00*/
 {
 	unsigned int colour=(unsigned int)strtol(str,NULL,16);
 	return (((colour & 0x00FF0000)>>8) | ((colour & 0x0000FF00)<<8) | ((colour & 0x000000FF)<<24));
 }
 
 static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
+/* Read a set of values into the dimensions block*/
 {
 	if (numvalues!=2) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
 	if (!strcmp(values[0],PERSONWIDTH)) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
@@ -235,6 +237,7 @@ static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int line
 }
 
 static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
+/* Read a set of values into the title block*/
 {
 	if (!strcmp(values[0],FILETITLE)) {
 		if (numvalues!=6) {
@@ -250,6 +253,7 @@ static void Graphics_StoreTitleDetails(char *values[],int numvalues,int linenum)
 }
 
 static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
+/* Read a set of values into the person block*/
 {
 	graphictype graphictype=graphictype_INVALID;
 	sextype sex=sex_ANY;
@@ -374,6 +378,7 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 }
 
 static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
+/* Read a set of values into the marriage block*/
 {
 	graphictype graphictype=graphictype_INVALID;
 	if (!strcmp(values[0],LINE)) graphictype=graphictype_LINE;

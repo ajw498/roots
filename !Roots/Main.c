@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.26 2000/09/18 15:58:15 AJW Exp $
+	$Id: Main.c,v 1.27 2000/09/21 10:08:11 AJW Exp $
 	
 */
 
@@ -45,8 +45,6 @@
 #include "File.h"
 #include "config.h"
 
-
-#define DIRPREFIX "Roots"
 
 #define quiticon_DISCARD 0
 #define quiticon_CANCEL 2
