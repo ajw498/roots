@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.8  2000/01/14 19:42:48  AJW
+	Added File_LoadFile
+
 	Revision 1.7  2000/01/14 13:50:31  AJW
 	Renamed Graphics.h to Windows.h etc
 
@@ -91,6 +94,35 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	AJWLib_File_fclose(file);
 	/*Error handling*/
 	return Desk_TRUE;
+}
+
+void File_LoadFile(char *filename)
+{
+	FILE *file;
+	char fileid[5];
+	int fileversion;
+	strcpy(newfilename,filename);
+	file=AJWLib_File_fopen(filename,"r");
+	AJWLib_File_fread(fileid,1,4,file);
+	AJWLib_File_fread(&fileversion,4,1,file);
+	fileid[4]='\0';
+	if (strcmp(fileid,FILEID)) {
+		AJWLib_File_fclose(file);
+		Desk_Error2_HandleText("This is not a Roots file"); /*msgs*/
+	}
+	if (fileversion>FILEVERSION) {
+		if (fileversion-99>FILEVERSION) {
+			AJWLib_File_fclose(file);
+			Desk_Error_Report(1,"Hello ,%d",fileversion); /*Give a choice? msgs*/
+			Desk_Error2_HandleText("This was created in a later version of Roots and I cannot handle it"); /*msgs*/
+		}
+		Desk_Error_Report(1,"This was produced by a later version of Roots, but I will try to load it anyway"); /*Give a choice? msgs*/
+	}
+	Database_Load(file);
+/*	Graphics_Load(file);*/
+/*	Windows_Load(file);*/
+	AJWLib_File_fclose(file);
+	/*Error handling*/
 }
 
 void File_NewFile(void)
