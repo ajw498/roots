@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.37 2000/09/13 21:15:37 AJW Exp $
+	$Id: Database.c,v 1.38 2000/09/14 13:50:06 AJW Exp $
 
 */
 
@@ -129,10 +129,6 @@ void Database_SetPrincipal(elementptr marriage,elementptr person) {
 
 void Database_SetSpouse(elementptr marriage,elementptr person) {
 	database[marriage].element.marriage.spouse=person;
-}
-
-void Database_SetChild(elementptr marriage,elementptr person) {
-/*	database[marriage].element.marriage.leftchild=person;*/
 }
 
 void Database_SetNextMarriage(elementptr marriage,elementptr nextmarriage) {
@@ -555,14 +551,14 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 	marriage2=marriage;
 	while (marriage2) {
 		if ((database[marriage2].element.marriage.spouse==linked && database[marriage2].element.marriage.principal==unlinked) || (database[marriage2].element.marriage.spouse==unlinked && database[marriage2].element.marriage.principal==linked)) {
-			AJWLib_Error2_HandleMsgs("Error.Married:These two people are already married to each other.");
+			AJWLib_Error2_HandleMsgs("Error.Marrd:");
 		}
 		marriage2=database[marriage2].element.marriage.previous;
 	}
 	marriage2=marriage;
 	while (marriage2) {
 		if ((database[marriage2].element.marriage.spouse==linked && database[marriage2].element.marriage.principal==unlinked) || (database[marriage2].element.marriage.spouse==unlinked && database[marriage2].element.marriage.principal==linked)) {
-			AJWLib_Error2_HandleMsgs("Error.Married:These two people are already married to each other.");
+			AJWLib_Error2_HandleMsgs("Error.Marrd:");
 		}
 		marriage2=database[marriage2].element.marriage.next;
 	}

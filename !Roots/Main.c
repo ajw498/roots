@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.24 2000/09/13 21:15:47 AJW Exp $
+	$Id: Main.c,v 1.25 2000/09/14 13:50:13 AJW Exp $
 	
 */
 
@@ -53,7 +53,8 @@
 
 #define iconbarmenu_INFO 0
 #define iconbarmenu_CHOICES 1
-#define iconbarmenu_QUIT 2
+#define iconbarmenu_GRAPHICSSTYLES 2
+#define iconbarmenu_QUIT 3
 
 
 static Desk_window_handle infowin,quitwin;
@@ -70,7 +71,7 @@ static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 	if (Database_GetSize()) {
 		Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
 	} else {
-		File_LoadGEDCOM(block->data.message.data.dataload.filename);
+		File_LoadFile(block->data.message.data.dataload.filename);
 	}
 	return Desk_TRUE;
 }
@@ -86,7 +87,7 @@ static Desk_bool ReceiveDataOpen(Desk_event_pollblock *block, void *ref)
 	block->data.message.header.action=Desk_message_DATAOPEN;
 	block->data.message.header.yourref=block->data.message.header.myref;
 	Desk_Wimp_SendMessage(Desk_event_USERMESSAGEACK,&(block->data.message),block->data.message.header.sender,0);
-	File_LoadFile(block->data.message.data.dataopen.filename);
+	File_LoadGEDCOM(block->data.message.data.dataopen.filename);
 	return Desk_TRUE;
 }
 
@@ -105,10 +106,16 @@ static Desk_bool IconBarClick(Desk_event_pollblock *block, void *ref)
 
 static void IconBarMenuClick(int entry, void *ref)
 {
+	char cmd[256];
+
 	Desk_UNUSED(ref);
 	switch (entry) {
 		case iconbarmenu_CHOICES:
 			Config_Open();
+			break;
+		case iconbarmenu_GRAPHICSSTYLES:
+			sprintf(cmd,"Filer_OpenDir %s.%s",choiceswrite,GRAPHICSDIR);
+			system(cmd);
 			break;
 		case iconbarmenu_QUIT:
 			if (File_GetModified()) AJWLib_Window_OpenTransient(quitwin); else Desk_Event_CloseDown();
@@ -160,7 +167,7 @@ int main(int argc,char *argv[])
 	if (argc>2) {
 		Desk_Msgs_Report(1,"Error.CmdLine:Too many arguments");
 	} else if (argc==2) {
-		File_LoadFile(argv[1]);
+		File_LoadGEDCOM(argv[1]);
 	}
 	while (Desk_TRUE) {
 		Desk_Error2_Try {

@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.27 2000/09/13 21:15:40 AJW Exp $
+	$Id: File.c,v 1.28 2000/09/14 13:50:09 AJW Exp $
 
 */
 
@@ -341,12 +341,7 @@ static void File_HandleData(char *id,char *tag,char *data)
 		Database_SetSpouse(marriage,person);
 		
 	} else if (!Desk_stricmp(tag,"FAM.CHIL")) {
-		elementptr marriage,person;
-
-		person=File_GetElementFromID(atoi(data),element_PERSON);
-		marriage=File_GetElementFromID(atoi(id),element_MARRIAGE);
-		Database_SetChild(marriage,person);
-		
+		/* Do nothing, as database will sort this out after everyone has been loaded*/
 	} else if (!Desk_stricmp(tag,"FAM._LINKN")) {
 		elementptr marriage,nextmarriage;
 
@@ -551,6 +546,7 @@ void File_LoadGEDCOM(char *filename)
 	FILE *file=NULL;
 	char fivebytedate[5];
 	char line[MAXLINELEN];
+	layout* gedcomlayout=NULL;
 
 	AJWLib_Assert(idarray==NULL);
 	AJWLib_Assert(idarraysize==0);
@@ -564,8 +560,9 @@ void File_LoadGEDCOM(char *filename)
 		AJWLib_File_fclose(file);
 		Database_LinkAllChildren();
 		Database_CheckConsistency();
-		Layout_LayoutLines(Layout_GetGEDCOMLayout());
-		Windows_LayoutNormal(Layout_GetGEDCOMLayout(),Desk_FALSE);
+		gedcomlayout=Layout_GetGEDCOMLayout();
+		Layout_LayoutLines(gedcomlayout);
+		Windows_LayoutNormal(gedcomlayout,Desk_FALSE);
 		strcpy(currentfilename,filename);
 		modified=Desk_FALSE;
 		Windows_FileModified();

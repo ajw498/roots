@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.38 2000/09/13 21:15:45 AJW Exp $
+	$Id: Layout.c,v 1.39 2000/09/14 13:50:12 AJW Exp $
 
 */
 
@@ -789,7 +789,9 @@ void Layout_SaveGEDCOM(layout *layout,FILE *file)
 
 layout *Layout_GetGEDCOMLayout(void)
 {
-	return gedcomlayout;
+	layout *returnvalue=gedcomlayout;
+	gedcomlayout=NULL;
+	return returnvalue;
 }
 
 void Layout_GEDCOMNewPerson(elementptr person)

@@ -155,7 +155,6 @@ void Database_SetMarriage(elementptr person,elementptr marriage);
 void Database_SetParentsMarriage(elementptr person,elementptr marriage);
 void Database_SetPrincipal(elementptr marriage,elementptr person);
 void Database_SetSpouse(elementptr marriage,elementptr person);
-void Database_SetChild(elementptr marriage,elementptr person);
 void Database_SetNextMarriage(elementptr marriage,elementptr nextmarriage);
 void Database_SetPreviousMarriage(elementptr marriage,elementptr previousmarriage);
 void Database_SetMarriageDate(elementptr marriage,char *date);
