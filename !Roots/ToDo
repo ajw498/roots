@@ -37,3 +37,4 @@ choice of graphics style before importing gedcom?
 
 display of page boundaries
 non zero line widths to keep fontfix happy
+font not found errors from lua code?
