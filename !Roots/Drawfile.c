@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.16 2000/06/17 18:45:32 AJW Exp $
+	$Id: Drawfile.c,v 1.17 2000/06/17 21:25:46 AJW Exp $
 
 */
 
@@ -68,7 +68,7 @@ static drawfile_diagram *drawfile=NULL;
 static char *fontarray[256];
 static int numberoffonts=0;
 
-static void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour,const Desk_bool filled)
+static void Drawfile_PlotRectangle2(int x,int y,int width,int height,int linethickness,unsigned int colour,Desk_bool filled)
 {
 	int *object;
 	const int sizeofpath=96;
@@ -101,21 +101,24 @@ static void Drawfile_PlotRectangle2(const int x,const int y,const int width,cons
 	object[23]=0; /*End path*/
 }
 
-void Drawfile_PlotRectangle(const int scale,const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
+void Drawfile_PlotRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
 {
+	Desk_UNUSED(scale);
 	Drawfile_PlotRectangle2(originx+x,originy+y,width,height,linethickness,colour,Desk_FALSE);
 }
 
-void Drawfile_PlotRectangleFilled(const int scale,const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
+void Drawfile_PlotRectangleFilled(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
 {
+	Desk_UNUSED(scale);
 	Drawfile_PlotRectangle2(originx+x,originy+y,width,height,linethickness,colour,Desk_TRUE);
 }
 
-void Drawfile_PlotLine(const int scale,const int originx,const int originy,const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour)
+void Drawfile_PlotLine(int scale,int originx,int originy,int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour)
 {
 	int *object;
 	const int sizeofpath=68;
 	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	Desk_UNUSED(scale);
 	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=2; /*Path object*/
@@ -218,13 +221,15 @@ static void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 	object[21]=0; /*Bytes in undo buffer*/
 }
 
-static void Drawfile_PlotText(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
+static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
 {
 	int fontnumber=Drawfile_AddFont((char *)font);
 	int *object;
 	int sizeofpath=52;
 	Desk_wimp_point *bbox;
 	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	Desk_UNUSED(scale);
+	Desk_UNUSED(handle);
 	sizeofpath+=strlen(text)+4;
 	sizeofpath&=~3; /*word align the size*/
 	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
@@ -250,7 +255,7 @@ static void Drawfile_Create(layout *layout,Desk_bool printing)
 {
 	Desk_wimp_rect box;
 	int paperwidth=21*70,paperheight=30*70; /*Get correct values*/
-	int papersize;
+	int papersize=0x500;
 	int width,height;
 	int xoffset=0,yoffset=0;
 	Desk_bool landscape=Desk_FALSE;
@@ -307,7 +312,7 @@ void Drawfile_Print(layout *layout)
 	} Desk_Error2_EndCatch
 }
 
-void Drawfile_Redraw(const int scale,const int originx,const int originy,const Desk_wimp_rect *cliprect)
+void Drawfile_Redraw(int scale,int originx,int originy,Desk_wimp_rect *cliprect)
 {
 	int matrix[6];
 	AJWLib_Assert(drawfile!=NULL);
@@ -317,10 +322,10 @@ void Drawfile_Redraw(const int scale,const int originx,const int originy,const D
 	matrix[3]=(scale<<16)/100;
 	matrix[4]=originx<<8;
 	matrix[5]=originy<<8;
-	Desk_Error2_CheckOS(Desk_SWI(5,0,SWI_Drawfile_Render,0,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),matrix,0/*cliprect*/));
+	Desk_Error2_CheckOS(Desk_SWI(5,0,SWI_Drawfile_Render,0,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),matrix,cliprect));
 }
 
-void Drawfile_Save(const char *filename,layout *layout)
+void Drawfile_Save(char *filename,layout *layout)
 {
 	Desk_Error2_Try {
 		Drawfile_Create(layout,Desk_FALSE);

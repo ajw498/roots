@@ -1,18 +1,18 @@
 #ifndef DRAWFILE_H
 #define DRAWFILE_H
 
-void Drawfile_PlotLine(const int scale,const int originx,const int originy,const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour);
+void Drawfile_PlotLine(int scale,int originx,int originy,int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour);
 
-void Drawfile_PlotRectangle(const int scale,const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour);
+void Drawfile_PlotRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour);
 
-void Drawfile_PlotRectangleFilled(const int scale,const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour);
+void Drawfile_PlotRectangleFilled(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour);
 
-void Drawfile_Save(const char *filename,layout *layout);
+void Drawfile_Save(char *filename,layout *layout);
 
 void Drawfile_Free(void);
 
 void Drawfile_Print(layout *layout);
 
-void Drawfile_Redraw(const int scale,const int originx,const int originy,const Desk_wimp_rect *cliprect);
+void Drawfile_Redraw(int scale,int originx,int originy,Desk_wimp_rect *cliprect);
 
 #endif

@@ -22,7 +22,6 @@ OBJECTS	=	\
 		Windows.o\
 		Config.o\
 		Layout.o\
-		Reports.o\
 		Draw.o\
 		File.o\
 		Print.o\

@@ -1,6 +1,9 @@
 IconSprites <Obey$Dir>.!Sprites
 Set Roots$Dir <Obey$Dir>
 
+RMEnsure DrawFile RMLoad System:Modules.DrawFile
+RMEnsure DrawFile Error Roots needs the DrawFile module
+
 Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0
 WimpSlot -Min 500k -Max 500k
 Run <Obey$Dir>.!RunImage %*0

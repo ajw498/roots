@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.66 2000/06/17 18:45:38 AJW Exp $
+	$Id: Windows.c,v 1.67 2000/06/17 21:25:53 AJW Exp $
 
 */
 
@@ -474,6 +474,7 @@ static void Windows_DragEnd(void *ref)
 	/*Find destination window*/
 	for (i=0;i<MAXWINDOWS;i++) if (mouseblk.window==windows[i].handle) window=i;
 	if (window==-1) return;
+	Desk_Icon_SetCaret(mouseblk.window,-1);
 	if (dragdata->windowdata->type==wintype_NORMAL) {
 		/*We are moving people/marriages*/
 		int mousex;
@@ -869,6 +870,7 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	windowdata *windowdata=ref;
 	int mousex,mousey,i;
 	Desk_convert_block blk;
+	if (!block->data.mouse.button.data.menu) Desk_Icon_SetCaret(block->data.mouse.window,-1);
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
 	mousey=((block->data.mouse.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windowdata->scale;
@@ -1141,6 +1143,7 @@ void Windows_CloseAllWindows(void)
 		}
 	}
 	Desk_Error2_TryCatch(Desk_Window_Hide(fileconfigwin);,)
+	Desk_Error2_TryCatch(Print_CloseWindow();,)
 	Desk_Error2_TryCatch(File_Remove();,)
 }
 
