@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.82 2000/09/21 10:08:14 AJW Exp $
+	$Id: Windows.c,v 1.83 2000/09/21 11:33:12 AJW Exp $
 
 */
 
@@ -68,10 +68,10 @@
 #define mainmenu_FILE 0
 #define mainmenu_PERSON 1
 #define mainmenu_ADDPERSON 2
-#define mainmenu_SELECT 3
-#define mainmenu_GRAPHICSSTYLE 4
-#define mainmenu_NEWVIEW 5
-#define mainmenu_SCALE 6
+#define mainmenu_SELECT 9 /*3*/
+#define mainmenu_GRAPHICSSTYLE 3 /*4*/
+#define mainmenu_NEWVIEW 10 /*5*/
+#define mainmenu_SCALE 4 /*6*/
 #define mainmenu_SEARCH 7
 #define mainmenu_REPORTS 8
 

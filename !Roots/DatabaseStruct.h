@@ -100,6 +100,8 @@ char *Database_GetMiddleNames(elementptr person);
 char *Database_GetSurname(elementptr person);
 Desk_bool Database_Loaded(void);
 void Database_LinkAllMarriages(void);
+char *Database_GetPersonUserField(elementptr person,int num);
+char *Database_GetMarriageUserField(elementptr marriage,int num);
 
 #endif
 
