@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.27  2000/01/10 15:49:21  AJW
+	menuoverwindow is now valid even when mouse was not clicked over a person
+
 	Revision 1.26  2000/01/09 12:27:23  AJW
 	Passes font name and size to Graphics_PlotText
 
@@ -885,6 +888,7 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 	mousex=block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x);
 	mousey=block->data.mouse.pos.y-(blk.screenrect.max.y-blk.scroll.y);
 	menuoverperson=none;
+	menuoverwindow=windowdata;
 	AJWLib_Menu_Shade(personmenu,personmenu_ADD);
 	AJWLib_Menu_Shade(personmenu,personmenu_DELETE);
 	AJWLib_Menu_Shade(personmenu,personmenu_UNLINK);
@@ -911,7 +915,6 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 				} else if (block->data.mouse.button.data.menu) {
 					elementptr marriage;
 					menuoverperson=windowdata->layout->person[i].person;
-					menuoverwindow=windowdata;
 					if (windowdata->type==wintype_NORMAL) {
 						AJWLib_Menu_UnShade(mainmenu,mainmenu_PERSON);
 						AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);
@@ -1217,7 +1220,6 @@ void Graphics_ExportClick(int entry,void *ref)
 	switch (entry) {
 		case exportmenu_DRAW:
 			Drawfile_Save("Fred",menuoverwindow->layout);
-			/*menu over window is only valid if menu was clicked over a person!*/
 			break;
 	}
 }
