@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.60 2000/11/21 20:04:21 AJW Exp $
+	$Id: Layout.c,v 1.61 2000/11/21 21:16:41 AJW Exp $
 
 */
 
@@ -358,7 +358,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.60 2000/11/21 20:04:21 AJW Exp $
+	$Id: Layout.c,v 1.61 2000/11/21 21:16:41 AJW Exp $
 
 */
 
@@ -697,21 +697,21 @@ static elementlayout *Layout_FindElementAtCoords(layout *layout,int x,int y,Desk
 
 	AJWLib_Assert(layout!=NULL);
 	if (transient) *transient=Desk_FALSE;
-	/*See if we clicked on a transient*/
-	/*Transients take priority over people, as they are generally smaller*/
-	for (i=layout->numtransients-1;i>=0;i--) {
-		if (x>=layout->transients[i].x && x<=layout->transients[i].x+layout->transients[i].width) {
-			if (y>=layout->transients[i].y && y<=layout->transients[i].y+layout->transients[i].height) {
-				if (transient) *transient=Desk_TRUE;
-				return layout->transients+i;
-			}
-		}
-	}
 	/*See if we clicked on a person*/
 	for (i=layout->numpeople-1;i>=0;i--) {
 		if (x>=layout->person[i].x && x<=layout->person[i].x+layout->person[i].width) {
 			if (y>=layout->person[i].y && y<=layout->person[i].y+layout->person[i].height) {
 				return layout->person+i;
+			}
+		}
+	}
+	/*See if we clicked on a transient*/
+	/*Transients have a lower priority than people*/
+	for (i=layout->numtransients-1;i>=0;i--) {
+		if (x>=layout->transients[i].x && x<=layout->transients[i].x+layout->transients[i].width) {
+			if (y>=layout->transients[i].y && y<=layout->transients[i].y+layout->transients[i].height) {
+				if (transient) *transient=Desk_TRUE;
+				return layout->transients+i;
 			}
 		}
 	}
@@ -1234,7 +1234,12 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 				if (Desk_Kbd_KeyDown(Desk_inkey_SHIFT)) {
 					if (elementlayout->flags.linkable) Layout_LinkDragStart(windowdata,mousedata.element);
 				} else {
-					if (elementlayout->flags.moveable) Layout_MoveDragStart(mousedata.element,elementlayout->x,windowdata);
+					if (elementlayout->flags.moveable) {
+						Layout_MoveDragStart(mousedata.element,elementlayout->x,windowdata);
+					} else {
+						Windows_UnselectAll(windowdata);
+						Layout_SelectDragStart(windowdata);
+					}
 				}
 			} else {
 				Windows_UnselectAll(windowdata);
@@ -1244,7 +1249,11 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 
 		case Desk_button_DRAGADJUST:
 			if (elementlayout) {
-				if (elementlayout->flags.linkable) Layout_LinkDragStart(windowdata,mousedata.element);
+				if (elementlayout->flags.linkable) {
+					Layout_LinkDragStart(windowdata,mousedata.element);
+				} else {
+					Layout_SelectDragStart(windowdata);
+				}
 			} else {
 				Layout_SelectDragStart(windowdata);
 			}
