@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.42 2000/11/21 20:33:34 AJW Exp $
+	$Id: File.c,v 1.43 2000/11/21 21:43:02 AJW Exp $
 
 */
 
@@ -359,8 +359,10 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		elementptr person;
 
 		if (prescan) return;
-		person=File_GetElementFromID(data,element_PERSON);
-		Windows_SetPerson(person);
+		if (atoi(data)>0) {
+			person=File_GetElementFromID(data,element_PERSON);
+			Windows_SetPerson(person);
+		}
 
 	} else if (!Desk_stricmp(tag,"_WINDOWS._GENERATIONS")) {
 		if (prescan) return;

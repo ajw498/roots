@@ -35,6 +35,5 @@ Emphasize in manual how layout is up to the user and is not controlled by roots,
 when a person is linked to themselves, give details of person then continue loading
 check for 0 length text when exporting drawfiles (does it do this already?)
 example graphics style that prints date of birth if avaliable else date of baptism? (Derrick porter)
-Export of example file give an extra person
 
 
