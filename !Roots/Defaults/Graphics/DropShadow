@@ -1,0 +1,83 @@
+
+-- Let Roots know what fonts will want to use
+font=ClaimFont("Trinity.Medium",12);
+titlefont=ClaimFont("Homerton.Bold.Oblique",24);
+
+-- Define the colours we will use
+-- Colour() takes the red, green and blue components (range 0-255) of the colour
+red=Colour(255,0,0);
+green=Colour(0,255,0);
+blue=Colour(0,0,255);
+black=Colour(0,0,0);
+grey=Colour(245,245,245);
+white=Colour(255,255,255);
+
+-- Define the default distances and sizes
+-- Roots will use these for newly created objects
+gapheightabove=50; -- Gap between the top of a person and the line joining their siblings
+gapheightbelow=50; -- Gap between the bottom of a person and the line joining their children
+personwidth=280;   -- Width of a person
+personheight=100;  -- Height of a person
+gapwidth=100;      -- Horizontal gap between two unmarried people
+marriagewidth=84;  -- Width of a marriage
+windowborder=30;   -- Gap between outermost person and the window edge
+titleheight=100;   -- Height of the title
+
+
+-- Constants (Roots does not place any meaning on these)
+linewidth=2;
+
+
+-- This function gets called by Roots whenever it needs to redraw a marriage
+function RedrawMarriage(marriage,x,y,width,height)
+-- Draw the two horizontal lines
+PlotLine(x,y+30,x+width,y+30,linewidth,black);
+PlotLine(x,y+70,x+width,y+70,linewidth,black);
+-- Draw the vertical line if there are any children of the marriage
+if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
+end
+
+-- This function gets called by Roots whenever it needs to redraw a person
+function RedrawPerson(person,x,y,width,height)
+-- Draw drop shadow
+PlotRectangleFilled(x+10,y-10,width,height,black);
+-- Draw white box
+PlotRectangleFilled(x,y,width,height,white);
+-- Draw the border
+PlotRectangle(x,y,width,height,linewidth,black);
+-- Work out what the full name of the person is
+name="";
+text=GetField(person,"forename");
+if strlen(text)>0 then name=name..text.." " end
+text=GetField(person,"middlenames");
+if strlen(text)>0 then name=name..text.." " end
+name=name..GetField(person,"surname");
+tx=GetTextDimensions(font,name);
+-- Work out what colour to use, depending on the sex of the person
+colour=green;
+sex=GetField(person,"sex");
+if sex=="M" then colour=blue end
+if sex=="F" then colour=red end
+-- Draw the name and date of birth
+PlotText(x+(width-tx)/2,y+60,font,grey,colour,name);
+text=GetField(person,"date of birth");
+tx=GetTextDimensions(font,text);
+PlotText(x+(width-tx)/2,y+20,font,grey,black,text);
+-- Draw the vertical line to connect to the sibling line if the person has parents
+if GetParentsMarriage(person) then PlotLine(x+width/2,y+height,x+width/2,y+height+50,linewidth,black) end
+end
+
+-- This function gets called by Roots whenever it needs to redraw a line joining siblings together
+-- The line could be horizontal or vertical
+function RedrawLine(x,y,width,height)
+PlotLine(x,y,x+width,y+height,linewidth,black);
+end
+
+-- This function gets called by Roots whenever it needs to redraw the title
+function RedrawTitle(title,x,y,width,height)
+-- Find the width of the text
+tx=GetTextDimensions(titlefont,title);
+-- Draw the text, centred horizontally
+PlotText(x+(width-tx)/2,y+50,titlefont,white,black,title);
+end
+
