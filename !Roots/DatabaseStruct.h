@@ -5,7 +5,7 @@
 #include "Layout.h"
 
 #define none 0
-#define FIELDSIZE 20
+#define FIELDSIZE 40
 #define NUMBERPERSONUSERFIELDS 10
 #define NUMBERMARRIAGEUSERFIELDS 5
 
