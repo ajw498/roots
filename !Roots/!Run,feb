@@ -1,0 +1,7 @@
+Dir <Obey$Dir>
+Set Roots$Dir <Obey$Dir>
+IconSprites <Obey$Dir>.!Sprites
+WimpSlot -Min 300k
+|DebugAIF <Obey$Dir>.!RunImage 2>stderr
+Run <Obey$Dir>.!RunImage 2>stderr
+TaskWindow "type stderr" -quit -name "stderr output"

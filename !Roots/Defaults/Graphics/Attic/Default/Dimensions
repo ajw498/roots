@@ -1,0 +1,18 @@
+#Width of a person
+PersonWidth,250
+#Height of a person
+PersonHeight,100
+#Height of gap from top of person to line joining siblings
+GapHeightAbove,40
+#Height of gap from bottom of person to line joining siblings
+GapHeightBelow,40
+#Minimum width of gap between people
+GapWidth,100
+#Width of gap between a married couple
+MarriageWidth,60
+#Minimum width between a second spouse and the first
+SecondMarriageGap,20
+#Width of blank space to leave around outside of each window
+WindowBorder,20
+#Height of gap between people in the unlinked window
+GapHeightUnlinked,30

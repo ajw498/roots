@@ -1,0 +1,18 @@
+#Box,x,y,width,height,linewidth,RRGGBB
+#Box,0,0,200,100,0,00FF00
+#FilledBox,x,y,width,height,RRGGBB
+#FilledBox,0,65,70,35,00F0F0
+#Text,x,y,size,RRGGBB,RRGGBB (background),font,text
+#Text,0,50,12,0000FF,FFFFFF,Trinity.Medium.Italic,Married
+#Line,x,y,x1,y1,linewidth,RRGGBB
+Line,0,35,60,35,0,000000
+Line,0,65,60,65,0,000000
+#ChildLine,x,y,x1,y1,linewidth,RRGGBB
+#This line is only plotted if there are any children
+ChildLine,30,-40,30,35,0,000000
+#SiblingLine,thickness,RRGGBB
+#This is the line that joins siblings together
+SiblingLine,0,000000
+#Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
+#Field,20,10,12,FF0000,FFFFFF,Corpus.Medium,Surname
+
