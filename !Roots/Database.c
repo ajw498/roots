@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.5  1999/10/11 17:56:04  AJW
+	Handles Edit marriage window now
+
 	Revision 1.4  1999/10/10 20:53:46  AJW
 	Modified to use Desk
 
@@ -25,13 +28,14 @@
 #include "Desk.Event.h"
 #include "Desk.Template.h"
 #include "Desk.File.h"
+#include "Desk.DeskMem.h"
 #include "Desk.Filing.h"
 
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Menu.h"
-#include "AJWLib.Handler.h"
+
 #include "AJWLib.Flex.h"
 #include "AJWLib.DrawFile.h"
 
@@ -67,6 +71,14 @@
 #define editpersonicon_SURNAMEMENU 2
 #define editpersonicon_TITLEMENU 13
 #define editpersonicon_SEXMENU 14
+
+#define editmarriageicon_PRINCIPAL 2
+#define editmarriageicon_SPOUSE 3
+#define editmarriageicon_PLACE 6
+#define editmarriageicon_PLACEMENU 7
+#define editmarriageicon_DATE -99
+#define editmarriageicon_OK 1
+#define editmarriageicon_CANCEL 0
 
 #define sexmenu_M 0
 #define sexmenu_F 1
@@ -376,7 +388,7 @@ void Database_AddChild(elementptr marriage,elementptr child)
 
 void Database_LinkPerson(elementptr person)
 {
-	if (database[0].file.linkedpeople!=none) { Desk_Error_Report(1,"DEBUGGING ERROR   REMOVE THIS");  return; }
+	if (database[0].file.linkedpeople!=none) return;
 	Database_UnlinkUnlinkedPerson(person);
 	database[0].file.linkedpeople=person;
 	Modules_ChangedStructure();
@@ -444,18 +456,36 @@ Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
+Desk_bool Database_CancelEditMarriageWindow(Desk_event_pollblock *block,void *ref)
+{
+	if (!block->data.mouse.button.data.select) return Desk_FALSE;
+	editingmarriage=none;
+	Desk_Window_Hide(editmarriagewin);
+	return Desk_TRUE;
+}
+
+Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void *ref)
+{
+	if (block->data.mouse.button.data.menu || editingmarriage==none) return Desk_FALSE;
+	Desk_Icon_GetText(editmarriagewin,editmarriageicon_PLACE,database[editingmarriage].marriage.data.place);
+/*	Desk_Icon_GetText(editmarriagewin,editmarriageicon_DATE,database[editingmarriage].marriage.data.date);*/
+	editingmarriage=none;
+	if (block->data.mouse.button.data.select) Desk_Window_Hide(editmarriagewin);
+	return Desk_TRUE;
+}
+
 void Database_EditMarriage(elementptr marriage)
 {
-/*editingmarriage a local static var?*/
-	if (editingmarriage) {
-		/*Cancel previous edit*/
-	}
-	if (marriage!=none) {
-		Desk_Icon_SetText(editmarriagewin,2,database[database[marriage].marriage.principal].person.data.surname); /*temp*/
-		Desk_Icon_SetText(editmarriagewin,3,database[database[marriage].marriage.spouse].person.data.surname); /*temp*/
-	}
+	char name[256];
+	if (marriage==none) return;
+	sprintf(name,"%s %s",database[database[marriage].marriage.principal].person.data.forename,database[database[marriage].marriage.principal].person.data.surname);
+	Desk_Icon_SetText(editmarriagewin,editmarriageicon_PRINCIPAL,name);
+	sprintf(name,"%s %s",database[database[marriage].marriage.spouse].person.data.forename,database[database[marriage].marriage.spouse].person.data.surname);
+	Desk_Icon_SetText(editmarriagewin,editmarriageicon_SPOUSE,name);
+	Desk_Icon_SetText(editmarriagewin,editmarriageicon_PLACE,database[marriage].marriage.data.place);
+/*	Desk_Icon_SetText(editmarriagewin,editmarriageicon_DATE,database[marriage].marriage.data.date);*/
 	Desk_Window_Show(editmarriagewin,editingmarriage ? Desk_open_WHEREVER : Desk_open_CENTERED);
-	editingmarriage=Desk_TRUE;
+	editingmarriage=marriage;
 }
 
 void Database_Delete(elementptr person)
@@ -578,11 +608,12 @@ Desk_bool Database_Init(void)
 	editmarriagewin=Desk_Window_Create("EditMarriage",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_OK,Database_OkEditWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,editpersonwin,editpersonicon_CANCEL,Database_CancelEditWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,editmarriagewin,editmarriageicon_OK,Database_OkEditMarriageWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,editmarriagewin,editmarriageicon_CANCEL,Database_CancelEditMarriageWindow,NULL);
 	/*Register handlers*/
 	sexmenu=AJWLib_Menu_CreateFromMsgs("Title.Sex:","Menu.Sex:M,F,U",Database_SexMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,Desk_button_MENU | Desk_button_SELECT);
 	titlemenu=AJWLib_Menu_CreateFromMsgs("Title.Title:","Menu.Title:",Database_TitleMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_TITLEMENU,editpersonicon_TITLE,titlemenu,Desk_button_MENU | Desk_button_SELECT);
-
 	return Desk_TRUE;
 }
