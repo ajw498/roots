@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.67 2001/02/03 20:26:15 AJW Exp $
+	$Id: Layout.c,v 1.68 2001/02/03 20:50:35 AJW Exp $
 
 */
 
@@ -405,7 +405,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.67 2001/02/03 20:26:15 AJW Exp $
+	$Id: Layout.c,v 1.68 2001/02/03 20:50:35 AJW Exp $
 
 */
 
@@ -666,6 +666,7 @@ static void Layout_MoveDragEnd(void *ref)
 	int mousex,mousey;
 
 	Layout_SetPointerShape("ptr_DEFAULT",1);
+	Desk_Event_mask.data.null=1; /* Disable Null polls*/
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Icon_SetCaret(mouseblk.window,-1);
 	/*Remove dragbox*/
@@ -698,6 +699,7 @@ static void Layout_SelectDragEnd(void *ref)
 	dragdata *dragdata=ref;
 	int mousex,mousey,i;
 
+	Desk_Event_mask.data.null=1; /* Disable Null polls*/
 	/*Get info*/
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
@@ -773,6 +775,7 @@ static void Windows_LinkDragEnd(void *ref)
 	int mousex,mousey;
 
 	Layout_SetPointerShape("ptr_default",1);
+	Desk_Event_mask.data.null=1; /* Disable Null polls*/
 
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
@@ -1114,6 +1117,7 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 	}
 
 	Desk_Wimp_DragBox(&dragblk);
+	Desk_Event_mask.data.null=0; /* Enable Null polls*/
 	Desk_Drag_SetHandlers(Layout_MoveDragPoll,Layout_MoveDragEnd,&dragdata);
 }
 
@@ -1189,6 +1193,7 @@ static void Layout_LinkDragStart(windowdata *windowdata,elementptr person)
 		if (windowdata->layout->person[i].element==person) Layout_RedrawElement(windowdata,windowdata->layout->person+i);
 	}
 	Desk_Wimp_DragBox(&dragblk);
+	Desk_Event_mask.data.null=0; /* Enable Null polls*/
 	Desk_Drag_SetHandlers(Layout_LinkDragPoll,Windows_LinkDragEnd,&dragdata);
 }
 

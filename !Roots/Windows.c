@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.107 2001/02/03 19:54:36 AJW Exp $
+	$Id: Windows.c,v 1.108 2001/02/03 20:50:40 AJW Exp $
 
 */
 
@@ -960,6 +960,7 @@ void Windows_Init(void)
 	numwindows=0;
 	for (i=0;i<MAXWINDOWS;i++) windows[i].handle=0;
 	Desk_Drag_Initialise(Desk_TRUE);
+	Desk_Event_mask.data.null=1; /* Disable Null polls*/
 	newviewwin=Desk_Window_Create("NewView",Desk_template_TITLEMIN);
 	Desk_Icon_InitIncDecHandler(newviewwin,newview_GENERATIONS,newview_UP,newview_DOWN,Desk_FALSE,1,1,999,10);
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_NORMAL);
