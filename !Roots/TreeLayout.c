@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.55 2000/11/21 21:16:47 AJW Exp $
+	$Id: TreeLayout.c,v 1.56 2000/11/27 21:30:16 AJW Exp $
 
 */
 
@@ -81,6 +81,7 @@ void Layout_LayoutTitle(layout *layout)
 {
 	Desk_wimp_rect bbox;
 	flags flags;
+	int size;
 
 	AJWLib_Assert(layout!=NULL);
 
@@ -91,6 +92,11 @@ void Layout_LayoutTitle(layout *layout)
 	flags.linkable=0;
 	flags.snaptogrid=0;
 	flags.selectable=0;
+	size=MINWINDOW_SIZE_X-(bbox.max.x-bbox.min.x);
+	if (size>0) {
+		bbox.max.x+=size/2;
+		bbox.min.x-=size/2;
+	}
 	Layout_AddTransient(layout,element_TITLE,bbox.min.x,bbox.max.y,bbox.max.x-bbox.min.x,Graphics_TitleHeight(),0,0,flags);
 }
 

@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.103 2000/11/27 20:39:21 AJW Exp $
+	$Id: Windows.c,v 1.104 2000/11/27 21:30:18 AJW Exp $
 
 */
 
@@ -29,6 +29,7 @@
 #include "Desk.GFX.h"
 #include "Desk.Save.h"
 #include "Desk.Kbd.h"
+#include "Desk.Keycodes.h"
 #include "Desk.Str.h"
 #include "Desk.Font2.h"
 #include "Desk.ColourTran.h"
@@ -467,6 +468,29 @@ static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *win
 	return Desk_TRUE;
 }
 
+static Desk_bool Windows_KeyPress(Desk_event_pollblock *block,windowdata *windowdata)
+{
+	switch (block->data.key.code) {
+		case Desk_keycode_ESCAPE:
+			Windows_UnselectAll(windowdata);
+			break;
+		case Desk_keycode_DELETE:
+			Layout_DeleteSelected(windowdata->layout);
+			break;
+		case Desk_keycode_PRINT:
+			Print_OpenWindow(windowdata->layout);
+			break;
+		case Desk_keycode_F3:
+			Desk_Icon_SetText(savewin,save_FILENAME,File_GetFilename());
+			AJWLib_Window_OpenTransient(savewin);
+			break;
+		default:
+			/*Let the default handler deal with it*/
+			return Desk_FALSE;
+	}
+	return Desk_TRUE;
+}
+
 void Windows_FileModified(void)
 {
 	int i;
@@ -506,7 +530,7 @@ static void Windows_OpenWindowCentered(windowdata *windowdata,Desk_convert_block
 		blk.scroll=coords->scroll;
 	}
 	Desk_Wimp_OpenWindow(&blk);
-
+	Desk_Window_GainCaret(windowdata->handle);
 }
 
 void Windows_LayoutNormal(layout *layout,Desk_bool opencentred)
@@ -573,6 +597,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Layout_MouseClick,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Layout_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_KEY,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_KeyPress,&windows[newwindow]);
 	Windows_OpenWindowCentered(&windows[newwindow],coords);
 	File_Modified();
 }
@@ -723,6 +748,9 @@ static void Windows_FileMenuClick(int entry,void *ref)
 {
 	Desk_UNUSED(ref);
 	switch (entry) {
+		case filemenu_SAVE:
+			AJWLib_Window_OpenTransient(savewin);
+			break;
 		case filemenu_CHOICES:
 			Windows_OpenFileConfig();
 			break;
