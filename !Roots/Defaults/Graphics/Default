@@ -38,12 +38,7 @@ PlotLine(x,y+70,x+width,y+70,0,black);
 if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
 end
 
--- This function gets called by Roots whenever it needs to redraw a person
-function RedrawPerson(person,x,y,width,height)
--- Draw the background (this must be done first otherwise it will overwrite what has already been drawn)
-PlotRectangleFilled(x,y,width,height,grey);
--- Draw the border
-PlotRectangle(x,y,width,height,linewidth,black);
+function CalcNameAndLength(person)
 -- Work out what the full name of the person is
 name="";
 text=GetField(person,"forename");
@@ -52,6 +47,16 @@ text=GetField(person,"middlenames");
 if strlen(text)>0 then name=name..text.." " end
 name=name..GetField(person,"surname");
 tx=GetTextDimensions(font,name);
+return name,tx;
+end
+
+-- This function gets called by Roots whenever it needs to redraw a person
+function RedrawPerson(person,x,y,width,height)
+-- Draw the background (this must be done first otherwise it will overwrite what has already been drawn)
+PlotRectangleFilled(x,y,width,height,grey);
+-- Draw the border
+PlotRectangle(x,y,width,height,linewidth,black);
+name,tx=CalcNameAndLength(person);
 -- Draw the name, centred horizontally
 PlotText(x+(width-tx)/2,y+50,font,grey,red,name);
 -- Draw the vertical line to connect to the sibling line if the person has parents
@@ -72,15 +77,11 @@ tx=GetTextDimensions(titlefont,title);
 PlotText(x+(width-tx)/2,y+50,titlefont,white,black,title);
 end
 
+-- This function gets called by Roots whenever any details about the person change
 function PersonChanged(person)
--- Work out what the full name of the person is
-name="";
-text=GetField(person,"forename");
-if strlen(text)>0 then name=name..text.." " end
-text=GetField(person,"middlenames");
-if strlen(text)>0 then name=name..text.." " end
-name=name..GetField(person,"surname");
-tx=GetTextDimensions(font,name)+12;
+name,tx=CalcNameAndLength(person);
+tx=tx+12;
 if personwidth>tx then tx=personwidth end
 SetWidth(person,tx);
 end
+
