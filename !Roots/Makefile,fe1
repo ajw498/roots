@@ -7,7 +7,8 @@ HEADERS	=	\
 		Drawfile.h\
 		Draw.h\
 		Modules.h\
-		File.h
+		File.h\
+		Print.h
 
 LIBS	=	\
 		L:Stubs.o.asstubs\
@@ -24,6 +25,7 @@ OBJECTS	=	\
 		Reports.o\
 		Draw.o\
 		File.o\
+		Print.o\
 		Drawfile.o\
 		Database.o\
 		!RunImage.o

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.64 2000/05/14 22:34:07 AJW Exp $
+	$Id: Windows.c,v 1.65 2000/05/16 22:23:03 AJW Exp $
 
 */
 
@@ -57,6 +57,7 @@
 #include "Drawfile.h"
 #include "Draw.h"
 #include "File.h"
+#include "Print.h"
 
 #define MAXWINDOWS 10
 #define REDRAWOVERLAP 4
@@ -1428,7 +1429,13 @@ static void Windows_OpenFileConfig(void)
 static void Windows_FileMenuClick(int entry,void *ref)
 {
 	Desk_UNUSED(ref);
-	if (entry==filemenu_CHOICES) Windows_OpenFileConfig();
+	switch (entry) {
+		case filemenu_CHOICES:
+			Windows_OpenFileConfig();
+			break;
+		case filemenu_PRINT:
+			Print_OpenWindow(menuoverwindow->layout);
+	}
 }
 
 static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
@@ -1683,6 +1690,5 @@ void Windows_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_REREAD,Windows_FileConfigReRead,NULL);
 	AJWLib_Window_KeyHandler(fileconfigwin,fileconfig_OK,Windows_FileConfigOk,fileconfig_CANCEL,Windows_Cancel,NULL);
-
 }
 
