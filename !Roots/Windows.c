@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.79 2000/09/14 11:39:09 AJW Exp $
+	$Id: Windows.c,v 1.80 2000/09/14 13:50:16 AJW Exp $
 
 */
 
@@ -50,6 +50,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "Main.h"
 #include "Graphics.h"
 #include "Modules.h"
 #include "Windows.h"
@@ -144,6 +145,7 @@
 #define fileconfig_CANCEL 9
 
 #define SWI_Wimp_SpriteOp 0x400E9
+#define SWI_Wimp_DragBox 0x400D0
 
 #define Windows_SetPointerShape(name,num) Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_Wimp_SpriteOp,36,NULL,name,num | 0x20,8,8,0,NULL))
 
@@ -206,7 +208,7 @@ extern layout *debuglayout;
 static windowdata windows[MAXWINDOWS];
 static Desk_bool menusdeletedvalid=Desk_FALSE;
 static int numwindows;
-static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin,fileconfigwin;
+static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin/*,savegedcomwin*/,scalewin,unsavedwin,fileconfigwin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconfigmenu=NULL;
 static elementptr newviewperson;
 static mouseclickdata mousedata;
@@ -449,8 +451,8 @@ static void Windows_SelectDragEnd(void *ref)
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
 	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale;
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
-		if (mousex>dragdata->windowdata->layout->person[i].x && dragdata->oldmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() || mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->oldmousex>dragdata->windowdata->layout->person[i].x) {
-			if (mousey>dragdata->windowdata->layout->person[i].y && dragdata->oldmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->person[i].y) {
+		if (mousex>dragdata->windowdata->layout->person[i].x && dragdata->origmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() || mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->origmousex>dragdata->windowdata->layout->person[i].x) {
+			if (mousey>dragdata->windowdata->layout->person[i].y && dragdata->origmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->origmousey>dragdata->windowdata->layout->person[i].y) {
 				if (Database_GetSelect(dragdata->windowdata->layout->person[i].person)) {
 					Database_DeSelect(dragdata->windowdata->layout->person[i].person);
 				} else {
@@ -461,8 +463,8 @@ static void Windows_SelectDragEnd(void *ref)
 		}
 	}
 	for (i=0;i<dragdata->windowdata->layout->nummarriages;i++) {
-		if (mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->oldmousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() || mousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() && dragdata->oldmousex>dragdata->windowdata->layout->marriage[i].x) {
-			if (mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->oldmousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->marriage[i].y) {
+		if (mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->origmousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() || mousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() && dragdata->origmousex>dragdata->windowdata->layout->marriage[i].x) {
+			if (mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->origmousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() && dragdata->origmousey>dragdata->windowdata->layout->marriage[i].y) {
 				if (Database_GetSelect(dragdata->windowdata->layout->marriage[i].marriage)) {
 					Database_DeSelect(dragdata->windowdata->layout->marriage[i].marriage);
 				} else {
@@ -541,7 +543,7 @@ static void Windows_LinkDragEnd(void *ref)
 				Desk_Error2_ReThrow();
 			} Desk_Error2_EndCatch
 		} Desk_Error2_Catch {
-			AJWLib_Error2_Report("%s");
+			AJWLib_Error2_ReportMsgs("Error.Marrd:%s");
 		} Desk_Error2_EndCatch
 	} else if (marriage) {
 		Database_AddChild(marriage,dragdata->person);
@@ -653,6 +655,14 @@ static void Windows_LinkDragFn(void *ref)
 		if (dragdata->ptr!=ptr_NOLINK) Windows_SetPointerShape("ptr_nolink",2);
 		dragdata->ptr=ptr_NOLINK;
 	}
+}
+
+static void Windows_SelectDragFn(void *ref)
+/*A select drag is in progress, so scroll if needed*/
+{
+	dragdata *dragdata=ref;
+
+	Windows_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
 }
 
 static void Windows_GetOffset(dragdata *dragdata)
@@ -816,16 +826,19 @@ static void Windows_StartDragNormal(elementptr person,int x,windowdata *windowda
 }
 
 static void Windows_StartDragSelect(windowdata *windowdata)
+/* Start a dragbox*/
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
 	Desk_convert_block blk;
 	Desk_mouse_block mouseblk;
 	int mousex,mousey;
+
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
 	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windowdata->scale;
+	dragblk.window=windowdata->handle;
 	dragblk.type=Desk_drag_RUBBERBOX;
 	dragblk.screenrect.min.x=mouseblk.pos.x;
 	dragblk.screenrect.max.x=mouseblk.pos.x;
@@ -837,10 +850,11 @@ static void Windows_StartDragSelect(windowdata *windowdata)
 	if (blk.screenrect.max.y>Desk_screen_size.y) dragblk.parent.max.y=Desk_screen_size.y; else dragblk.parent.max.y=blk.screenrect.max.y;
 	dragdata.windowdata=windowdata;
 	dragdata.origmousex=mousex;
+	dragdata.origmousey=mousey;
 	dragdata.oldmousex=mousex;
 	dragdata.oldmousey=mousey;
-	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(NULL,Windows_SelectDragEnd,&dragdata);
+	Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Wimp_DragBox,NULL,&dragblk,0x4B534154,0x3)); /*using RO4 features if present*/
+	Desk_Drag_SetHandlers(Windows_SelectDragFn,Windows_SelectDragEnd,&dragdata);
 }
 
 static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
@@ -1768,14 +1782,14 @@ void Windows_Init(void)
 	AJWLib_Window_KeyHandler(scalewin,scale_OK,Windows_ScaleClick,scale_CANCEL,Windows_Cancel,NULL);
 	savewin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
-	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);
+	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,File_Result,1024*10/*Filesize estimate?*/,ROOTS_FILETYPE,NULL);
 	savedrawwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
-	savegedcomwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
+/*	savegedcomwin=Desk_Window_Create("Save",Desk_template_TITLEMIN);*/
 	Desk_Menu_AddSubMenu(exportmenu,exportmenu_DRAW,(Desk_menu_ptr)savedrawwin);
-	Desk_Menu_AddSubMenu(exportmenu,exportmenu_GEDCOM,(Desk_menu_ptr)savegedcomwin);
-/*	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);*/
+/*	Desk_Menu_AddSubMenu(exportmenu,exportmenu_GEDCOM,(Desk_menu_ptr)savegedcomwin);*/
+	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,(Desk_menu_ptr)savedrawwin);
 	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
-	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_TEXT,NULL);
+/*	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL*Need a result handler?*,1024*10 *Filesize estimate?*,Desk_filetype_TEXT,NULL);*/
 	fileconfigwin=Desk_Window_Create("FileConfig",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_OK,Windows_FileConfigOk,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);

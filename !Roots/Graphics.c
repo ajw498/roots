@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.39 2000/09/14 11:39:07 AJW Exp $
+	$Id: Graphics.c,v 1.40 2000/09/14 13:50:10 AJW Exp $
 
 */
 
@@ -666,8 +666,10 @@ static void Graphics_ParseStyle(void)
 	Graphics_ParseFile(&titlefile,Graphics_StoreTitleDetails);
 	Graphics_ClaimFonts();
 }
-void Graphics_LoadPersonFileLine(char *line) {
-	/* Add the line to the personfile block, allocating as nessacery*/
+
+void Graphics_LoadPersonFileLine(char *line)
+/* Add the line to the personfile block, allocating as nessacery*/
+{
 	int offset;
 
 	AJWLib_Assert(line!=NULL);
@@ -685,8 +687,9 @@ void Graphics_LoadPersonFileLine(char *line) {
 	personfile[offset+strlen(line)+1]='\0';
 }
 
-void Graphics_LoadMarriageFileLine(char *line) {
-	/* Add the line to the marriagefile block, allocating as nessacery*/
+void Graphics_LoadMarriageFileLine(char *line)
+/* Add the line to the marriagefile block, allocating as nessacery*/
+{
 	int offset;
 
 	AJWLib_Assert(line!=NULL);
@@ -704,8 +707,9 @@ void Graphics_LoadMarriageFileLine(char *line) {
 	marriagefile[offset+strlen(line)+1]='\0';
 }
 
-void Graphics_LoadDimensionsFileLine(char *line) {
-	/* Add the line to the dimensionsfile block, allocating as nessacery*/
+void Graphics_LoadDimensionsFileLine(char *line)
+/* Add the line to the dimensionsfile block, allocating as nessacery*/
+{
 	int offset;
 
 	AJWLib_Assert(line!=NULL);
@@ -723,8 +727,9 @@ void Graphics_LoadDimensionsFileLine(char *line) {
 	dimensionsfile[offset+strlen(line)+1]='\0';
 }
 
-void Graphics_LoadTitleFileLine(char *line) {
-	/* Add the line to the titlefile block, allocating as nessacery*/
+void Graphics_LoadTitleFileLine(char *line)
+/* Add the line to the titlefile block, allocating as nessacery*/
+{
 	int offset;
 
 	AJWLib_Assert(line!=NULL);
@@ -742,8 +747,9 @@ void Graphics_LoadTitleFileLine(char *line) {
 	titlefile[offset+strlen(line)+1]='\0';
 }
 
-void Graphics_SetGraphicsStyle(char *style) {
-	/* Set the name of the current graphics style, then import it if needed and parse it*/
+void Graphics_SetGraphicsStyle(char *style)
+/* Set the name of the current graphics style, then import it if needed and parse it*/
+{
 	char filename[256];
 
 	AJWLib_Assert(style!=NULL);

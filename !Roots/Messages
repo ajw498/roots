@@ -9,7 +9,7 @@ Sex.F:Female
 Sex.U:Unknown
 
 Title.IconBar:<Task.Name>
-Menu.IconBar:Info,Choices...,Quit
+Menu.IconBar:Info,Choices...,Graphics styles...,Quit
 
 Title.Sex:Sex
 Menu.Sex:<Sex.M>,<Sex.F>,<Sex.U>
@@ -61,7 +61,7 @@ User.Desc2:Status
 User.Desc3:Other
 
 Error.NoMem:Not enough free memory.
-Error.Married:These two people are already married to each other.
+Error.Marrd:These two people are already married to each other.
 Error.ConfigL:Error loading the choices file (%s)
 Error.ConfigS:Error saving the choices file (%s)
 Error.Choices:Error creating choices directory (%s)
