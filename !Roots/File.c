@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.13 2000/02/23 21:22:48 uid1 Exp $
+	$Id: File.c,v 1.14 2000/02/26 00:05:45 uid1 Exp $
 
 */
 
@@ -153,8 +153,8 @@ void File_New(void)
 	Windows_FilenameChanged(currentfilename);
 	Database_New();
 	Graphics_LoadStyle(Config_GraphicsStyle());
-	Windows_OpenWindow(wintype_UNLINKED,none,0);
-	Windows_OpenWindow(wintype_NORMAL,none,0);
+	Windows_OpenWindow(wintype_UNLINKED,none,0,100,NULL);
+	Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
 	Windows_LayoutNormal(NULL);
 }
 

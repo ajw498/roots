@@ -25,7 +25,7 @@ void Windows_ChangedLayout(void);
 
 Desk_bool Windows_BringToFront(void);
 
-void Windows_OpenWindow(wintype type,elementptr person,int generations);
+void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale,Desk_convert_block *coords);
 
 void Windows_Relayout(void);
 
