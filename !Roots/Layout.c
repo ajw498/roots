@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.65 2001/02/03 13:37:28 AJW Exp $
+	$Id: Layout.c,v 1.66 2001/02/03 19:54:31 AJW Exp $
 
 */
 
@@ -107,7 +107,7 @@ void Layout_CalcAllGridFromPositions(layout *layout)
 	for (i=0;i<layout->numpeople;i++) {
 		layout->person[i].xgrid=layout->person[i].x;
 		layout->person[i].ygrid=layout->person[i].y/(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
-		if (layout->person[i].width==Graphics_PersonWidth()) layout->person[i].width=0;
+		if (layout->person[i].width==Graphics_PersonWidth(none)) layout->person[i].width=0;
 		if (layout->person[i].height==Graphics_PersonHeight()) layout->person[i].height=0;
 	}
 }
@@ -119,7 +119,7 @@ void Layout_CalcAllPositionsFromGrid(layout *layout)
 	for (i=0;i<layout->numpeople;i++) {
 		layout->person[i].x=layout->person[i].xgrid;
 		layout->person[i].y=layout->person[i].ygrid*(Graphics_PersonHeight()+Graphics_GapHeightBelow()+Graphics_GapHeightAbove());
-		if (layout->person[i].width==0) layout->person[i].width=Graphics_PersonWidth();
+		if (layout->person[i].width==0) layout->person[i].width=Graphics_PersonWidth(none);
 		if (layout->person[i].height==0) layout->person[i].height=Graphics_PersonHeight();
 	}
 }
@@ -398,7 +398,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.65 2001/02/03 13:37:28 AJW Exp $
+	$Id: Layout.c,v 1.66 2001/02/03 19:54:31 AJW Exp $
 
 */
 
@@ -1333,7 +1333,7 @@ layout *Layout_GetGEDCOMLayout(void)
 	if (gedcomlayout!=NULL) {
 		for (i=0;i<gedcomlayout->numpeople;i++) {
 			if (gedcomlayout->person[i].width==0 && gedcomlayout->person[i].height==0) {
-				gedcomlayout->person[i].width=Database_GetElementType(gedcomlayout->person[i].element)==element_MARRIAGE ? Graphics_MarriageWidth() : Graphics_PersonWidth();
+				gedcomlayout->person[i].width=Database_GetElementType(gedcomlayout->person[i].element)==element_MARRIAGE ? Graphics_MarriageWidth() : Graphics_PersonWidth(gedcomlayout->person[i].element);
 				gedcomlayout->person[i].height=Graphics_PersonHeight();
 			}
 		}
