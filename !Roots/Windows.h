@@ -15,6 +15,9 @@
 #define fieldconfig_USERMARRIAGEBASE 24
 #define fieldconfig_OK 2
 #define fieldconfig_CANCEL 3
+#define fieldconfig_SAVEASDEFAULT 36
+#define fieldconfig_SEPARATEMARRIAGES 35
+
 
 extern Desk_window_handle fieldconfigwin;
 

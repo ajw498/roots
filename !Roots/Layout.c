@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.57 2000/11/13 20:26:13 AJW Exp $
+	$Id: Layout.c,v 1.58 2000/11/14 20:09:36 AJW Exp $
 
 */
 
@@ -28,6 +28,36 @@
 #include "Config.h"
 
 static layout *gedcomlayout=NULL;
+
+void Layout_ChangeMarriageTypes(layout *layout,Desk_bool separate)
+/*Change separate marriages into non, or vice versa*/
+/*This should really be in TreeLayout.c, but I can't be bothered at the moment*/
+{
+	int i;
+	flags flags;
+
+	flags.editable=1;
+	flags.moveable=1;
+	flags.linkable=1;
+	flags.snaptogrid=1;
+	flags.selectable=1;
+
+	if (separate) {
+		for (i=0;i<layout->numtransients;i++) {
+			if (Database_GetElementType(layout->transients[i].element)==element_MARRIAGE) {
+				Layout_AddElement(layout,layout->transients[i].element,layout->transients[i].x,layout->transients[i].y,Graphics_MarriageWidth(),layout->transients[i].height,layout->transients[i].xgrid,layout->transients[i].ygrid,flags);
+			}
+		}
+	} else {
+		for (i=0;i<layout->numpeople;i++) {
+			if (Database_GetElementType(layout->person[i].element)==element_MARRIAGE) {
+				Layout_RemoveElement(layout,layout->person[i].element);
+				i--;
+			}
+		}
+	}
+	Modules_ChangedStructure();
+}
 
 void Layout_Select(elementptr person)
 {
@@ -328,7 +358,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.57 2000/11/13 20:26:13 AJW Exp $
+	$Id: Layout.c,v 1.58 2000/11/14 20:09:36 AJW Exp $
 
 */
 

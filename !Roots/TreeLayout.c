@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.51 2000/11/13 20:26:18 AJW Exp $
+	$Id: TreeLayout.c,v 1.52 2000/11/14 20:09:43 AJW Exp $
 
 */
 
@@ -213,7 +213,8 @@ void TreeLayout_AddMarriage(layout *layout,elementptr marriage)
 
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(marriage!=none);
-	
+
+	if (!Config_SeparateMarriages()) return;
 	leftperson=Database_GetSpouseFromMarriage(marriage);
 	leftx=Layout_FindXCoord(layout,leftperson);
 	rightperson=Database_GetPrincipalFromMarriage(marriage);

@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.18 2000/11/12 16:13:19 AJW Exp $
+	$Id: Config.c,v 1.19 2000/11/14 20:09:34 AJW Exp $
 
 */
 
@@ -31,6 +31,7 @@
 
 #include "Config.h"
 #include "Modules.h"
+#include "Layout.h"
 
 #define config_IMPORTSTYLE 6
 #define config_DISPLAYTITLE 9
@@ -113,6 +114,12 @@ static void Config_Default(void)
 	config.autoincreasealways=Desk_FALSE;
 	config.fontblend=Desk_FALSE;
 	config.separatemarriages=Desk_TRUE;
+}
+
+void Config_SetSeparateMarriages(layout *layout,Desk_bool separate)
+{
+	if (config.separatemarriages!=separate) Layout_ChangeMarriageTypes(layout,separate);
+	config.separatemarriages=separate;
 }
 
 Desk_bool Config_SeparateMarriages(void)

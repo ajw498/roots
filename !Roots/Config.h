@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "LayoutStruct.h"
+
 extern char choicesread[256],choiceswrite[256];
 
 #define GRAPHICSDIR "Graphics"
@@ -9,6 +11,7 @@ extern char choicesread[256],choiceswrite[256];
 char *Config_GraphicsStyle(void);
 
 Desk_bool Config_SeparateMarriages(void);
+void Config_SetSeparateMarriages(layout *layout,Desk_bool separate);
 Desk_bool Config_ImportGraphicsStyle(void);
 Desk_bool Config_Title(void);
 Desk_bool Config_Snap(void);

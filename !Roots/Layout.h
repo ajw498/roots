@@ -7,6 +7,7 @@
 
 extern mouseclickdata mousedata;
 
+void Layout_ChangeMarriageTypes(layout *layout,Desk_bool separate);
 void Layout_DeleteSelected(layout *layout);
 Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref);
 void Layout_ResizeWindow(windowdata *windowdata);
