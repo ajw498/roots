@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.6  2000/01/14 13:02:49  AJW
+	Changed Graphics_ to Windows_
+
 	Revision 1.5  2000/01/11 17:13:24  AJW
 	Removed Database_Load until it works
 
@@ -87,8 +90,8 @@ Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 {
 	if (block->data.mouse.button.data.select==1) {
-		Graphics_OpenWindow(wintype_UNLINKED,none,0);
-		Graphics_OpenWindow(wintype_NORMAL,none,0);
+		Windows_OpenWindow(wintype_UNLINKED,none,0);
+		Windows_OpenWindow(wintype_NORMAL,none,0);
 		return Desk_TRUE;
 	}
 #if DEBUG
