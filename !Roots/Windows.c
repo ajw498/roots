@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.49 2000/02/26 17:11:25 uid1 Exp $
+	$Id: Windows.c,v 1.50 2000/02/26 17:47:25 uid1 Exp $
 
 */
 
@@ -969,12 +969,14 @@ void Windows_Relayout(void)
 
 int Windows_GetSize(void)
 {
-	int i,size=sizeof(savedata)+sizeof(tag)+sizeof(int);
+	int i,size=0;
+	Desk_bool donelayout=Desk_FALSE;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle!=0) {
-			if (windows[i].type==wintype_NORMAL) {
+			size+=sizeof(savedata)+sizeof(tag)+sizeof(int);
+			if (windows[i].type==wintype_NORMAL || !donelayout) {
 				size+=Layout_GetSize(windows[i].layout);
-				return size;
+				donelayout=Desk_TRUE;
 			}
 		}
 	}
