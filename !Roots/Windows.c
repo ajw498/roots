@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.109 2001/06/24 22:30:39 AJW Exp $
+	$Id: Windows.c,v 1.110 2001/07/02 19:39:08 AJW Exp $
 
 */
 
@@ -234,8 +234,8 @@ void Windows_GraphicsStylesMenu(Desk_menu_ptr *menuptr,char *dirname)
 		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY); /*Does this cope with long filenames?*/
 		do {
 			name=Desk_Filing_ReadDir(&dir);
-			if (name) {
-				Desk_bool found;
+			if (name && strcmp(name,"CVS")!=0) {
+				Desk_bool found=Desk_FALSE;
 
 				if (*menuptr) {
 					/*Check that the style is not already in the menu*/
@@ -243,7 +243,6 @@ void Windows_GraphicsStylesMenu(Desk_menu_ptr *menuptr,char *dirname)
 					Desk_menu_item *menu;
 
 					menu=Desk_Menu_FirstItem(*menuptr);
-					found=Desk_FALSE;
 					do {
 						j++;
 						if (menu[j].iconflags.data.indirected) {
@@ -259,7 +258,6 @@ void Windows_GraphicsStylesMenu(Desk_menu_ptr *menuptr,char *dirname)
 					}
 				} else {
 					*menuptr=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
-					found=Desk_FALSE;
 					i=0;
 				}
 				if (!found) {
