@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.27 2000/02/28 17:21:08 uid1 Exp $
+	$Id: Layout.c,v 1.28 2000/02/28 21:36:45 uid1 Exp $
 
 */
 
@@ -450,25 +450,26 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 {
 	Desk_wimp_rect box;
 	int i;
-	AJWLib_Assert(layout!=NULL);
 	box.min.x=INFINITY;
 	box.min.y=INFINITY;
 	box.max.x=-INFINITY;
 	box.max.y=-INFINITY;
-	for (i=0;i<layout->numpeople;i++) {
-		if (layout->person[i].selected || !selection) {
-			if (layout->person[i].x<box.min.x) box.min.x=layout->person[i].x;
-			if (layout->person[i].x+Graphics_PersonWidth()>box.max.x) box.max.x=layout->person[i].x+Graphics_PersonWidth();
-			if (layout->person[i].y<box.min.y) box.min.y=layout->person[i].y;
-			if (layout->person[i].y>box.max.y) box.max.y=layout->person[i].y;
+	if (layout) {
+		for (i=0;i<layout->numpeople;i++) {
+			if (layout->person[i].selected || !selection) {
+				if (layout->person[i].x<box.min.x) box.min.x=layout->person[i].x;
+				if (layout->person[i].x+Graphics_PersonWidth()>box.max.x) box.max.x=layout->person[i].x+Graphics_PersonWidth();
+				if (layout->person[i].y<box.min.y) box.min.y=layout->person[i].y;
+				if (layout->person[i].y>box.max.y) box.max.y=layout->person[i].y;
+			}
 		}
-	}
-	for (i=0;i<layout->nummarriages;i++) {
-		if (layout->marriage[i].selected || !selection) {
-			if (layout->marriage[i].x<box.min.x) box.min.x=layout->marriage[i].x;
-			if (layout->marriage[i].x+Graphics_MarriageWidth()>box.max.x) box.max.x=layout->marriage[i].x+Graphics_MarriageWidth();
-			if (layout->marriage[i].y<box.min.y) box.min.y=layout->marriage[i].y;
-			if (layout->marriage[i].y>box.max.y) box.max.y=layout->marriage[i].y;
+		for (i=0;i<layout->nummarriages;i++) {
+			if (layout->marriage[i].selected || !selection) {
+				if (layout->marriage[i].x<box.min.x) box.min.x=layout->marriage[i].x;
+				if (layout->marriage[i].x+Graphics_MarriageWidth()>box.max.x) box.max.x=layout->marriage[i].x+Graphics_MarriageWidth();
+				if (layout->marriage[i].y<box.min.y) box.min.y=layout->marriage[i].y;
+				if (layout->marriage[i].y>box.max.y) box.max.y=layout->marriage[i].y;
+			}
 		}
 	}
 	if (box.min.x==INFINITY) {
