@@ -17,4 +17,9 @@ int Config_ScrollSpeed(void);
 
 int Config_ScrollDistance(void);
 
+Desk_bool Config_AutoIncreaseSize(void);
+
+Desk_bool Config_AutoIncreaseAlways(void);
+
+
 #endif
