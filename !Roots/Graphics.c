@@ -2,12 +2,13 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.52 2000/10/21 15:07:13 AJW Exp $
+	$Id: Graphics.c,v 1.53 2000/11/05 12:03:43 AJW Exp $
 
 */
 
 #include "Desk.Window.h"
 #include "Desk.Error.h"
+#include "Desk.DeskMem.h"
 #include "Desk.Event.h"
 #include "Desk.EventMsg.h"
 #include "Desk.Handler.h"
@@ -25,6 +26,7 @@
 #include "Desk.GFX.h"
 #include "Desk.Font2.h"
 #include "Desk.ColourTran.h"
+#include "Desk.Str.h"
 
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
@@ -44,6 +46,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+
+#define LUA_REENTRANT
+#include "Lua.Lua.h"
 
 #include "Database.h"
 #include "Graphics.h"
@@ -86,6 +91,8 @@
 #define INITIALEDMIDDLENAME "initialedmiddlename"
 #define INITIALEDNAME "initialedname"
 #define SEX            "sex"
+
+#define MAXFONTS 255
 
 
 typedef enum personfieldtype {
@@ -183,11 +190,27 @@ typedef struct graphics {
 	int nummarriagefields;
 } graphics;
 
+static struct luadetails {
+	int originx;
+	int originy;
+	int scale;
+	lua_State *state;
+	char *error;
+	int numberoffonts;
+	struct fonts {
+		Desk_font2_block *handle;
+		char *fontname;
+		int size;
+	} fonts[MAXFONTS];
+} luadetails={0,0,100,NULL,NULL,0};
+
 static graphics graphicsdata;
 static char *personfile=NULL,*marriagefile=NULL,*dimensionsfile=NULL,*titlefile=NULL;
 static char currentstyle[256]="";
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
 static plottextfn Graphics_PlotText=NULL;
+static layout *redrawlayout=NULL;
+static Desk_bool uselua=Desk_FALSE;
 
 static unsigned int Graphics_RGBToPalette(char *str)
 /* Convert RRGGBB hex colour to a palette format 0xBBGGRR00*/
@@ -820,6 +843,7 @@ void Graphics_RemoveStyle(void)
 {
 	AJWLib_AssertWarning(graphicsdata.person!=NULL);
 	AJWLib_AssertWarning(graphicsdata.marriage!=NULL);
+	lua_close(luadetails.state);
 	Graphics_ReleaseFonts();
 	graphicsdata.numpersonobjects=0;
 	graphicsdata.nummarriageobjects=0;
@@ -850,6 +874,175 @@ static void Graphics_LoadStyleFile(char *style,char *filename,char **anchor)
 	(*anchor)[size]='\0';
 }
 
+static int Graphics_LuaPlotLine(lua_State *state)
+{
+	int x0,y0,x1,y1,thickness;
+	unsigned int colour;
+
+	if (lua_gettop(state)!=6) lua_error(state,"Incorrect number of arguments to function PlotLine");
+	x0=(int)lua_tonumber(state,1);
+	y0=(int)lua_tonumber(state,2);
+	x1=(int)lua_tonumber(state,3);
+	y1=(int)lua_tonumber(state,4);
+	thickness=(int)lua_tonumber(state,5);
+	colour=(unsigned int)lua_tonumber(state,6);
+	Graphics_PlotLine(luadetails.scale,luadetails.originx,luadetails.originy,x0,y0,x1,y1,thickness,colour);
+	return 0;
+}
+
+static int Graphics_LuaPlotRectangle(lua_State *state)
+{
+	int x,y,width,height,thickness;
+	unsigned int colour;
+
+	if (lua_gettop(state)!=6) lua_error(state,"Incorrect number of arguments to function PlotRectangle");
+	x=(int)lua_tonumber(state,1);
+	y=(int)lua_tonumber(state,2);
+	width=(int)lua_tonumber(state,3);
+	height=(int)lua_tonumber(state,4);
+	thickness=(int)lua_tonumber(state,5);
+	colour=(unsigned int)lua_tonumber(state,6);
+	Graphics_PlotRectangle(luadetails.scale,luadetails.originx,luadetails.originy,x,y,width,height,thickness,colour);
+	return 0;
+}
+
+static int Graphics_LuaPlotRectangleFilled(lua_State *state)
+{
+	int x,y,width,height;
+	unsigned int colour;
+
+	if (lua_gettop(state)!=5) lua_error(state,"Incorrect number of arguments to function PlotRectangleFilled");
+	x=(int)lua_tonumber(state,1);
+	y=(int)lua_tonumber(state,2);
+	width=(int)lua_tonumber(state,3);
+	height=(int)lua_tonumber(state,4);
+	colour=(unsigned int)lua_tonumber(state,5);
+	Graphics_PlotRectangleFilled(luadetails.scale,luadetails.originx,luadetails.originy,x,y,width,height,0,colour);
+	return 0;
+}
+
+static int Graphics_LuaPlotText(lua_State *state)
+{
+	int x,y;
+	int handle;
+	const char *text;
+	unsigned int bgcolour,fgcolour;
+
+	if (lua_gettop(state)!=6) lua_error(state,"Incorrect number of arguments to function PlotText");
+	x=(int)lua_tonumber(state,1);
+	y=(int)lua_tonumber(state,2);
+	handle=(int)lua_tonumber(state,3);
+	bgcolour=(unsigned int)lua_tonumber(state,4);
+	fgcolour=(unsigned int)lua_tonumber(state,5);
+	text=lua_tostring(state,6);
+	Graphics_PlotText(luadetails.scale,luadetails.originx,luadetails.originy,x,y,luadetails.fonts[handle].handle->handle,luadetails.fonts[handle].fontname,luadetails.fonts[handle].size,bgcolour,fgcolour,(char *)text);
+	return 0;
+}
+
+static int Graphics_LuaClaimFont(lua_State *state)
+{
+	int handle;
+	const char *fontname;
+	Desk_os_error *err;
+
+	if (lua_gettop(state)!=2) lua_error(state,"Incorrect number of arguments to function ClaimFont");
+	handle=luadetails.numberoffonts;
+	if (handle>=MAXFONTS) lua_error(state,"Too many fonts");
+	fontname=lua_tostring(state,1);
+	luadetails.fonts[handle].fontname=Desk_DeskMem_Malloc(strlen(fontname)+1);
+	strcpy(luadetails.fonts[handle].fontname,fontname);
+	luadetails.fonts[handle].size=(int)(16*lua_tonumber(state,2));
+	err=Desk_Font2_ClaimFont(&(luadetails.fonts[handle].handle),luadetails.fonts[handle].fontname,luadetails.fonts[handle].size,luadetails.fonts[handle].size);
+	if (err) lua_error(state,err->errmess);
+	lua_pushnumber(state,handle);
+	luadetails.numberoffonts++;
+	return 1;
+}
+
+static int Graphics_LuaGetField(lua_State *state)
+{
+	const char *fieldname;
+	elementptr element;
+
+	if (lua_gettop(state)!=2) lua_error(state,"Incorrect number of arguments to function GetField");
+	element=(elementptr)lua_tonumber(state,1);
+	fieldname=lua_tostring(state,2);
+	lua_pushstring(state,Database_GetField(element,(char *)fieldname));
+	return 1;
+}
+
+static int Graphics_LuaGetCoords(lua_State *state)
+{
+	elementptr element;
+
+	if (lua_gettop(state)!=1) lua_error(state,"Incorrect number of arguments to function GetCoords");
+	element=(elementptr)lua_tonumber(state,1);
+	lua_pushnumber(state,Layout_FindXCoord(redrawlayout,element));
+	lua_pushnumber(state,Layout_FindYCoord(redrawlayout,element));
+	return 2;
+}
+
+static int Graphics_LuaGetChild(lua_State *state)
+{
+	elementptr element;
+
+	if (lua_gettop(state)!=1) lua_error(state,"Incorrect number of arguments to function GetChild");
+	element=(elementptr)lua_tonumber(state,1);
+	element=Database_GetLeftChild(element);
+	if (element!=none) {
+		lua_pushnumber(state,element);
+		return 1;
+	}
+	return 0;
+}
+
+/*gettextdimensions(handle,text)
+getchild(marriage)
+getparentsmarriage(person)*/
+
+static int Graphics_LuaError(lua_State *state)
+{
+	const char *err;
+	int len;
+	int i,j;
+
+	err=lua_tostring(state,1);
+	len=strlen(err);
+	luadetails.error=Desk_DeskMem_Malloc(len+1);
+	j=0;
+	/*Strip control chars*/
+	for (i=0;i<len;i++) if (err[i]>=' ') luadetails.error[j++]=err[i];
+	luadetails.error[j]='\0';
+	return 0;
+}
+
+static void Graphics_LuaCheckError(int returncode)
+{
+	char *errormsg="Unknown error";
+
+	if (luadetails.error) errormsg=luadetails.error;
+	switch (returncode) {
+		case 0:
+			if (luadetails.error==NULL) break;
+		case LUA_ERRRUN:
+			AJWLib_Error2_HandleMsgs("Error.Lua1:%s",errormsg);
+			break;
+		case LUA_ERRFILE:
+			AJWLib_Error2_HandleMsgs("Error.Lua2:Unable to open file");
+			break;
+		case LUA_ERRSYNTAX:
+			AJWLib_Error2_HandleMsgs("Error.Lua3:%s",errormsg);
+			break;
+		case LUA_ERRMEM:
+			luadetails.error="Out of memory"; /*FIXME?*/
+			AJWLib_Error2_HandleMsgs("Error.NoMem:Out of memory");
+			break;
+		default:
+			AJWLib_Error2_HandleMsgs("Error.Lua4:%s",errormsg);
+			break;
+	}
+}
+
 void Graphics_LoadStyle(char *style)
 {
 	char filename[256];
@@ -860,6 +1053,24 @@ void Graphics_LoadStyle(char *style)
 	AJWLib_Assert(dimensionsfile==NULL);
 	AJWLib_Assert(titlefile==NULL);
 	AJWLib_Assert(style!=NULL);
+	luadetails.error=NULL;
+	luadetails.numberoffonts=0;
+	/*Initialise Lua*/
+	luadetails.state=lua_open(0);
+	/*Replace default error handler*/
+	lua_register(luadetails.state,"_ERRORMESSAGE",Graphics_LuaError);
+	/*Register functions that can be called from Lua*/
+	lua_register(luadetails.state,"PlotLine",Graphics_LuaPlotLine);
+	lua_register(luadetails.state,"PlotRectangle",Graphics_LuaPlotRectangle);
+	lua_register(luadetails.state,"PlotRectangleFilled",Graphics_LuaPlotRectangleFilled);
+	lua_register(luadetails.state,"PlotText",Graphics_LuaPlotText);
+	lua_register(luadetails.state,"ClaimFont",Graphics_LuaClaimFont);
+	lua_register(luadetails.state,"GetField",Graphics_LuaGetField);
+	lua_register(luadetails.state,"GetCoords",Graphics_LuaGetCoords);
+	lua_register(luadetails.state,"GetChild",Graphics_LuaGetChild);
+	/*Load the lua file, and run any bits of it that are not functions*/
+	Graphics_LuaCheckError(lua_dofile(luadetails.state,"<Roots$Dir>.LuaCode"));
+	uselua=Desk_TRUE;
 	Desk_Error2_Try {
 		sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,style);
 		if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs("Error.NoDir:Dir %s does not exist",style);
@@ -881,117 +1092,145 @@ char *Graphics_GetCurrentStyle(void)
 	return currentstyle;
 }
 
-static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool selected)
+static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,int width,int height,Desk_bool selected)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	AJWLib_Assert(person>0);
-	for (i=0;i<graphicsdata.numpersonobjects;i++) {
-		int xcoord=0;
-		if (graphicsdata.person[i].sex==sex_ANY || graphicsdata.person[i].sex==Database_GetSex(person)) {
-			switch (graphicsdata.person[i].type) {
-				case graphictype_RECTANGLE:
-					Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-					break;
-				case graphictype_FILLEDRECTANGLE:
-					Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-					break;
-				case graphictype_CHILDLINE:
-					if (!Database_GetMother(person)) break;
-				case graphictype_LINE:
-					Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
-					break;
-				case graphictype_CENTREDTEXTLABEL:
-					xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
-				case graphictype_TEXTLABEL:
-					Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
-					break;
-				default:
-					break;
-			}
-		}
-	}
-	for (i=0;i<graphicsdata.numpersonfields;i++) {
-		char fieldtext[3*FIELDSIZE+1]="";
-		int xcoord=0;
-		if (graphicsdata.personfields[i].sex==sex_ANY || graphicsdata.personfields[i].sex==Database_GetSex(person)) {
-			if (graphicsdata.personfields[i].personfieldtype<personfieldtype_UNKNOWN) {
-				strcpy(fieldtext,Database_GetPersonUserField(person,graphicsdata.personfields[i].personfieldtype));
-			} else {
-				switch (graphicsdata.personfields[i].personfieldtype) {
-					case personfieldtype_SURNAME:
-						strcpy(fieldtext,Database_GetSurname(person));
+	if (uselua) {
+		luadetails.originx=originx;
+		luadetails.originy=originy;
+		luadetails.scale=scale;
+		if (luadetails.error) return; /*Avoid infinite loop of error message causeing redraw causeing error...*/
+		lua_getglobal(luadetails.state,"RedrawPerson");
+		lua_pushnumber(luadetails.state,person);
+		lua_pushnumber(luadetails.state,x);
+		lua_pushnumber(luadetails.state,y);
+		lua_pushnumber(luadetails.state,width);
+		lua_pushnumber(luadetails.state,height);
+		Graphics_LuaCheckError(lua_call(luadetails.state,5,0));
+	} else {
+		for (i=0;i<graphicsdata.numpersonobjects;i++) {
+			int xcoord=0;
+			if (graphicsdata.person[i].sex==sex_ANY || graphicsdata.person[i].sex==Database_GetSex(person)) {
+				switch (graphicsdata.person[i].type) {
+					case graphictype_RECTANGLE:
+						Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 						break;
-					case personfieldtype_FORENAME:
-						strcpy(fieldtext,Database_GetForename(person));
+					case graphictype_FILLEDRECTANGLE:
+						Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 						break;
-					case personfieldtype_MIDDLENAMES:
-						strcpy(fieldtext,Database_GetMiddleNames(person));
+					case graphictype_CHILDLINE:
+						if (!Database_GetMother(person)) break;
+					case graphictype_LINE:
+						Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 						break;
-					case personfieldtype_NAME:
-						strcpy(fieldtext,Database_GetName(person));
-						break;
-					case personfieldtype_FULLNAME:
-						strcpy(fieldtext,Database_GetFullName(person));
-						break;
-					case personfieldtype_INITIALEDMIDDLENAME:
-						strcpy(fieldtext,Database_GetInitialedMiddleName(person));
-						break;
-					case personfieldtype_INITIALEDNAME:
-						strcpy(fieldtext,Database_GetInitialedName(person));
-						break;
-					case personfieldtype_SEX:
-						sprintf(fieldtext,"%c",Database_GetSex(person));
+					case graphictype_CENTREDTEXTLABEL:
+						xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
+					case graphictype_TEXTLABEL:
+						Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
 						break;
 					default:
-						strcpy(fieldtext,"Unimplemented");
+						break;
 				}
 			}
-			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
-			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
+		}
+		for (i=0;i<graphicsdata.numpersonfields;i++) {
+			char fieldtext[3*FIELDSIZE+1]="";
+			int xcoord=0;
+			if (graphicsdata.personfields[i].sex==sex_ANY || graphicsdata.personfields[i].sex==Database_GetSex(person)) {
+				if (graphicsdata.personfields[i].personfieldtype<personfieldtype_UNKNOWN) {
+					strcpy(fieldtext,Database_GetPersonUserField(person,graphicsdata.personfields[i].personfieldtype));
+				} else {
+					switch (graphicsdata.personfields[i].personfieldtype) {
+						case personfieldtype_SURNAME:
+							strcpy(fieldtext,Database_GetSurname(person));
+							break;
+						case personfieldtype_FORENAME:
+							strcpy(fieldtext,Database_GetForename(person));
+							break;
+						case personfieldtype_MIDDLENAMES:
+							strcpy(fieldtext,Database_GetMiddleNames(person));
+							break;
+						case personfieldtype_NAME:
+							strcpy(fieldtext,Database_GetName(person));
+							break;
+						case personfieldtype_FULLNAME:
+							strcpy(fieldtext,Database_GetFullName(person));
+							break;
+						case personfieldtype_INITIALEDMIDDLENAME:
+							strcpy(fieldtext,Database_GetInitialedMiddleName(person));
+							break;
+						case personfieldtype_INITIALEDNAME:
+							strcpy(fieldtext,Database_GetInitialedName(person));
+							break;
+						case personfieldtype_SEX:
+							sprintf(fieldtext,"%c",Database_GetSex(person));
+							break;
+						default:
+							strcpy(fieldtext,"Unimplemented");
+					}
+				}
+				if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
+				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
+			}
 		}
 	}
-	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
+	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,width,height,EORCOLOUR);
 }
 
-static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool selected)
+static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,int width,int height,elementptr marriage,Desk_bool selected)
 {
 	int i,xcoord=0;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	AJWLib_Assert(marriage>0);
-	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
-		switch (graphicsdata.marriage[i].type) {
-			case graphictype_RECTANGLE:
-				Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
-				break;
-			case graphictype_FILLEDRECTANGLE:
-				Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
-				break;
-			case graphictype_CHILDLINE:
-				if (!Database_GetLeftChild(marriage)) break;
-			case graphictype_LINE:
-				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
-				break;
-			case graphictype_CENTREDTEXTLABEL:
-				xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.text)/2;
-			case graphictype_TEXTLABEL:
-				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
-				break;
-			default:
-				break;
+	if (uselua) {
+		luadetails.originx=originx;
+		luadetails.originy=originy;
+		luadetails.scale=scale;
+		if (luadetails.error) return; /*Avoid infinite loop of error message causeing redraw causeing error...*/
+		lua_getglobal(luadetails.state,"RedrawMarriage");
+		lua_pushnumber(luadetails.state,marriage);
+		lua_pushnumber(luadetails.state,x);
+		lua_pushnumber(luadetails.state,y);
+		lua_pushnumber(luadetails.state,width);
+		lua_pushnumber(luadetails.state,height);
+		Graphics_LuaCheckError(lua_call(luadetails.state,5,0));
+	} else {
+		for (i=0;i<graphicsdata.nummarriageobjects;i++) {
+			switch (graphicsdata.marriage[i].type) {
+				case graphictype_RECTANGLE:
+					Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+					break;
+				case graphictype_FILLEDRECTANGLE:
+					Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+					break;
+				case graphictype_CHILDLINE:
+					if (!Database_GetLeftChild(marriage)) break;
+				case graphictype_LINE:
+					Graphics_PlotLine(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+					break;
+				case graphictype_CENTREDTEXTLABEL:
+					xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.text)/2;
+				case graphictype_TEXTLABEL:
+					Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
+					break;
+				default:
+					break;
+			}
+		}
+		for (i=0;i<graphicsdata.nummarriagefields;i++) {
+			char fieldtext[FIELDSIZE]="Unimplemented";
+			if (graphicsdata.marriagefields[i].marriagefieldtype<marriagefieldtype_UNKNOWN) {
+				strcpy(fieldtext,Database_GetMarriageUserField(marriage,graphicsdata.marriagefields[i].marriagefieldtype));
+			}
+			if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriagefields[i].textproperties.font->handle,fieldtext)/2;
+			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 		}
 	}
-	for (i=0;i<graphicsdata.nummarriagefields;i++) {
-		char fieldtext[FIELDSIZE]="Unimplemented";
-		if (graphicsdata.marriagefields[i].marriagefieldtype<marriagefieldtype_UNKNOWN) {
-			strcpy(fieldtext,Database_GetMarriageUserField(marriage,graphicsdata.marriagefields[i].marriagefieldtype));
-		}
-		if (graphicsdata.marriagefields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.marriagefields[i].textproperties.font->handle,fieldtext)/2;
-		Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
-	}
-	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
+	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,width,height,EORCOLOUR);
 }
 
 static void Graphics_PlotChildren(int scale,int originx,int originy,int leftx,int rightx,int y)
@@ -1009,8 +1248,9 @@ void Graphics_SetFunctions(plotfn plotline,plotfn plotrect,plotfn plotrectfilled
 	Graphics_PlotText=plottext;
 }
 
-void Graphics_PlotElement(elementptr element,int scale,int originx,int originy,int x,int y,int width,int height,Desk_bool plotselection)
+void Graphics_PlotElement(layout *layout,elementptr element,int scale,int originx,int originy,int x,int y,int width,int height,Desk_bool plotselection)
 {
+	redrawlayout=layout;
 	switch (Database_GetElementType(element)) {
 		case element_CHILDLINE:
 			Graphics_PlotChildren(scale,originx,originy,x,x+width,y);
@@ -1019,69 +1259,12 @@ void Graphics_PlotElement(elementptr element,int scale,int originx,int originy,i
 			Graphics_PlotText(scale,originx,originy,x,y,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
 			break;
 		case element_PERSON:
-			Graphics_PlotPerson(scale,originx,originy,element,x,y,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
+			Graphics_PlotPerson(scale,originx,originy,element,x,y,width,height,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
 			break;
 		case element_MARRIAGE:
-			Graphics_PlotMarriage(scale,originx,originy,x,y,element,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
+			Graphics_PlotMarriage(scale,originx,originy,x,y,width,height,element,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
 			break;
 	}
 }
 
-/*void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
-{
-	int i;
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	AJWLib_Assert(layout!=NULL);
-	Graphics_PlotLine=plotline;
-	Graphics_PlotRectangle=plotrect;
-	Graphics_PlotRectangleFilled=plotrectfilled;
-	Graphics_PlotText=plottext;
-	if (layout->title.x!=INFINITY || layout->title.y!=INFINITY) {
-		if (Config_Title()) {
-			Desk_wimp_point *coords;
-			coords=AJWLib_Font_GetWidthAndHeight(graphicsdata.title.font->handle,Database_GetTitle());
-			if ((originx+((layout->title.x-coords->x/2)*scale)/100)-4<cliprect->max.x) {
-				if ((originx+((layout->title.x+coords->x/2)*scale)/100)+4>cliprect->min.x) {
-					if ((originy+((layout->title.y-Graphics_TitleHeight())*scale)/100)<cliprect->max.y) {
-						Graphics_PlotText(scale,originx,originy,layout->title.x-coords->x/2,layout->title.y-coords->y/2,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
-					}
-				}
-			}
-		}
-	}
-	for (i=0;i<layout->numtransients;i++) {
-		if ((originx+((layout->transients[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
-			if ((originx+((layout->transients[i].x+layout->transients[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
-				if ((originy+((layout->transients[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
-					if ((originy+((layout->transients[i].y+layout->transients[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotChildren(scale,originx,originy,layout->transients[i].x,layout->transients[i].x+layout->transients[i].width,layout->transients[i].y);
-					}
-				}
-			}
-		}
-	}
-	for (i=0;i<layout->nummarriages;i++) {
-		if ((originx+((layout->marriage[i].x-Graphics_PersonWidth())*scale)/100)<cliprect->max.x) {
-			if ((originx+((layout->marriage[i].x+Graphics_MarriageWidth()+Graphics_PersonWidth())*scale)/100)>cliprect->min.x) {
-				if ((originy+((layout->marriage[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
-					if ((originy+((layout->marriage[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].element,plotselection ? Layout_GetSelect(layout->marriage[i].element) : Desk_FALSE);
-					}
-				}
-			}
-		}
-	}
-	for (i=0;i<layout->numpeople;i++) {
-		if ((originx+((layout->person[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
-			if ((originx+((layout->person[i].x+Graphics_PersonWidth()+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
-				if ((originy+((layout->person[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
-					if ((originy+((layout->person[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotPerson(scale,originx,originy,layout->person[i].element,layout->person[i].x,layout->person[i].y,plotselection ? Layout_GetSelect(layout->person[i].element) : Desk_FALSE);
-					}
-				}
-			}
-		}
-	}
-} */
 

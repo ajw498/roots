@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.48 2000/10/21 15:07:10 AJW Exp $
+	$Id: Database.c,v 1.49 2000/11/05 12:03:40 AJW Exp $
 
 */
 
@@ -15,6 +15,7 @@
 #include "Desk.Menu.h"
 #include "Desk.DeskMem.h"
 #include "Desk.Filing.h"
+#include "Desk.Str.h"
 
 #include "AJWLib.Assert.h"
 #include "AJWLib.Window.h"
@@ -220,6 +221,34 @@ void Database_SetMarriageUser(int num,elementptr marriage,char *str)
 	AJWLib_Assert(num<NUMBERMARRIAGEUSERFIELDS);
 	strncpy(database[marriage].element.marriage.data.user[num],str,FIELDSIZE-1);
 	database[marriage].element.marriage.data.user[num][FIELDSIZE-1]='\0';
+}
+
+char *Database_GetField(elementptr element,char *fieldname)
+{
+	char sexstr[]="U";
+	int i;
+
+	AJWLib_Assert(database!=NULL);
+	if (element<=none) return "";
+	if (element>=database[0].element.file.numberofelements) return "";
+	switch (database[element].type) {
+		case element_PERSON:
+			sexstr[0]=database[element].element.person.data.sex;
+			if (Desk_stricmp(fieldname,"forename")==0)    return database[element].element.person.data.forename;
+			if (Desk_stricmp(fieldname,"surname")==0)     return database[element].element.person.data.surname;
+			if (Desk_stricmp(fieldname,"middlenames")==0) return database[element].element.person.data.middlenames;
+			if (Desk_stricmp(fieldname,"sex")==0)         return sexstr;
+			for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+				if (Desk_stricmp(fieldname,personuser[i])==0) return database[element].element.person.data.user[i];
+			}
+			break;
+		case element_MARRIAGE:
+			for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+				if (Desk_stricmp(fieldname,marriageuser[i])==0) return database[element].element.marriage.data.user[i];
+			}
+			break;
+	}
+	return "";
 }
 
 void Database_SetMarriage(elementptr person,elementptr marriage)
@@ -590,7 +619,9 @@ elementptr Database_GetParentsMarriage(elementptr person)
 elementptr Database_GetMother(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
-	if (person==none) return none;
+	AJWLib_AssertWarning(person>=0);
+	AJWLib_AssertWarning(person<database[0].element.file.numberofelements);
+	if (person<=none || person>=database[0].element.file.numberofelements) return none;
 	if (database[person].element.person.parentsmarriage==none) return none;
 	return database[database[person].element.person.parentsmarriage].element.marriage.spouse;
 }
