@@ -1,0 +1,56 @@
+#define DEBUG 1
+
+typedef struct personlayout {
+	int x;
+	int y;
+	elementptr person;
+	Desk_bool child;
+	Desk_bool selected;
+} personlayout;
+
+typedef struct marriagelayout {
+	int x;
+	int y;
+	elementptr marriage;
+	Desk_bool childline;
+	Desk_bool selected;
+} marriagelayout;
+
+typedef struct childlinelayout {
+	int leftx;
+	int rightx;
+	int y;
+} childlinelayout;
+
+typedef struct layout {
+	personlayout *person;
+	int numpeople;
+	marriagelayout *marriage;
+	int nummarriages;
+	childlinelayout *children;
+	int numchildren;
+} layout;
+
+
+layout *Layout_LayoutUnlinked(void);
+layout *Layout_LayoutNormal(void);
+layout *Layout_LayoutDescendents(elementptr person, int generations);
+layout *Layout_LayoutAncestors(elementptr person, int generations);
+Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
+Desk_bool Layout_Selected(layout *layout,elementptr person);
+void Layout_AlterChildline(layout *layout,elementptr person,Desk_bool on);
+void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,Desk_bool on);
+void Layout_AddPerson(layout *layout,elementptr person,int x,int y);
+void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y);
+int Layout_FindXCoord(layout *layout,elementptr person);
+int Layout_FindYCoord(layout *layout,elementptr person);
+int Layout_FindMarriageXCoord(layout *layout,elementptr marriage);
+void Layout_LayoutMarriages(layout *layout);
+void Layout_LayoutLines(layout *layout);
+void Layout_SelectDescendents(layout *layout,elementptr person);
+void Layout_SelectAncestors(layout *layout,elementptr person);
+void Layout_SelectSiblings(layout *layout,elementptr person);
+void Layout_SelectSpouses(layout *layout,elementptr person);
+void Layout_RemovePerson(layout *layout,elementptr person);
+void Layout_RemoveMarriage(layout *layout,elementptr marriage);
+
