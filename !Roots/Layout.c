@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.72 2002/08/01 15:36:22 ajw Exp $
+	$Id: Layout.c,v 1.73 2002/08/01 15:55:26 ajw Exp $
 
 */
 
@@ -454,7 +454,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.72 2002/08/01 15:36:22 ajw Exp $
+	$Id: Layout.c,v 1.73 2002/08/01 15:55:26 ajw Exp $
 
 */
 
@@ -743,6 +743,8 @@ static void Layout_MoveDragEnd(void *ref)
 	mousey=Layout_NearestGeneration(((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale);
 	/*Move all people/marriages that were selected*/
 	Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex,mousey-dragdata->origmousey);
+	/*We need to find the new position of marriages before trying to unlink anybody*/
+	Layout_LayoutLines(dragdata->windowdata->layout,Desk_FALSE);
 	/*Check to see if any people might need unlinking*/
 	if (mousey!=dragdata->origmousey) {
 		int i;
@@ -751,6 +753,7 @@ static void Layout_MoveDragEnd(void *ref)
 			TreeLayout_CheckForUnlink(dragdata->windowdata->layout,dragdata->windowdata->layout->person[i].element);
 		}
 	}
+	/*Find the new position of marriages as some may have become unlinked since the first time*/
 	Layout_LayoutLines(dragdata->windowdata->layout,Desk_FALSE);
 	Layout_LayoutTitle(dragdata->windowdata->layout);
 	Layout_ResizeWindow(dragdata->windowdata);

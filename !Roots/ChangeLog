@@ -1,9 +1,13 @@
+v1.15 1-Aug-02
+Fixed bug that unlinked a family if they were moved up a generation or more
+Added user defineable field types
+
 v1.14 20-Oct-01
 Fixed a bug that caused a crash if you closed a window with unsaved changes,
 and then selected the save option.
 Clicking on the toggle size icon on a newly opened window should no longer
 move the window off screen
- 
+
 v1.13 2-Jul-01
 Added style editor
 
@@ -17,7 +21,7 @@ Added support for GEDCOM CONT (continuation) and CONC (concatenation) tags
 Fixed bug that greyed out marriage submenu when auto sized marriages were used
 Now only claims Null polls when needed rather than all the time
 User created graphics styles are still stored in Boot:Choices, but defaults are
- left in !Roots.Defaults for easier future upgrading. 
+ left in !Roots.Defaults for easier future upgrading
 
 v1.10 29-Nov-00
 Improved graphics styles - uses Lua as a scripting language
