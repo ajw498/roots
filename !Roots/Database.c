@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.8  1999/10/25 16:50:11  AJW
+	Added Database_GetName etc functions
+
 	Revision 1.7  1999/10/25 16:29:30  AJW
 	Added Database_GetFilename and Database_New
 
@@ -231,6 +234,78 @@ elementptr Database_GetMarriageRtoL(elementptr person)
 	marriage2=database[marriage].marriage.previous;
 	if (marriage2==none) return database[marriage].marriage.principal;
 	return database[marriage2].marriage.spouse;
+}
+
+char *Database_GetName(elementptr person)
+{
+	static char result[256];
+	strcpy(result,"");
+	if (strlen(database[person].person.data.forename)) {
+		strcat(result,database[person].person.data.forename);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.surname)) {
+		strcat(result,database[person].person.data.surname);
+	}
+	return result;
+}
+
+char *Database_GetFullName(elementptr person)
+{
+	static char result[256];
+	strcpy(result,"");
+	if (strlen(database[person].person.data.forename)) {
+		strcat(result,database[person].person.data.forename);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.middlenames)) {
+		strcat(result,database[person].person.data.middlenames);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.surname)) {
+		strcat(result,database[person].person.data.surname);
+	}
+	return result;
+}
+
+char *Database_GetTitledName(elementptr person)
+{
+	static char result[256];
+	strcpy(result,"");
+	if (strlen(database[person].person.data.title)) {
+		strcat(result,database[person].person.data.title);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.forename)) {
+		strcat(result,database[person].person.data.forename);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.surname)) {
+		strcat(result,database[person].person.data.surname);
+	}
+	return result;
+}
+
+char *Database_GetTitledFullName(elementptr person)
+{
+	static char result[256];
+	strcpy(result,"");
+	if (strlen(database[person].person.data.title)) {
+		strcat(result,database[person].person.data.title);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.forename)) {
+		strcat(result,database[person].person.data.forename);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.middlenames)) {
+		strcat(result,database[person].person.data.middlenames);
+		strcat(result," ");
+	}
+	if (strlen(database[person].person.data.surname)) {
+		strcat(result,database[person].person.data.surname);
+	}
+	return result;
 }
 
 void Database_UnlinkPerson(elementptr person)
