@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.35 2001/06/11 23:10:14 AJW Exp $
+	$Id: Main.c,v 1.36 2001/06/21 22:12:43 AJW Exp $
 	
 */
 
@@ -64,7 +64,7 @@
 
 
 static Desk_window_handle proginfowin,quitwin;
-static Desk_menu_ptr iconbarmenu;
+static Desk_menu_ptr iconbarmenu,editgsmenu;
 static char *taskname=NULL,*errbad=NULL;
 
 static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
@@ -114,20 +114,10 @@ static Desk_bool IconBarClick(Desk_event_pollblock *block, void *ref)
 
 static void IconBarMenuClick(int entry, void *ref)
 {
-	char cmd[256];
-
 	Desk_UNUSED(ref);
 	switch (entry) {
 		case iconbarmenu_CHOICES:
 			Config_Open();
-			break;
-		case iconbarmenu_GRAPHICSSTYLES:
-			EditGraphics_Open();
-			break;
-			sprintf(cmd,"Filer_OpenDir %s.%s",DEFAULTS,GRAPHICSDIR);
-			Desk_Wimp_StartTask(cmd);
-			sprintf(cmd,"Filer_OpenDir %s.%s",choiceswrite,GRAPHICSDIR);
-			Desk_Wimp_StartTask(cmd);
 			break;
 		case iconbarmenu_QUIT:
 			if (File_GetModified()) AJWLib_Window_OpenTransient(quitwin); else Desk_Event_CloseDown();
@@ -169,6 +159,9 @@ int main(int argc,char *argv[])
 		Desk_Icon_SetText(proginfowin,proginfo_VERSION,ROOTS_VERSION);
 		AJWLib_Window_RegisterDCS(quitwin,quiticon_DISCARD,quiticon_CANCEL,-1,NULL,NULL);
 		iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
+		editgsmenu=AJWLib_Menu_CreateFromMsgs("Title.GS:","Menu.GS:",EditGraphics_IBarMenuClick,NULL);
+		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_GRAPHICSSTYLES,editgsmenu);
+
 		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)proginfowin);
 		AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
 		Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);

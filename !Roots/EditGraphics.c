@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.2 2001/06/11 23:10:13 AJW Exp $
+	$Id: EditGraphics.c,v 1.3 2001/06/21 22:12:41 AJW Exp $
 
 */
 
@@ -46,6 +46,7 @@
 #include "AJWLib/Str.h"
 #include "AJWLib/Draw.h"
 #include "AJWLib/DrawFile.h"
+#include "AJWLib/File.h"
 
 #include "EditGraphics.h"
 #include "Draw.h"
@@ -90,6 +91,27 @@
 #define editshape_BACK 27
 #define editshape_DELETE 28
 
+#define editmisc_ABOVE 29
+#define editmisc_BELOW 4
+#define editmisc_BETWEEN 8
+#define editmisc_THICKNESS 20
+#define editmisc_BORDER 12
+#define editmisc_TITLE 16
+#define editmisc_ABOVEUP 3
+#define editmisc_BELOWUP 6
+#define editmisc_BETWEENUP 10
+#define editmisc_THICKNESSUP 22
+#define editmisc_BORDERUP 14
+#define editmisc_TITLEUP 18
+#define editmisc_ABOVEDOWN 31
+#define editmisc_BELOWDOWN 5
+#define editmisc_BETWEENDOWN 9
+#define editmisc_THICKNESSDOWN 21
+#define editmisc_BORDERDOWN 13
+#define editmisc_TITLEDOWN 17
+#define editmisc_COLOUR 25
+#define editmisc_COLOURMENU 24
+
 
 #define shapemenu_LINE 0
 #define shapemenu_RECTANGLE 1
@@ -101,6 +123,11 @@
 #define justmenu_LEFT 0
 #define justmenu_RIGHT 1
 #define justmenu_CENTRED 2
+
+#define ibarmenu_NEW 0
+#define ibarmenu_EDIT 1
+#define ibarmenu_DELETE 2
+#define ibarmenu_DIR 3
 
 #define edittext_TYPE 9
 #define edittext_TYPEMENU 8
@@ -123,6 +150,15 @@
 #define edittext_YUP 7
 #define edittext_YDOWN 6
 #define edittext_DELETE 28
+
+#define mainwin_PERSON 0
+#define mainwin_MARRIAGE 1
+#define mainwin_MISC 2
+#define mainwin_CANCEL 4
+#define mainwin_SAVE 3
+#define mainwin_NAME 5
+
+
 
 typedef struct shapedetails {
 	enum {
@@ -173,12 +209,29 @@ typedef struct persondetails {
 	object *objects;
 } persondetails;
 
+typedef struct miscdetails {
+	int gapabove;
+	int gapbelow;
+	int gapbetween;
+	int thickness;
+	unsigned int colour;
+	int windowborder;
+	int titleheight;
+} miscdetails;
 
-static persondetails person;
+typedef struct styledetails {
+	persondetails person;
+	persondetails marriage;
+	miscdetails misc;
+} styledetails;
+
+static styledetails style;
+static persondetails *item;
 static shapedetails *editingshape=NULL;
 static textdetails *editingtext=NULL;
+static Desk_bool editingsize=Desk_FALSE,editingmisc=Desk_FALSE;
 
-static Desk_window_handle editwin,toolboxpane,shapewin,sizewin,textwin;
+static Desk_window_handle editwin,toolboxpane,shapewin,sizewin,textwin,mainwin,miscwin;
 static Desk_menu_ptr shapemenu,textmenu,fontmenu,justmenu;
 
 #define BORDER 50
@@ -189,9 +242,9 @@ static void EditGraphics_UpdateWindow(void)
 	Desk_wimp_rect bbox={0,0,0,0};
 	object *object;
 
-	bbox.max.x=person.width;
-	bbox.max.y=person.height;
-	object=person.objects;
+	bbox.max.x=item->width;
+	bbox.max.y=item->height;
+	object=item->objects;
 
 	while (object!=NULL) {
 		if (object->type==object_SHAPE) {
@@ -214,10 +267,30 @@ static void EditGraphics_UpdateWindow(void)
 	Desk_Window_ForceWholeRedraw(editwin);
 }
 
-void EditGraphics_Open(void)
+void EditGraphics_CreateNew(void)
 {
-	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
-	EditGraphics_UpdateWindow();
+	style.person.width=400;
+	style.person.height=200;
+	style.person.objects=NULL;
+
+	style.marriage.width=150;
+	style.marriage.height=200;
+	style.marriage.objects=NULL;
+
+	style.misc.gapabove=25;
+	style.misc.gapbelow=25;
+	style.misc.gapbetween=50;
+	style.misc.thickness=0;
+	style.misc.colour=0;
+	style.misc.windowborder=20;
+	style.misc.titleheight=100;
+
+	Desk_Icon_SetText(mainwin,mainwin_NAME,AJWLib_Msgs_TempLookup("Style.New:New"));
+
+	editingshape=NULL;
+	editingtext=NULL;
+
+	Desk_Window_Show(mainwin,Desk_open_CENTERED);
 }
 
 static void EditGraphics_UpdateShapeWindow(void)
@@ -330,23 +403,36 @@ static Desk_bool EditGraphics_SendToBack(Desk_event_pollblock *block,void *ref)
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	if (ref) editingobject=editingtext; else editingobject=editingshape;
 
-	object=person.objects;
+	object=item->objects;
 	while (object!=NULL && &(object->next->object.shape)!=editingobject) object=object->next;
 	if (object==NULL) return Desk_TRUE;
 	nextobject=object->next;
 	object->next=nextobject->next;
-	nextobject->next=person.objects;
-	person.objects=nextobject;
+	nextobject->next=item->objects;
+	item->objects=nextobject;
 	EditGraphics_UpdateWindow();
 	return Desk_TRUE;
 }
 
-static Desk_bool EditGraphics_EditSize(Desk_event_pollblock *block,void *ref)
+static Desk_bool EditGraphics_OpenEditSizeWindow(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(block);
 	Desk_UNUSED(ref);
 
+	Desk_Icon_SetInteger(sizewin,editsize_WIDTH,item->width);
+	Desk_Icon_SetInteger(sizewin,editsize_HEIGHT,item->height);
 	Desk_Window_Show(sizewin,Desk_open_NEARLAST);
+	editingsize=Desk_TRUE;
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_CloseEditSizeWindow(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(block);
+	Desk_UNUSED(ref);
+
+	Desk_Window_Hide(sizewin);
+	editingsize=Desk_FALSE;
 	return Desk_TRUE;
 }
 
@@ -383,12 +469,12 @@ static Desk_bool EditGraphics_AddText(Desk_event_pollblock *block,void *ref)
 	Desk_UNUSED(block);
 	Desk_UNUSED(ref);
 
-	oldtext=person.objects;
+	oldtext=item->objects;
 	while (oldtext!=NULL && oldtext->next!=NULL) oldtext=oldtext->next; /*Find end of text list*/
 	newtext=Desk_DeskMem_Malloc(sizeof(object));
 	if (oldtext==NULL) { /*Add new text to end of list*/
-		newtext->next=person.objects;
-		person.objects=newtext;
+		newtext->next=item->objects;
+		item->objects=newtext;
 	} else {
 		newtext->next=NULL;
 		oldtext->next=newtext;
@@ -399,8 +485,8 @@ static Desk_bool EditGraphics_AddText(Desk_event_pollblock *block,void *ref)
 	newtext->object.text.x=0;
 	newtext->object.text.y=0;
 	newtext->object.text.size=12;
-	strcpy(newtext->object.text.label,"Wibble");
-	strcpy(newtext->object.text.font,"Trinity.Medium");
+	strcpy(newtext->object.text.label,AJWLib_Msgs_TempLookup("Default.Text:Wibble"));
+	strcpy(newtext->object.text.font,AJWLib_Msgs_TempLookup("Default.Font:Trinity.Medium"));
 	newtext->object.text.colour=0; /*black*/
 	newtext->object.text.expand=Desk_FALSE;
 	newtext->object.text.bbox=*AJWLib_Font_GetBBoxGiven(newtext->object.text.font,newtext->object.text.size*16,newtext->object.text.label);
@@ -435,12 +521,12 @@ static Desk_bool EditGraphics_AddShape(Desk_event_pollblock *block,void *ref)
 	Desk_UNUSED(block);
 	Desk_UNUSED(ref);
 
-	oldshape=person.objects;
+	oldshape=item->objects;
 	while (oldshape!=NULL && oldshape->next!=NULL) oldshape=oldshape->next; /*Find end of shape list*/
 	newshape=Desk_DeskMem_Malloc(sizeof(object));
 	if (oldshape==NULL) { /*Add new shape to end of list*/
-		newshape->next=person.objects;
-		person.objects=newshape;
+		newshape->next=item->objects;
+		item->objects=newshape;
 	} else {
 		newshape->next=NULL;
 		oldshape->next=newshape;
@@ -462,19 +548,31 @@ static Desk_bool EditGraphics_AddShape(Desk_event_pollblock *block,void *ref)
 static Desk_bool EditGraphics_Delete(Desk_event_pollblock *block,void *ref)
 {
 	void *editingobject;
-    object *object, *nextobject;
+    object *object, *objecttodelete=NULL;
 
 	AJWLib_Assert(editingshape!=NULL || editingtext!=NULL);
 	
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	if (ref) editingobject=editingtext; else editingobject=editingshape;
 
-	object=person.objects;
-	while (object!=NULL && &(object->next->object.shape)!=editingobject) object=object->next;
+	object=item->objects;
 	if (object==NULL) return Desk_TRUE;
-	nextobject=object->next;
-	object->next=nextobject->next;
-	Desk_DeskMem_Free(nextobject);
+	if (&(object->object.shape)==editingobject) {
+		objecttodelete=object;
+		item->objects=object->next;
+	} else {
+		struct object *previousobject=NULL;
+		while (object!=NULL) {
+			if (&(object->object.shape)==editingobject) {
+				objecttodelete=object;
+				break;
+			}
+			previousobject=object;
+			object=object->next;
+		}
+		previousobject->next=objecttodelete->next;
+	}
+	Desk_DeskMem_Free(objecttodelete);
 	if (ref) EditGraphics_CloseTextWindow(NULL,NULL); else EditGraphics_CloseShapeWindow(NULL,NULL);
 	EditGraphics_UpdateWindow();
 	return Desk_TRUE;
@@ -485,8 +583,10 @@ static Desk_bool EditGraphics_UpdateWidthAndHeight(Desk_event_pollblock *block,v
 	Desk_UNUSED(block);
 	Desk_UNUSED(ref);
 
-	person.width=Desk_Icon_GetInteger(sizewin,editsize_WIDTH);
-	person.height=Desk_Icon_GetInteger(sizewin,editsize_HEIGHT);
+	if (editingsize) {
+		item->width=Desk_Icon_GetInteger(sizewin,editsize_WIDTH);
+		item->height=Desk_Icon_GetInteger(sizewin,editsize_HEIGHT);
+	}
 	if (editingshape) {
 		editingshape->x=Desk_Icon_GetInteger(shapewin,editshape_X);
 		editingshape->y=Desk_Icon_GetInteger(shapewin,editshape_Y);
@@ -509,17 +609,123 @@ static Desk_bool EditGraphics_UpdateWidthAndHeight(Desk_event_pollblock *block,v
 	return Desk_FALSE;
 }
 
-static Desk_bool EditGraphics_CloseWindow(Desk_event_pollblock *block,void *ref)
+static Desk_bool EditGraphics_ClosePersonWindow(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(block);
 	Desk_UNUSED(ref);
 
-	Desk_Pane2_Hide(editwin);
+	EditGraphics_CloseEditSizeWindow(NULL,NULL);
 	EditGraphics_CloseTextWindow(NULL,NULL);
 	EditGraphics_CloseShapeWindow(NULL,NULL);
+	Desk_Pane2_Hide(editwin);
 	return Desk_TRUE;
 }
 
+static Desk_bool EditGraphics_OpenMiscWindow(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(block);
+	Desk_UNUSED(ref);
+
+	if (editingmisc) return Desk_TRUE;
+
+	Desk_Icon_SetInteger(miscwin,editmisc_ABOVE,style.misc.gapabove);
+	Desk_Icon_SetInteger(miscwin,editmisc_BELOW,style.misc.gapbelow);
+	Desk_Icon_SetInteger(miscwin,editmisc_BETWEEN,style.misc.gapbetween);
+	Desk_Icon_SetInteger(miscwin,editmisc_THICKNESS,style.misc.thickness);
+	Desk_Icon_SetInteger(miscwin,editmisc_BORDER,style.misc.windowborder);
+	Desk_Icon_SetInteger(miscwin,editmisc_TITLE,style.misc.titleheight);
+
+	Desk_Window_Show(miscwin,Desk_open_NEARLAST);
+	editingmisc=Desk_TRUE;
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_CloseMiscWindow(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(block);
+	Desk_UNUSED(ref);
+
+	if (!editingmisc) return Desk_TRUE;
+
+	style.misc.gapabove=Desk_Icon_GetInteger(miscwin,editmisc_ABOVE);
+	style.misc.gapbelow=Desk_Icon_GetInteger(miscwin,editmisc_BELOW);
+	style.misc.gapbetween=Desk_Icon_GetInteger(miscwin,editmisc_BETWEEN);
+	style.misc.thickness=Desk_Icon_GetInteger(miscwin,editmisc_THICKNESS);
+	style.misc.windowborder=Desk_Icon_GetInteger(miscwin,editmisc_BORDER);
+	style.misc.titleheight=Desk_Icon_GetInteger(miscwin,editmisc_TITLE);
+
+	Desk_Window_Hide(miscwin);
+	editingmisc=Desk_FALSE;
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_EditPerson(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(block);
+	Desk_UNUSED(ref);
+
+	EditGraphics_ClosePersonWindow(NULL,NULL);
+	item=&(style.person);
+	Desk_Window_SetTitle(editwin,AJWLib_Msgs_TempLookup("Edit.Person:"));
+
+	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
+	EditGraphics_UpdateWindow();
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_EditMarriage(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(block);
+	Desk_UNUSED(ref);
+
+	EditGraphics_ClosePersonWindow(NULL,NULL);
+	item=&(style.marriage);
+	Desk_Window_SetTitle(editwin,AJWLib_Msgs_TempLookup("Edit.Marr:"));
+
+	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
+	EditGraphics_UpdateWindow();
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_CancelStyle(Desk_event_pollblock *block,void *ref)
+{
+	object *item;
+
+	Desk_UNUSED(ref);
+
+	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+
+	item=style.person.objects;
+	while (item) {
+		object *next=item->next;
+		Desk_DeskMem_Free(item);
+		item=next;
+	}
+
+	item=style.marriage.objects;
+	while (item) {
+		object *next=item->next;
+		Desk_DeskMem_Free(item);
+		item=next;
+	}
+
+	EditGraphics_ClosePersonWindow(NULL,NULL);
+	EditGraphics_CloseMiscWindow(NULL,NULL);
+	Desk_Window_Hide(mainwin);
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_SaveStyle(Desk_event_pollblock *block,void *ref)
+{
+	FILE *file;
+	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	/*Do the actual saving*/
+	file=AJWLib_File_fopen("IDEFS::4.$.op","w");
+	fprintf(file,"-- Roots style file\n-- Saved by the Roots style editor\n");
+	AJWLib_File_fclose(file);
+	if (block->data.mouse.button.data.select) EditGraphics_CancelStyle(block,ref);
+	return Desk_TRUE;
+}
 static Desk_bool EditGraphics_ShapeColourChoice(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(ref);
@@ -539,6 +745,27 @@ static Desk_bool EditGraphics_ShapePickColour(Desk_event_pollblock *block,void *
 
 	Desk_Icon_ScreenPos(shapewin,editshape_COLOURMENU,&pos);
 	AJWLib_ColourPicker_Open(colourpicker_MENU,pos.max.x,pos.max.y,editingshape->colour,Desk_FALSE,NULL,EditGraphics_ShapeColourChoice,NULL);
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_MiscColourChoice(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(ref);
+
+	style.misc.colour=block->data.words[7];
+	Desk_Icon_ForceRedraw(miscwin,editmisc_COLOUR);
+	return Desk_TRUE;
+}
+
+static Desk_bool EditGraphics_MiscPickColour(Desk_event_pollblock *block,void *ref)
+{
+	Desk_wimp_rect pos;
+
+	Desk_UNUSED(ref);
+	Desk_UNUSED(block);
+
+	Desk_Icon_ScreenPos(miscwin,editmisc_COLOURMENU,&pos);
+	AJWLib_ColourPicker_Open(colourpicker_MENU,pos.max.x,pos.max.y,style.misc.colour,Desk_FALSE,NULL,EditGraphics_MiscColourChoice,NULL);
 	return Desk_TRUE;
 }
 
@@ -581,7 +808,7 @@ static Desk_bool EditGraphics_MouseClick(Desk_event_pollblock *block,void *ref)
 	if (block->data.mouse.button.data.select) {
 		object *object, *foundobject;
 
-		object=person.objects;
+		object=item->objects;
 		foundobject=NULL;
 		while (object!=NULL) {
 			if (object->type==object_SHAPE) {
@@ -619,9 +846,9 @@ static Desk_bool EditGraphics_RedrawWindow(Desk_event_pollblock *block,void *ref
 	Desk_UNUSED(ref);
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-		object *object=person.objects;
+		object *object=item->objects;
 
-		Draw_PlotRectangleFilled(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,0,0,person.width,person.height,0,0xFFFFFF00);
+		Draw_PlotRectangleFilled(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,0,0,item->width,item->height,0,0xFFFFFF00);
 		while (object) {
 			shapedetails *shape=&(object->object.shape);
 			textdetails *text=&(object->object.text);
@@ -699,9 +926,50 @@ static Desk_bool EditGraphics_RedrawTextWindow(Desk_event_pollblock *block,void 
 	return Desk_TRUE;
 }
 
+static Desk_bool EditGraphics_RedrawMiscWindow(Desk_event_pollblock *block,void *ref)
+{
+	Desk_window_redrawblock blk;
+	Desk_bool more=Desk_FALSE;
+	Desk_wimp_rect pos;
+
+	blk.window=block->data.openblock.window;
+
+	Desk_UNUSED(ref);
+	AJWLib_Assert(editingmisc!=NULL);
+
+	Desk_Wimp_RedrawWindow(&blk,&more);
+
+	Desk_Icon_ScreenPos(miscwin,editmisc_COLOUR,&pos);
+
+	while (more) {
+		Draw_PlotRectangleFilled(100,0,0,pos.min.x,pos.min.y,pos.max.x-pos.min.x,pos.max.y-pos.min.y,0,style.misc.colour);
+		Desk_Wimp_GetRectangle(&blk,&more);
+	}
+	return Desk_TRUE;
+}
+
+void EditGraphics_IBarMenuClick(int entry, void *ref)
+{
+	Desk_UNUSED(ref);
+	
+	switch (entry) {
+		case ibarmenu_NEW:
+			EditGraphics_CreateNew();
+			break;
+/*		case ibarmenu_DIR:
+			sprintf(cmd,"Filer_OpenDir %s.%s",DEFAULTS,GRAPHICSDIR);
+			Desk_Wimp_StartTask(cmd);
+			sprintf(cmd,"Filer_OpenDir %s.%s",choiceswrite,GRAPHICSDIR);
+			Desk_Wimp_StartTask(cmd);
+			break;*/
+	}
+}
+
 void EditGraphics_Init(void)
 {
 	Desk_wimp_point paneoffset={-182,0};
+
+	mainwin=Desk_Pane2_CreateAndAddMain("NewStyle",Desk_template_TITLEMIN);
 
 	editwin=Desk_Pane2_CreateAndAddMain("EditStyle",Desk_template_TITLEMIN);
 	toolboxpane=Desk_Pane2_CreateAndAddPane("EditToolbox",Desk_template_TITLEMIN,editwin,&paneoffset,NULL,Desk_pane2_PANETOP | Desk_pane2_MAINTOP | Desk_pane2_FIXED);
@@ -709,9 +977,10 @@ void EditGraphics_Init(void)
 	shapewin=Desk_Window_Create("EditObject",Desk_template_TITLEMIN);
 	textwin=Desk_Window_Create("EditText",Desk_template_TITLEMIN);
 	sizewin=Desk_Window_Create("EditSize",Desk_template_TITLEMIN);
+	miscwin=Desk_Window_Create("EditMisc",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,toolboxpane,toolbox_ADDSHAPE,EditGraphics_AddShape,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,toolboxpane,toolbox_ADDTEXT,EditGraphics_AddText,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,toolboxpane,toolbox_EDITSIZE,EditGraphics_EditSize,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,toolboxpane,toolbox_EDITSIZE,EditGraphics_OpenEditSizeWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,shapewin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
 	Desk_Event_Claim(Desk_event_KEY,shapewin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
 	Desk_Icon_InitIncDecHandler(shapewin,editshape_WIDTH,editshape_WIDTHUP,editshape_WIDTHDOWN,Desk_FALSE,5,0,9995,100);
@@ -724,6 +993,15 @@ void EditGraphics_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,shapewin,editshape_DELETE,EditGraphics_Delete,NULL);
 	Desk_Event_Claim(Desk_event_REDRAW,shapewin,Desk_event_ANY,EditGraphics_RedrawShapeWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLOSE,shapewin,Desk_event_ANY,EditGraphics_CloseShapeWindow,NULL);
+
+	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_PERSON,EditGraphics_EditPerson,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_MARRIAGE,EditGraphics_EditMarriage,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_MISC,EditGraphics_OpenMiscWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_CANCEL,EditGraphics_CancelStyle,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_SAVE,EditGraphics_SaveStyle,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,miscwin,editmisc_COLOURMENU,EditGraphics_MiscPickColour,NULL);
+	Desk_Event_Claim(Desk_event_CLOSE,miscwin,Desk_event_ANY,EditGraphics_CloseMiscWindow,NULL);
+	Desk_Event_Claim(Desk_event_REDRAW,miscwin,Desk_event_ANY,EditGraphics_RedrawMiscWindow,NULL);
 
 	Desk_Event_Claim(Desk_event_CLOSE,textwin,Desk_event_ANY,EditGraphics_CloseTextWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,textwin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
@@ -739,15 +1017,19 @@ void EditGraphics_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,editwin,Desk_event_ANY,EditGraphics_MouseClick,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,sizewin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
 	Desk_Event_Claim(Desk_event_REDRAW,editwin,Desk_event_ANY,EditGraphics_RedrawWindow,NULL);
-	Desk_Event_Claim(Desk_event_CLOSE,editwin,Desk_event_ANY,EditGraphics_CloseWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLOSE,editwin,Desk_event_ANY,EditGraphics_ClosePersonWindow,NULL);
+	Desk_Event_Claim(Desk_event_CLOSE,sizewin,Desk_event_ANY,EditGraphics_CloseEditSizeWindow,NULL);
 	Desk_Event_Claim(Desk_event_KEY,sizewin,Desk_event_ANY,EditGraphics_UpdateWidthAndHeight,NULL);
 	Desk_Icon_InitIncDecHandler(sizewin,editsize_WIDTH,editsize_WIDTHUP,editsize_WIDTHDOWN,Desk_FALSE,5,0,9995,400);
 	Desk_Icon_InitIncDecHandler(sizewin,editsize_HEIGHT,editsize_HEIGHTUP,editsize_HEIGHTDOWN,Desk_FALSE,5,0,9995,200);
-	person.width=400;
-	person.height=200;
-	person.objects=NULL;
-	editingshape=NULL;
-	editingtext=NULL;
+
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_ABOVE,editmisc_ABOVEUP,editmisc_ABOVEDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_BELOW,editmisc_BELOWUP,editmisc_BELOWDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_BETWEEN,editmisc_BETWEENUP,editmisc_BETWEENDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_THICKNESS,editmisc_THICKNESSUP,editmisc_THICKNESSDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_BORDER,editmisc_BORDERUP,editmisc_BORDERDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_TITLE,editmisc_TITLEUP,editmisc_TITLEDOWN,Desk_FALSE,5,0,99995,20);
+
 
 	shapemenu=AJWLib_Menu_CreateFromMsgs("Title.Shape:","Menu.Shape:",EditGraphics_ShapeMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(shapewin,editshape_TYPEMENU,editshape_TYPE,shapemenu,Desk_button_MENU | Desk_button_SELECT);
