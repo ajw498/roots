@@ -17,7 +17,7 @@ Menu.Sex:<Sex.M>,<Sex.F>,<Sex.U>
 Title.Surname:Surnames
 
 Title.Main:<Task.Name>
-Menu.Main:File,Person,Add person,Select,~New view...,Scale view...
+Menu.Main:File,Person,Add person,Select,Graphics style,~New view...,Scale view...
 
 Title.Select:Select
 Menu.Select:Descendents,Ancestors,Siblings,Spouses
