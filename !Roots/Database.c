@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.28 2000/06/22 19:07:24 AJW Exp $
+	$Id: Database.c,v 1.29 2000/06/22 21:33:57 AJW Exp $
 
 */
 
@@ -504,7 +504,7 @@ void Database_Marry(elementptr linked,elementptr unlinked)
 	elementptr marriage;
 	AJWLib_Assert(database!=NULL);
 /*	if (Database_IsUnlinked(linked)) return;*/
-	if (!Database_IsUnlinked(unlinked)) return;
+/*	if (!Database_IsUnlinked(unlinked)) return;*/
 	{
 		int fixme;
 	}

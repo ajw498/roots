@@ -12,16 +12,12 @@ typedef struct personlayout {
 	int x;
 	int y;
 	elementptr person;
-	Desk_bool child;
-	Desk_bool reserved;
 } personlayout;
 
 typedef struct marriagelayout {
 	int x;
 	int y;
 	elementptr marriage;
-	Desk_bool childline;
-	Desk_bool reserved;
 } marriagelayout;
 
 typedef struct childlinelayout {

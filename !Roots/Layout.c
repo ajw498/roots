@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.31 2000/06/22 19:07:28 AJW Exp $
+	$Id: Layout.c,v 1.32 2000/06/22 21:34:01 AJW Exp $
 
 */
 
@@ -56,19 +56,6 @@ static Desk_bool selectmarriages;
 static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn);
 static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int generation,callfn fn);
 
-void Layout_AlterChildline(layout *layout,elementptr person,Desk_bool on)
-{
-	int i;
-	AJWLib_Assert(layout!=NULL);
-	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) layout->person[i].child=on;
-}
-
-void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,Desk_bool on)
-{
-	int i;
-	AJWLib_Assert(layout!=NULL);
-	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) layout->marriage[i].childline=on;
-}
 
 void Layout_LayoutTitle(layout *layout)
 {
@@ -100,7 +87,6 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 	layout->person[layout->numpeople].x=x;
 	layout->person[layout->numpeople].y=y;
 	layout->person[layout->numpeople].person=person;
-	layout->person[layout->numpeople].child=(Database_GetMother(person)==none ? Desk_FALSE : Desk_TRUE);
 	layout->numpeople++;
 	Database_DeSelect(person);
 	Modules_ChangedLayout();
@@ -114,7 +100,6 @@ void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
 	layout->marriage[layout->nummarriages].x=x;
 	layout->marriage[layout->nummarriages].y=y;
 	layout->marriage[layout->nummarriages].marriage=marriage;
-	layout->marriage[layout->nummarriages].childline=(Database_GetLeftChild(marriage)==none ? Desk_FALSE : Desk_TRUE);
 	Database_DeSelect(marriage);
 	layout->nummarriages++;
 	Modules_ChangedLayout();
@@ -233,7 +218,6 @@ static void Layout_PlotPerson(layout *layout,elementptr person,int generation,De
 	}
 	layout->person[layout->numpeople-1].y=(generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight());
 	layout->person[layout->numpeople-1].person=person;
-	if (child && Database_GetFather(person)) layout->person[layout->numpeople-1].child=Desk_TRUE; else layout->person[layout->numpeople-1].child=Desk_FALSE;
 	Database_DeSelect(person);
 #ifdef DEBUG
 halt=Desk_TRUE;
@@ -256,7 +240,6 @@ static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y,Des
 	layout->marriage[layout->nummarriages-1].x=x;
 	layout->marriage[layout->nummarriages-1].y=y;
 	layout->marriage[layout->nummarriages-1].marriage=marriage;
-	layout->marriage[layout->nummarriages-1].childline=(Database_GetLeftChild(marriage) ? children : Desk_FALSE);
 	Database_DeSelect(marriage);
 }
 

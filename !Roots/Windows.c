@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.69 2000/06/22 19:07:43 AJW Exp $
+	$Id: Windows.c,v 1.70 2000/06/22 21:34:03 AJW Exp $
 
 */
 
@@ -463,7 +463,7 @@ static void Windows_LinkDragEnd(void *ref)
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
 	dragdata *dragdata=ref;
-	int mousex,mousey,i,j;
+	int mousex,mousey,i;
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
@@ -482,6 +482,7 @@ static void Windows_LinkDragEnd(void *ref)
 				}
 				/*put marriage next to spouse rather than principal?*/
 				Layout_AddMarriage(dragdata->windowdata->layout,Database_GetMarriage(dragdata->person),dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth(),dragdata->origmousey);
+				Windows_UnselectAll(dragdata->windowdata);
 				break;
 			}
 		}
@@ -494,12 +495,7 @@ static void Windows_LinkDragEnd(void *ref)
 				/*Check that the person is in the right generation*/
 				if (dragdata->origmousey+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow()!=Layout_NearestGeneration(mousey)) return;
 				Database_AddChild(dragdata->windowdata->layout->marriage[i].marriage,dragdata->person);
-				dragdata->windowdata->layout->marriage[i].childline=Desk_TRUE;
-				for (j=0;j<dragdata->windowdata->layout->numpeople;j++) {
-					if (dragdata->windowdata->layout->person[j].person==dragdata->person) {
-						dragdata->windowdata->layout->person[j].child=Desk_TRUE;
-					}
-				}
+				Windows_UnselectAll(dragdata->windowdata);
 				break;
 			}
 		}
@@ -570,12 +566,11 @@ static void Windows_DragFn(void *ref)
 	Desk_Window_GetInfo3(dragdata->windowdata->handle,&infoblk);
 	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/dragdata->windowdata->scale;
 	mousey=((mouseblk.pos.y-(blk.openblock.screenrect.max.y-blk.openblock.scroll.y))*100)/dragdata->windowdata->scale;
-	mousey=Layout_NearestGeneration(mousey);
-	if (mousex!=dragdata->oldmousex || mousey!=dragdata->oldmousey) {
+	if (mousex!=dragdata->oldmousex || Layout_NearestGeneration(mousey)!=dragdata->oldmousey) {
 		/*Unplot drag box if it has moved*/
 		Windows_PlotDragBox(dragdata);
 		dragdata->oldmousex=mousex;
-		dragdata->oldmousey=mousey;
+		dragdata->oldmousey=Layout_NearestGeneration(mousey);
 		Windows_GetOffset(dragdata);
 		/*Replot it in new position*/
 		Windows_PlotDragBox(dragdata);
@@ -612,6 +607,38 @@ static void Windows_DragFn(void *ref)
 		Desk_Wimp_OpenWindow(&blk.openblock);
 		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
 		dragdata->oldmousex=mousex;
+	} else if (mouseblk.pos.y-blk.openblock.screenrect.min.y<Config_ScrollDistance()) {
+		/*We are near bottom edge of window*/
+		Windows_PlotDragBox(dragdata);
+		dragdata->plotted=Desk_FALSE;
+		if (-(infoblk.block.scroll.y-infoblk.block.workarearect.max.y-(infoblk.block.screenrect.max.y-infoblk.block.screenrect.min.y))>=infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.min.y-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.y-blk.openblock.screenrect.min.y)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
+		blk.openblock.scroll.y-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.y-blk.openblock.screenrect.min.y)))/20;
+		Desk_Wimp_OpenWindow(&blk.openblock);
+		mousey=mouseblk.pos.y-(blk.openblock.screenrect.min.y-blk.openblock.scroll.y);
+		dragdata->oldmousey=Layout_NearestGeneration(mousey);
+	} else if (blk.openblock.screenrect.max.y-mouseblk.pos.y<Config_ScrollDistance()) {
+		/*We are near top edge of window*/
+		Windows_PlotDragBox(dragdata);
+		dragdata->plotted=Desk_FALSE;
+		if (infoblk.block.scroll.y>=infoblk.block.workarearect.max.y) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.max.y+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.y-mouseblk.pos.y)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
+		blk.openblock.scroll.y+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.y-mouseblk.pos.y)))/20;
+		Desk_Wimp_OpenWindow(&blk.openblock);
+		mousey=mouseblk.pos.y-(blk.openblock.screenrect.min.y-blk.openblock.scroll.y);
+		dragdata->oldmousex=Layout_NearestGeneration(mousey);
 	}
 }
 
@@ -724,7 +751,7 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	Desk_drag_block dragblk;
 	Desk_convert_block blk;
 	Desk_mouse_block mouseblk;
-	int mousex,mousey;
+	int mousex,mousey,i;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
@@ -745,6 +772,11 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	dragdata.origmousey=Layout_NearestGeneration(mousey);
 	dragdata.oldmousex=mousex;
 	dragdata.oldmousey=mousey;
+	Windows_UnselectAll(windowdata);
+	Database_Select(person);
+	for (i=0;i<windowdata->layout->numpeople;i++) {
+		if (windowdata->layout->person[i].person==person) Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
+	}
 	Desk_Wimp_DragBox(&dragblk);
 	Desk_Drag_SetHandlers(NULL,Windows_LinkDragEnd,&dragdata);
 }
