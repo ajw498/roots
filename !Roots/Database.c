@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.57 2000/11/27 20:03:14 AJW Exp $
+	$Id: Database.c,v 1.58 2001/02/03 13:37:24 AJW Exp $
 
 */
 
@@ -36,6 +36,7 @@
 #include "File.h"
 #include "Layout.h"
 #include "Config.h"
+#include "Graphics.h"
 #include "Shareware.h"
 
 
@@ -63,11 +64,11 @@
 #define sexmenu_U 2
 
 typedef struct persondata {
-	char surname[FIELDSIZE];
-	char forename[FIELDSIZE];
-	char middlenames[FIELDSIZE];
+	char *surname;
+	char *forename;
+	char *middlenames;
 	sextype sex;
-    char user[NUMBERPERSONUSERFIELDS][FIELDSIZE];
+    char *user[NUMBERPERSONUSERFIELDS];
 } persondata;
 
 typedef struct person {
@@ -83,7 +84,7 @@ typedef struct freeelement {
 } freeelement;
 
 typedef struct marriagedata {
-	char user[NUMBERMARRIAGEUSERFIELDS][FIELDSIZE];
+	char *user[NUMBERMARRIAGEUSERFIELDS];
 } marriagedata;
 
 typedef struct marriage {
@@ -99,7 +100,7 @@ typedef struct marriage {
 typedef struct file {
 	int numberofelements;
 	int newpersonnumber;
-	char filetitle[FIELDSIZE];
+	char *filetitle;
 	elementptr freeelement;
 } file;
 
@@ -192,10 +193,18 @@ Desk_bool Database_ElementValid(elementptr person)
 	return Desk_FALSE;
 }
 
+#define Database_UpdateField(field,text) \
+{\
+	char *newtext;\
+	newtext = Desk_DeskMem_Malloc(strlen(text)+1);\
+	if (field != NULL) free(field);\
+	field = newtext;\
+	strcpy(field,text);\
+}
+
 void Database_SetTitle(char *title)
 {
-	strncpy(database[0].element.file.filetitle,title,FIELDSIZE-1);
-	database[0].element.file.filetitle[FIELDSIZE-1]='\0';
+	Database_UpdateField(database[0].element.file.filetitle,title);
 }
 
 void Database_SetNextNewPerson(int personnumber)
@@ -205,20 +214,17 @@ void Database_SetNextNewPerson(int personnumber)
 
 void Database_SetForename(elementptr person,char *name)
 {
-	strncpy(database[person].element.person.data.forename,name,FIELDSIZE-1);
-	database[person].element.person.data.forename[FIELDSIZE-1]='\0';
+	Database_UpdateField(database[person].element.person.data.forename,name);
 }
 
 void Database_SetMiddleNames(elementptr person,char *name)
 {
-	strncpy(database[person].element.person.data.middlenames,name,FIELDSIZE-1);
-	database[person].element.person.data.middlenames[FIELDSIZE-1]='\0';
+	Database_UpdateField(database[person].element.person.data.middlenames,name);
 }
 
 void Database_SetSurname(elementptr person,char *name)
 {
-	strncpy(database[person].element.person.data.surname,name,FIELDSIZE-1);
-	database[person].element.person.data.surname[FIELDSIZE-1]='\0';
+	Database_UpdateField(database[person].element.person.data.surname,name);
 }
 
 char *Database_GetForename(elementptr person)
@@ -244,15 +250,13 @@ void Database_SetSex(elementptr person,sextype sexchar)
 void Database_SetPersonUser(int num,elementptr person,char *str)
 {
 	AJWLib_Assert(num<NUMBERPERSONUSERFIELDS);
-	strncpy(database[person].element.person.data.user[num],str,FIELDSIZE-1);
-	database[person].element.person.data.user[num][FIELDSIZE-1]='\0';
+	Database_UpdateField(database[person].element.person.data.user[num],str);
 }
 
 void Database_SetMarriageUser(int num,elementptr marriage,char *str)
 {
 	AJWLib_Assert(num<NUMBERMARRIAGEUSERFIELDS);
-	strncpy(database[marriage].element.marriage.data.user[num],str,FIELDSIZE-1);
-	database[marriage].element.marriage.data.user[num][FIELDSIZE-1]='\0';
+	Database_UpdateField(database[marriage].element.marriage.data.user[num],str);
 }
 
 char *Database_GetField(elementptr element,char *fieldname)
@@ -508,11 +512,21 @@ elementptr Database_Link(layout *layout,elementptr start,elementptr end)
 
 static void Database_FreeElement(elementptr element)
 {
+	int i;
+
 	AJWLib_Assert(database!=NULL);
-	database[element].element.freeelement.next=database[0].element.file.freeelement;
-	database[0].element.file.freeelement=element;
+	if (database[element].type == element_PERSON) {
+		if (database[element].element.person.data.forename) free(database[element].element.person.data.forename);
+		if (database[element].element.person.data.middlenames) free(database[element].element.person.data.middlenames);
+		if (database[element].element.person.data.surname) free(database[element].element.person.data.surname);
+		for (i=0;i<NUMBERPERSONUSERFIELDS;i++) if (database[element].element.person.data.user[i]) free(database[element].element.person.data.user[i]);
+	} else if (database[element].type == element_MARRIAGE) {
+		for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) if (database[element].element.marriage.data.user[i]) free(database[element].element.marriage.data.user[i]);
+	}
 	database[element].type=element_FREE;
 	database[element].selected=Desk_FALSE;
+	database[element].element.freeelement.next=database[0].element.file.freeelement;
+	database[0].element.file.freeelement=element;
 }
 
 void Database_SetFlag(elementptr person)
@@ -871,6 +885,10 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 	}
 
 	marriage=Database_GetFreeElement(); /*An error is ok, as we haven't altered the structure yet*/
+	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+		database[marriage].element.marriage.data.user[i]=Desk_DeskMem_Malloc(1);
+		database[marriage].element.marriage.data.user[i][0]='\0';
+	}
 	database[marriage].type=element_MARRIAGE;
 	database[marriage].selected=Desk_FALSE;
 	/*Link new marriage into marriage chain*/
@@ -919,9 +937,6 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 	database[marriage].element.marriage.spouse=unlinked;
 	database[marriage].element.marriage.leftchild=none;
 	database[marriage].element.marriage.rightchild=none;
-	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		strcpy(database[marriage].element.marriage.data.user[i],"");
-	}
 	Modules_ChangedStructure();
 	return marriage;
 }
@@ -981,9 +996,12 @@ static void Database_EditTitle(void)
 
 static Desk_bool Database_OkEditTitleWindow(Desk_event_pollblock *block,void *ref)
 {
+	char *title;
+
 	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	Desk_Icon_GetText(edittitlewin,edittitleicon_TEXT,database[0].element.file.filetitle);
+	title=Desk_Icon_GetTextPtr(edittitlewin,edittitleicon_TEXT);
+	Database_UpdateField(database[0].element.file.filetitle,title);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(edittitlewin);
 	Modules_ChangedLayout();
 	return Desk_TRUE;
@@ -1010,20 +1028,26 @@ static Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref
 static Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 {
 	int i;
-	
+	char *icon;
+
 	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingperson==none) return Desk_FALSE;
-	Desk_Icon_GetText(editpersonwin,editpersonicon_SURNAME,database[editingperson].element.person.data.surname);
-	Desk_Icon_GetText(editpersonwin,editpersonicon_FORENAME,database[editingperson].element.person.data.forename);
-	Desk_Icon_GetText(editpersonwin,editpersonicon_MIDDLENAMES,database[editingperson].element.person.data.middlenames);
+	icon=Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_SURNAME);
+	Database_UpdateField(database[editingperson].element.person.data.surname,icon);
+	icon=Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_FORENAME);
+	Database_UpdateField(database[editingperson].element.person.data.forename,icon);
+	icon=Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_MIDDLENAMES);
+	Database_UpdateField(database[editingperson].element.person.data.middlenames,icon);
 	if (!strcmp(Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),AJWLib_Msgs_TempLookup("Sex.M:"))) database[editingperson].element.person.data.sex=sex_MALE;
 	else if (!strcmp(Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_SEX),AJWLib_Msgs_TempLookup("Sex.F:"))) database[editingperson].element.person.data.sex=sex_FEMALE;
 	else database[editingperson].element.person.data.sex=sex_UNKNOWN;
 	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		Desk_Icon_GetText(editpersonwin,editpersonicon_USERBASE+1+2*i,database[editingperson].element.person.data.user[i]);
+		icon=Desk_Icon_GetTextPtr(editpersonwin,editpersonicon_USERBASE+1+2*i);
+		Database_UpdateField(database[editingperson].element.person.data.user[i],icon);
 	}
 	Modules_ChangedData(editingperson);
+	Graphics_PersonChanged(editingperson);
 	editingperson=none;
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(editpersonwin);
 	return Desk_TRUE;
@@ -1042,14 +1066,17 @@ static Desk_bool Database_CancelEditMarriageWindow(Desk_event_pollblock *block,v
 static Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 {
 	int i;
+	char *icon;
 
 	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingmarriage==none) return Desk_FALSE;
 	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		Desk_Icon_GetText(editmarriagewin,editmarriageicon_USERBASE+1+2*i,database[editingmarriage].element.marriage.data.user[i]);
+		icon=Desk_Icon_GetTextPtr(editmarriagewin,editmarriageicon_USERBASE+1+2*i);
+		Database_UpdateField(database[editingmarriage].element.marriage.data.user[i],icon);
 	}
 	Modules_ChangedData(editingmarriage);
+	Graphics_MarriageChanged(editingmarriage);
 	editingmarriage=none;
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(editmarriagewin);
 	return Desk_TRUE;
@@ -1112,13 +1139,17 @@ elementptr Database_Add(void)
 	database[newperson].element.person.siblingsrtol=none;
 	database[newperson].element.person.siblingsltor=none;
 	database[newperson].element.person.marriage=none;
-	sprintf(database[newperson].element.person.data.surname,"NewPerson%d",database[0].element.file.newpersonnumber++);
-	strcpy(database[newperson].element.person.data.forename,"");
-	strcpy(database[newperson].element.person.data.middlenames,"");
-	database[newperson].element.person.data.sex=sex_UNKNOWN;
 	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		strcpy(database[newperson].element.person.data.user[i],"");
+		database[newperson].element.person.data.user[i]=Desk_DeskMem_Malloc(1);
+		database[newperson].element.person.data.user[i][0]='\0';
 	}
+	database[newperson].element.person.data.surname=Desk_DeskMem_Malloc(FIELDSIZE);
+	sprintf(database[newperson].element.person.data.surname,"NewPerson%d",database[0].element.file.newpersonnumber++);
+	database[newperson].element.person.data.forename=Desk_DeskMem_Malloc(1);
+	database[newperson].element.person.data.forename[0]='\0';
+	database[newperson].element.person.data.middlenames=Desk_DeskMem_Malloc(1);
+	database[newperson].element.person.data.middlenames[0]='\0';
+	database[newperson].element.person.data.sex=sex_UNKNOWN;
 	Modules_ChangedStructure();
 	return newperson;
 }
@@ -1138,9 +1169,11 @@ elementptr Database_AddMarriage(void)
 	database[newmarriage].element.marriage.rightchild=none;
 	database[newmarriage].element.marriage.principal=none;
 	database[newmarriage].element.marriage.spouse=none;
-	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		strcpy(database[newmarriage].element.marriage.data.user[i],"");
+	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+		database[newmarriage].element.marriage.data.user[i]=Desk_DeskMem_Malloc(1);
+		database[newmarriage].element.marriage.data.user[i][0]='\0';
 	}
+
 	Modules_ChangedStructure();
 	return newmarriage;
 }
@@ -1349,6 +1382,7 @@ void Database_SetMarriageGEDCOMDesc(int num,char *desc)
 void Database_New(void)
 {
 	int i;
+	char *title;
 
 	AJWLib_Assert(database==NULL);
 	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(databaseelement));
@@ -1356,7 +1390,9 @@ void Database_New(void)
 	database[0].element.file.numberofelements=1;
 	database[0].element.file.newpersonnumber=1;
 	database[0].element.file.freeelement=0;
-	strcpy(database[0].element.file.filetitle,AJWLib_Msgs_TempLookup("Tree.Title:Title"));
+	title=AJWLib_Msgs_TempLookup("Tree.Title:Title");
+	database[0].element.file.filetitle=Desk_DeskMem_Malloc(strlen(title)+1);
+	strcpy(database[0].element.file.filetitle,title);
 	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
 		char tag[20], *buffer;
 

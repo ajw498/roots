@@ -23,6 +23,7 @@ void Layout_Free(layout *layout);
 Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
 void Layout_AddElement(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid,flags flags);
 void Layout_AddTransient(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid,flags flags);
+void Layout_SetWidth(layout *layout,elementptr person,int width);
 int Layout_FindXCoord(layout *layout,elementptr person);
 int Layout_FindYCoord(layout *layout,elementptr person);
 int Layout_FindWidth(layout *layout,elementptr person);
@@ -39,6 +40,7 @@ void Layout_Init(void);
 void Layout_RemoveTransients(layout *layout);
 void Layout_CalcAllGridFromPositions(layout *layout);
 void Layout_CalcAllPositionsFromGrid(layout *layout);
+void Layout_ResizeAllWidths(layout *layout);
 
 #endif
 
