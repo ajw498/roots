@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.3  1999/09/28 14:16:10  AJW
+	Added centering marriage over children when dragging
+
 	Revision 1.2  1999/09/27 16:56:43  AJW
 	Added centering siblings under marriage when dragging
 
@@ -132,7 +135,7 @@ typedef struct dragdata {
 	int personoffset;
 	windowdata *windowdata;
 	wimp_rect  coords;
-	int origmousex,oldmousex,oldoffset,oldmousey,centeredunder;
+	int origmousex,oldmousex,oldoffset,oldmousey,centered;
 	BOOL plotted,marriage;
 } dragdata;
 
@@ -487,8 +490,8 @@ void Graphics_GetOffset(dragdata *dragdata)
 			}
 		}
 	}
-	/*Look for siblings centered under marriage*/
-	distance=dragdata->oldmousex-dragdata->centeredunder;
+	/*Look for siblings centered under marriage and marriages centered over siblings*/
+	distance=dragdata->oldmousex-dragdata->centered;
 	if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
 }
 
@@ -582,12 +585,24 @@ void Graphics_StartDragNormal(elementptr person,int x,int y,windowdata *windowda
 		if (allsiblings) {
 			int centre=(rightx+leftx+Graphics_PersonWidth())/2;
 			int marriagepos=Layout_FindMarriageXCoord(windowdata->layout,Database_GetMarriage(Database_GetMother(person)))+Graphics_MarriageWidth()/2;
-			dragdata.centeredunder=marriagepos+(mousex-centre);
+			dragdata.centered=marriagepos+(mousex-centre);
 		} else {
-			dragdata.centeredunder=INFINITY;
+			dragdata.centered=INFINITY;
 		}
 	} else {
-		dragdata.centeredunder=INFINITY;
+		if (Database_GetRightChild(person)) {
+			int tempx,rightx=-INFINITY,leftx=INFINITY,centre,marriagepos;
+			elementptr person1=Database_GetRightChild(person);
+			do {
+				if ((tempx=Layout_FindXCoord(windowdata->layout,person1))<leftx) leftx=tempx;
+				if (tempx>rightx) rightx=tempx;
+			} while ((person1=Database_GetSiblingRtoL(person1))!=none);
+			centre=(rightx+leftx+Graphics_PersonWidth())/2;
+			marriagepos=Layout_FindMarriageXCoord(windowdata->layout,person)+Graphics_MarriageWidth()/2;
+			dragdata.centered=centre+(mousex-marriagepos);
+		} else {
+			dragdata.centered=INFINITY;
+		}
 	}
 	Wimp_DragBox(&dragblk);
 	Drag_SetHandlers(Graphics_DragFn,Graphics_DragEnd,&dragdata);
