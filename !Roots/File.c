@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.35 2000/10/16 11:44:59 AJW Exp $
+	$Id: File.c,v 1.36 2000/11/06 23:45:51 AJW Exp $
 
 */
 
@@ -609,7 +609,9 @@ void File_New(void)
 	Desk_Error2_Try {
 		Database_New();
 		Desk_Error2_Try {
-			Graphics_LoadStyle(AJWLib_Msgs_TempLookup("Style.Default:Default"));
+			char buffer[256];
+			strcpy(buffer,AJWLib_Msgs_TempLookup("Style.Default:Default"));
+			Graphics_LoadStyle(buffer);
 			Desk_Error2_Try {
 				Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
 				Windows_LayoutNormal(NULL,Desk_TRUE);

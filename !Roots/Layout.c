@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.50 2000/11/05 12:03:46 AJW Exp $
+	$Id: Layout.c,v 1.51 2000/11/06 23:45:55 AJW Exp $
 
 */
 
@@ -138,6 +138,30 @@ int Layout_FindYCoord(layout *layout,elementptr person)
 	return 0;
 }
 
+int Layout_FindWidth(layout *layout,elementptr person)
+{
+	int i;
+
+	AJWLib_Assert(layout!=NULL);
+
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].element==person) return layout->person[i].width;
+	for (i=0;i<layout->numtransients;i++) if (layout->transients[i].element==person) return layout->transients[i].width;
+	AJWLib_AssertWarning(0);
+	return 0;
+}
+
+int Layout_FindHeight(layout *layout,elementptr person)
+{
+	int i;
+
+	AJWLib_Assert(layout!=NULL);
+
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].element==person) return layout->person[i].height;
+	for (i=0;i<layout->numtransients;i++) if (layout->transients[i].element==person) return layout->transients[i].height;
+	AJWLib_AssertWarning(0);
+	return 0;
+}
+
 int Layout_FindXGridCoord(layout *layout,elementptr person)
 {
 	int i;
@@ -269,7 +293,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.50 2000/11/05 12:03:46 AJW Exp $
+	$Id: Layout.c,v 1.51 2000/11/06 23:45:55 AJW Exp $
 
 */
 

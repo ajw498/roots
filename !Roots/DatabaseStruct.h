@@ -10,7 +10,7 @@ typedef int elementptr;
 
 typedef enum elementtype {
 	element_TITLE=-5,
-	element_CHILDLINE,
+	element_LINE,
 	element_NONE=0,
 	element_PERSON,
 	element_MARRIAGE,
