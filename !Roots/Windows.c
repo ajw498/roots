@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.36  2000/02/12 21:26:03  root
+	Checkin for CVS
+
 	Revision 1.35  2000/01/17 16:57:58  AJW
 	Added Windows_Load
 
@@ -967,15 +970,20 @@ void Windows_Load(FILE *file)
 void Windows_Save(FILE *file)
 {
 	int i;
+	Desk_bool writtenlayout=Desk_FALSE;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle!=0) {
 			savedata data;
 			data.type=windows[i].type;
 			data.person=windows[i].person;
 			data.generations=windows[i].generations;
-			data.size=sizeof(savedata)+Layout_GetSize(windows[i].layout);
+			data.size=sizeof(savedata);
+			if (data.type==wintype_NORMAL && !writtenlayout) data.size+=Layout_GetSize(windows[i].layout);
 			AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
-			Layout_Save(windows[i].layout,file); /*Don't save if second or more normal or closerel layouts*/
+			if (data.type==wintype_NORMAL && !writtenlayout) {
+				Layout_Save(windows[i].layout,file);
+				writtenlayout=Desk_TRUE;
+			}
 		}
 	}
 }
