@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.5  1999/09/29 17:07:25  AJW
+	Added Layout_FindYCoord
+
 	Revision 1.4  1999/09/29 15:56:32  AJW
 	Added Layout_AddMarriage
 
@@ -127,6 +130,13 @@ int Layout_FindXCoord(layout *layout,elementptr person)
 {
 	int i;
 	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) return layout->person[i].x;
+	return 0;
+}
+
+int Layout_FindYCoord(layout *layout,elementptr person)
+{
+	int i;
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) return layout->person[i].y;
 	return 0;
 }
 
