@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.13 2000/05/14 19:42:40 AJW Exp $
+	$Id: Config.c,v 1.14 2000/05/14 22:34:03 AJW Exp $
 
 */
 
@@ -56,6 +56,46 @@ typedef struct configdata {
 
 static configdata config;
 static Desk_window_handle configwin;
+char choicesread[256],choiceswrite[256];
+
+static void Config_SetChoicesPath(void)
+{
+	/*Set up defaults*/
+	strcpy(choicesread,"<Roots$Dir>.Defaults");
+	strcpy(choiceswrite,"Null:Choices");
+	Desk_Error2_Try {
+		if (strcmp(getenv("Choices$Write"),"")) {
+			/*We are running a new boot structure*/
+			if (Desk_File_IsDirectory("<Roots$Dir>.Choices")) {
+				/*We already have a directory inside !Roots*/
+				if (Desk_File_IsDirectory("Choices:Roots")) {
+					/*We also have a directory in Choices: so remove the one inside !Roots*/
+					Desk_SWI(4,0,Desk_SWI_OS_FSControl,27,"<Roots$Dir>.Choices",NULL,0x03);
+				} else {
+					/*Move the directory from inside !Roots to Choices:*/
+					Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,"<Roots$Dir>.Choices","<Choices$Write>.Roots",0x83));
+				}
+			} else {
+				if (!Desk_File_IsDirectory("Choices:Roots")) {
+					/*We have no choices anywhere, so copy defaults to Choices:*/
+					Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,"<Roots$Dir>.Defaults","<Choices$Write>.Roots",0x03));
+				}
+			}
+			strcpy(choicesread,"Choices:Roots");
+			strcpy(choiceswrite,"<Choices$Write>.Roots");
+		} else {
+			/*We have no new boot structure*/
+			if (!Desk_File_IsDirectory("<Roots$Dir>.Choices")) {
+				/*We don't have a directory inside !Roots, so copy defaults*/
+				Desk_Error2_CheckOS(Desk_SWI(4,0,Desk_SWI_OS_FSControl,26,"<Roots$Dir>.Defaults","<Roots$Dir>.Choices",0x03));
+			}
+			strcpy(choicesread,"<Roots$Dir>.Choices");
+			strcpy(choiceswrite,"<Roots$Dir>.Choices");
+		}
+	} Desk_Error2_Catch {
+		AJWLib_Error2_ReportMsgs("Error.Choices:%s");
+	} Desk_Error2_EndCatch
+}
 
 static void Config_Default(void)
 {
@@ -128,10 +168,12 @@ static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 static Desk_bool Config_Save(Desk_event_pollblock *block,void *ref)
 {
 	FILE *file=NULL;
+	char filename[256];
 	if (!Config_Ok(block,ref)) return Desk_FALSE;
 	Desk_Error2_Try {
-		if (!Desk_File_IsDirectory(CONFIGDIR)) Desk_File_CreateDirectory(CONFIGDIR);
-		file=AJWLib_File_fopen(CONFIGWRITE,"wb");
+		if (!Desk_File_IsDirectory(choiceswrite)) Desk_File_EnsureDirectory(choiceswrite);
+		sprintf(filename,"%s.%s",choiceswrite,CONFIGFILE);
+		file=AJWLib_File_fopen(filename,"wb");
 		AJWLib_File_fwrite(&config,sizeof(config),1,file);
 		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
@@ -143,10 +185,12 @@ static Desk_bool Config_Save(Desk_event_pollblock *block,void *ref)
 static void Config_Load(void)
 {
 	FILE *file=NULL;
+	char filename[256];
 	Config_Default();
+	sprintf(filename,"%s.%s",choicesread,CONFIGFILE);
 	Desk_Error2_Try {
-		if (Desk_File_Exists(CONFIGREAD)) {
-			file=AJWLib_File_fopen(CONFIGREAD,"rb");
+		if (Desk_File_Exists(filename)) {
+			file=AJWLib_File_fopen(filename,"rb");
 			AJWLib_File_fread(&config,sizeof(config),1,file);
 			AJWLib_File_fclose(file);
 		}
@@ -212,6 +256,7 @@ void Config_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,configwin,config_SNAP,Config_SnapClick,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,configwin,config_AUTOINCREASE,Config_AutoIncreaseClick,NULL);
 	AJWLib_Window_KeyHandler(configwin,config_OK,Config_Ok,config_CANCEL,Config_Cancel,NULL);
+	Config_SetChoicesPath();
 	Config_Load();
 }
 
