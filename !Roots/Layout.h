@@ -5,6 +5,9 @@
 #include "DatabaseStruct.h"
 #include "WindowsStruct.h"
 
+#define MINWINDOW_SIZE_X 500
+#define MINWINDOW_SIZE_Y 256
+
 extern mouseclickdata mousedata;
 
 void Layout_ChangeMarriageTypes(layout *layout,Desk_bool separate);

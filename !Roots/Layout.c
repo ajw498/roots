@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.62 2000/11/27 20:39:15 AJW Exp $
+	$Id: Layout.c,v 1.63 2000/11/27 21:30:10 AJW Exp $
 
 */
 
@@ -372,7 +372,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.62 2000/11/27 20:39:15 AJW Exp $
+	$Id: Layout.c,v 1.63 2000/11/27 21:30:10 AJW Exp $
 
 */
 
@@ -434,8 +434,6 @@ void Layout_Free(layout *layout)
 #include "Print.h"
 
 #define REDRAWOVERLAP 4
-#define MINWINDOW_SIZE_X 500
-#define MINWINDOW_SIZE_Y 256
 
 #define SWI_OS_SpriteOp 0x2E
 #define SWI_Wimp_SpriteOp 0x400E9
@@ -1306,10 +1304,12 @@ layout *Layout_GetGEDCOMLayout(void)
 	layout *returnvalue=gedcomlayout;
 	int i;
 
-	for (i=0;i<gedcomlayout->numpeople;i++) {
-		if (gedcomlayout->person[i].width==0 && gedcomlayout->person[i].height==0) {
-			gedcomlayout->person[i].width=Database_GetElementType(gedcomlayout->person[i].element)==element_MARRIAGE ? Graphics_MarriageWidth() : Graphics_PersonWidth();
-			gedcomlayout->person[i].height=Graphics_PersonHeight();
+	if (gedcomlayout!=NULL) {
+		for (i=0;i<gedcomlayout->numpeople;i++) {
+			if (gedcomlayout->person[i].width==0 && gedcomlayout->person[i].height==0) {
+				gedcomlayout->person[i].width=Database_GetElementType(gedcomlayout->person[i].element)==element_MARRIAGE ? Graphics_MarriageWidth() : Graphics_PersonWidth();
+				gedcomlayout->person[i].height=Graphics_PersonHeight();
+			}
 		}
 	}
 	gedcomlayout=NULL;
