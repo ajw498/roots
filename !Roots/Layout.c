@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.71 2002/08/01 14:56:58 ajw Exp $
+	$Id: Layout.c,v 1.72 2002/08/01 15:36:22 ajw Exp $
 
 */
 
@@ -344,7 +344,7 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 	box.max.y=-INFINITY;
 	if (layout) {
 		for (i=0;i<layout->numpictures;i++) {
-/*			if (Layout_GetSelect(layout->person[i].element) || !selection)*/ { int FIXME_NOW;
+/*			if (Layout_GetSelect(layout->person[i].element) || !selection)*/ {
 				if (layout->picture[i].x+layout->picture[i].minx<box.min.x) box.min.x=layout->picture[i].x+layout->picture[i].minx;
 				if (layout->picture[i].x+layout->picture[i].minx+layout->picture[i].width>box.max.x) box.max.x=layout->picture[i].x+layout->picture[i].minx+layout->picture[i].width;
 				if (layout->picture[i].y+layout->picture[i].miny<box.min.y) box.min.y=layout->picture[i].y+layout->picture[i].miny;
@@ -454,7 +454,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.71 2002/08/01 14:56:58 ajw Exp $
+	$Id: Layout.c,v 1.72 2002/08/01 15:36:22 ajw Exp $
 
 */
 
@@ -804,7 +804,7 @@ static void Layout_SelectDragEnd(void *ref)
 	}
 }
 
-static elementlayout *Layout_FindElementAtCoords(layout *layout,int x,int y,Desk_bool *transient)
+static elementlayout *Layout_FindElementAtCoords(layout *layout,int x,int y,Desk_bool *transient/*, picturelayout **picturelayout*/)
 {
 	int i;
 
@@ -828,6 +828,16 @@ static elementlayout *Layout_FindElementAtCoords(layout *layout,int x,int y,Desk
 			}
 		}
 	}
+/*	if (picturelayout == NULL) return NULL;
+	*See if we clicked on a picture*
+	for (i=layout->numpictures-1;i>=0;i--) {
+		if (x>=layout->picture[i].x && x<=layout->picture[i].x+layout->picture[i].minx+layout->picture[i].width) {
+			if (y>=layout->picture[i].y+layout->picture[i].miny && y<=layout->picture[i].y+layout->picture[i].miny+layout->picture[i].height) {
+				*picturelayout = layout->picture+i;
+				return NULL;
+			}
+		}
+	}*/
 	return NULL;
 }
 
