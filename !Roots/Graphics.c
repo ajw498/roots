@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.63 2001/02/03 19:54:28 AJW Exp $
+	$Id: Graphics.c,v 1.64 2001/02/04 14:13:40 AJW Exp $
 
 */
 
@@ -812,23 +812,28 @@ void Graphics_SetGraphicsStyle(char *style)
 			sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,currentstyle);
 			Desk_Error2_CheckOS(Desk_SWI(2,1,Desk_SWI_OS_File,17,filename,&type));
 			if (type==0) {
-				/*Not found, so import*/
-				if (uselua) {
-					sprintf(filename,"%s.%s",choiceswrite,GRAPHICSDIR);
-					if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
-					sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
-					Desk_File_SaveMemory(filename,luafile,strlen(luafile));
-				} else {
-					sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
-					if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
-					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
-					Desk_File_SaveMemory(filename,personfile,strlen(personfile));
-					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
-					Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
-					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
-					Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
-					sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
-					Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
+				/*Not found in Choices:, so try defaults*/
+				sprintf(filename,"%s.%s.%s",DEFAULTS,GRAPHICSDIR,currentstyle);
+				Desk_Error2_CheckOS(Desk_SWI(2,1,Desk_SWI_OS_File,17,filename,&type));
+				if (type==0) {
+					/*Not found, so import*/
+					if (uselua) {
+						sprintf(filename,"%s.%s",choiceswrite,GRAPHICSDIR);
+						if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
+						sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
+						Desk_File_SaveMemory(filename,luafile,strlen(luafile));
+					} else {
+						sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
+						if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
+						sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
+						Desk_File_SaveMemory(filename,personfile,strlen(personfile));
+						sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
+						Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
+						sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
+						Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
+						sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
+						Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
+					}
 				}
 			}
 		}
