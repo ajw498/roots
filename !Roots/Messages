@@ -32,7 +32,7 @@ Item.Marriage:Marriage
 Item.Select:Selection
 
 Title.Person:Selection
-Menu.Person:Edit,Delete
+Menu.Person:Edit,Delete,Unlink
 
 Title.Config:Styles
 
