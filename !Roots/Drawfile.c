@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Drawfile.c,v $
+	Revision 1.6  2000/01/09 17:50:08  AJW
+	Added text functions
+
 	Revision 1.5  2000/01/08 20:00:38  AJW
 	Removed custom PlotPerson etc.
 
@@ -32,6 +35,7 @@
 #include "Desk.Icon.h"
 #include "Desk.Menu.h"
 #include "Desk.Msgs.h"
+#include "Desk.DeskMem.h"
 #include "Desk.Drag.h"
 #include "Desk.Resource.h"
 #include "Desk.Screen.h"
@@ -139,15 +143,89 @@ void Drawfile_PlotLine(int minx,int miny,int maxx,int maxy,int linethickness,uns
 	object[16]=0; /*End path*/
 }
 
-/*char fontarraythingy*/
-void Drawfile_PlotText(int x,int y,int handle,char *font,int size,unsigned int bgcolour, unsigned int fgcolour,char *text)
+static char *fontarray[256];
+static int numberoffonts=0;
+
+static void Drawfile_FreeFontArray(void)
 {
-	/**/
+	int i;
+	for (i=0;i<numberoffonts;i++) Desk_DeskMem_Free(fontarray[i]);
+	numberoffonts=0;
+}
+
+static int Drawfile_AddFont(char *font)
+{
+	int i;
+	int fontnumber=0;
+	for (i=0;i<numberoffonts;i++) {
+		if (strcmp(fontarray[i],font)==0) {
+			fontnumber=i+1; /*font number 0 is the system font*/
+		}
+	}
+	if (fontnumber==0) {
+		fontarray[numberoffonts]=Desk_DeskMem_Malloc(strlen(font)+1);
+		/*freeing if an error?*/
+		strcpy(fontarray[numberoffonts++],font);
+		fontnumber=numberoffonts;
+	}
+	return fontnumber;
+}
+
+void Drawfile_CreateTable(void)
+{
+	int sizeoftable=8;
+	int i;
+	int *object;
+	char *items;
+	for (i=0;i<numberoffonts;i++) {
+		int sizeofentry=strlen(fontarray[i])+1+1; /*strlen+terminator+fontnumber*/
+		sizeofentry=(sizeofentry+3)&~3; /*Word align*/
+		sizeoftable+=sizeofentry;
+	}
+	AJWLib_Flex_MidExtend((flex_ptr)&drawfile,40,sizeoftable);
+	object=(int *)((char *)drawfile+40);
+	items=(char *)drawfile+48;
+	object[0]=0; /*Font table tag*/
+	object[1]=sizeoftable;
+	for (i=0;i<numberoffonts;i++) {
+		int sizeofentry=strlen(fontarray[i])+1; /*strlen+terminator*/
+		*(items++)=i+1;
+		strcpy(items,fontarray[i]);
+		items+=sizeofentry;
+		items=(char *)(((unsigned int)items+3)&~3); /*Word align*/
+	}
+}
+
+void Drawfile_PlotText(int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
+{
+	int fontnumber=Drawfile_AddFont(font);
+	int *object;
+	int sizeofpath=52;
+	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	sizeofpath+=strlen(text)+4;
+	sizeofpath&=~3; /*word align the size*/
+	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
+	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
+	object[0]=1; /*Text object*/
+	object[1]=sizeofpath;
+	object[2]=x<<8; /*Boundingbox*/
+	object[3]=y<<8;
+	object[4]=(x+1000)<<8;
+	object[5]=(y+1000)<<8;
+	object[6]=fgcolour; /*unsigned???*/
+	object[7]=bgcolour;
+	object[8]=fontnumber;
+	object[9]=size*640; /*X size*/
+	object[10]=size*640; /*Y size*/
+	object[11]=x<<8;
+	object[12]=y<<8;
+	strcpy(((char *)object)+52,text);
 }
 
 void Drawfile_Save(char *filename,layout *layout)
 {
 	Desk_wimp_rect box;
+	Drawfile_FreeFontArray();
 	AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
 	strcpy(drawfile->tag,"Draw");
 	drawfile->major_version=201;
@@ -158,7 +236,9 @@ void Drawfile_Save(char *filename,layout *layout)
 	drawfile->bbox.min.y=0;
 	drawfile->bbox.max.x=(box.max.x-box.min.x)<<8;
 	drawfile->bbox.max.y=(box.max.y-box.min.y)<<8;
-	Graphics_Redraw(layout,-box.min.x,-box.min.y,&box,Desk_TRUE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+	Graphics_Redraw(layout,-box.min.x,-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+	Drawfile_CreateTable();
 	Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
 	AJWLib_Flex_Free((flex_ptr)&drawfile);
+	Drawfile_FreeFontArray();
 }
