@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.5  1999/09/29 17:31:05  AJW
+	Add people to layout when linking/marrying etc
+
 	Revision 1.4  1999/09/28 15:43:07  AJW
 	Added Graphics_RedrawPerson and Graphics_RedrawMarriage
 	Added dragging a box to select people
@@ -82,14 +85,10 @@
 
 #define mainmenu_FILE 0
 #define mainmenu_PERSON 1
-#define mainmenu_NEWVIEW 4
-#define mainmenu_SEARCH 5
-#define mainmenu_REPORTS 6
+#define mainmenu_NEWVIEW 3
+#define mainmenu_SEARCH 4
+#define mainmenu_REPORTS 5
 #define mainmenu_SELECT 2
-#define mainmenu_LINEUP 3
-
-#define lineupmenu_SIBLINGS 0
-#define lineupmenu_PARENTS 1
 
 #define filemenu_INFO 0
 #define filemenu_SAVE 1
@@ -151,7 +150,7 @@ extern layout *layouts;
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
 static window_handle addparentswin,newviewwin,fileinfowin;
-static menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,lineupmenu;
+static menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
 static os_trfm matrix;
@@ -410,8 +409,17 @@ void Graphics_DragEnd(void *ref)
 	if (mouseblk.window==addparentswin) {
 		if (initialperson==addparentsperson) return;
 		if (Database_IsUnlinked(initialperson)) {
+			int childx,childy;
 			Database_AddParents(addparentschild,addparentsperson,initialperson);
 			Window_Hide(addparentswin);
+			for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle && windows[i].type==wintype_NORMAL) window=i;
+			if (window==-1) return;
+			childx=Layout_FindXCoord(windows[window].layout,addparentschild);
+			childy=Layout_FindYCoord(windows[window].layout,addparentschild);
+			Layout_AddPerson(windows[window].layout,addparentsperson,childx-(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
+			Layout_AddPerson(windows[window].layout,initialperson,childx+(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
+			Layout_AddMarriage(windows[window].layout,Database_GetMarriage(initialperson),childx+(Graphics_PersonWidth()-Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
+			for (i=0;i<windows[window].layout->numpeople;i++) if (windows[window].layout->person[i].person==addparentschild) windows[window].layout->person[i].child=TRUE;
 			return;
 		}
 	}
@@ -432,6 +440,7 @@ void Graphics_DragEnd(void *ref)
 			if (!Database_IsUnlinked(initialperson)) return; /*This should never happen*/
 			if (Database_GetLinked()==none) {
 				Database_LinkPerson(initialperson);
+				Layout_AddPerson(windows[window].layout,initialperson,0,0);
 				return;
 			}
 			Window_GetCoords(mouseblk.window,&blk);
@@ -450,6 +459,8 @@ void Graphics_DragEnd(void *ref)
 							Window_Show(addparentswin,open_CENTERED);
 						} else {
 							Database_Marry(finalperson,initialperson);
+							Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->person[i].x+Graphics_PersonWidth()+Graphics_MarriageWidth(),windows[window].layout->person[i].y);
+							Layout_AddMarriage(windows[window].layout,Database_GetMarriage(finalperson),windows[window].layout->person[i].x+Graphics_PersonWidth(),windows[window].layout->person[i].y);
 						}
 						return;
 					}
@@ -459,6 +470,8 @@ void Graphics_DragEnd(void *ref)
 				if (mousex>=windows[window].layout->marriage[i].x && mousex<=windows[window].layout->marriage[i].x+Graphics_MarriageWidth()) {
 					if (mousey>=windows[window].layout->marriage[i].y && mousey<=windows[window].layout->marriage[i].y+Graphics_PersonHeight()) {
 						Database_AddChild(windows[window].layout->marriage[i].marriage,initialperson);
+						windows[window].layout->marriage[i].childline=TRUE;
+						Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->marriage[i].x+(Graphics_MarriageWidth()-Graphics_PersonWidth())/2,windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
 						return;
 					}
 				}
@@ -724,11 +737,8 @@ BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 	Menu_Shade(personmenu,personmenu_ADD);
 	Menu_Shade(personmenu,personmenu_DELETE);
 	Menu_Shade(personmenu,personmenu_UNLINK);
-	Menu_Shade(lineupmenu,lineupmenu_SIBLINGS);
-	Menu_Shade(lineupmenu,lineupmenu_PARENTS);
 	Menu_Shade(mainmenu,mainmenu_PERSON);
 	Menu_Shade(mainmenu,mainmenu_SELECT);
-	Menu_Shade(mainmenu,mainmenu_LINEUP);
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
 			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+Graphics_PersonHeight()) {
@@ -753,7 +763,6 @@ BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 					if (windowdata->type==wintype_NORMAL) {
 						Menu_UnShade(mainmenu,mainmenu_PERSON);
 						Menu_UnShade(mainmenu,mainmenu_SELECT);
-						Menu_UnShade(mainmenu,mainmenu_LINEUP);
 						Menu_UnShade(personmenu,personmenu_UNLINK);
 					} else if (windowdata->type==wintype_UNLINKED) {
 						Menu_UnShade(personmenu,personmenu_DELETE);
@@ -986,16 +995,6 @@ void Graphics_PersonMenuClick(int entry,void *ref)
 	}
 }
 
-void Graphics_LineUpMenuClick(int entry,void *ref)
-{
-	switch (entry) {
-		case lineupmenu_SIBLINGS:
-			break;
-		case lineupmenu_PARENTS:
-			break;
-	}
-}
-
 void Graphics_SelectMenuClick(int entry,void *ref)
 {
 	switch (entry) {
@@ -1080,10 +1079,8 @@ void Graphics_Init(void)
 	personmenu=Menu_CreateFromMsgs("Title.Person:","Menu.Person:",Graphics_PersonMenuClick,NULL);
 	mainmenu=Menu_CreateFromMsgs("Title.Main:","Menu.Main:",Graphics_MainMenuClick,NULL);
 	selectmenu=Menu_CreateFromMsgs("Title.Select:","Menu.Select:",Graphics_SelectMenuClick,NULL);
-	lineupmenu=Menu_CreateFromMsgs("Title.LineUp:","Menu.LineUp:",Graphics_LineUpMenuClick,NULL);
 	Menu_AddSubMenu(mainmenu,mainmenu_PERSON,personmenu);
 	Menu_AddSubMenu(mainmenu,mainmenu_FILE,filemenu);
-	Menu_AddSubMenu(mainmenu,mainmenu_LINEUP,lineupmenu);
 	Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);
 	Menu_AddSubMenu(filemenu,filemenu_INFO,(menu_ptr)fileinfowin);
 	Menu_AddSubMenu(mainmenu,mainmenu_SELECT,selectmenu);
