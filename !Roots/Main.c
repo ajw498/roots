@@ -1,8 +1,12 @@
 /*
 	FT - Main program
 	© Alex Waugh 1999
+	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.2  1999/10/02 18:46:37  AJW
+	I'm not sure what has changed
+
 	Revision 1.1  1999/09/27 15:25:18  AJW
 	Initial revision
 
