@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.17 2000/02/26 18:38:35 uid1 Exp $
+	$Id: Graphics.c,v 1.18 2000/02/26 21:17:07 uid1 Exp $
 
 */
 
@@ -69,16 +69,26 @@ static unsigned int Graphics_RGBToPalette(char *str)
 
 void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 {
-	if (numvalues!=2) Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
-	if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
+	if (!strcmp(values[0],"filetitle")) {
+		if (numvalues!=6) Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
+		graphicsdata.titleheight=Graphics_ConvertToOS(values[1]);
+		graphicsdata.title.size=(int)strtol(values[2],NULL,10);
+		graphicsdata.title.colour=Graphics_RGBToPalette(values[3]);
+		graphicsdata.title.bgcolour=Graphics_RGBToPalette(values[4]);
+		strcpy(graphicsdata.title.fontname,values[5]);
+	} else {
+		if (numvalues!=2) Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
+		if (!strcmp(values[0],"personwidth")) graphicsdata.personwidth=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"personheight")) graphicsdata.personheight=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"gapheightabove")) graphicsdata.gapheightabove=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"gapheightbelow")) graphicsdata.gapheightbelow=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"gapwidth")) graphicsdata.gapwidth=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"marriagewidth")) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"secondmarriagegap")) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"windowborder")) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
+		else if (!strcmp(values[0],"gapheightunlinked")) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
+		else Desk_Error_Report(1,"Syntax error in dimensions file, line %d",linenum);
+	}
 }
 
 void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
@@ -387,6 +397,11 @@ int Graphics_WindowBorder(void)
 	return graphicsdata.windowborder;
 }
 
+int Graphics_TitleHeight(void)
+{
+	return graphicsdata.titleheight;
+}
+
 int Graphics_GetSize(void)
 {
 	int size=0;
@@ -407,6 +422,7 @@ void Graphics_ClaimFonts(void)
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	Desk_Font2_ClaimFont(&(graphicsdata.title.font),graphicsdata.title.fontname,16*graphicsdata.title.size,16*graphicsdata.title.size);
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
 			Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,16*graphicsdata.person[i].details.textlabel.properties.size,16*graphicsdata.person[i].details.textlabel.properties.size);
@@ -436,6 +452,7 @@ void Graphics_ReleaseFonts(void)
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	Desk_Font2_ReleaseFont(&(graphicsdata.title.font));
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
 			Desk_Font2_ReleaseFont(&(graphicsdata.person[i].details.textlabel.properties.font));
@@ -529,6 +546,11 @@ void Graphics_LoadStyle(char *style)
 	graphicsdata.gapheightunlinked=30;
 	graphicsdata.siblinglinethickness=0;
 	graphicsdata.siblinglinecolour=0;
+	graphicsdata.titleheight=40;
+	graphicsdata.title.size=24;
+	graphicsdata.title.colour=0;
+	graphicsdata.title.bgcolour=0xFFFFFF00;
+	strcpy(graphicsdata.title.fontname,"Homerton.Bold");
 	graphicsdata.numpersonobjects=0;
 	graphicsdata.nummarriageobjects=0;
 	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
@@ -694,6 +716,11 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 	Graphics_PlotRectangle=plotrect;
 	Graphics_PlotRectangleFilled=plotrectfilled;
 	Graphics_PlotText=plottext;
+	if (layout->title.x!=INFINITY || layout->title.y!=INFINITY) {
+		Desk_wimp_point *coords;
+		coords=AJWLib_Font_GetWidthAndHeight(graphicsdata.title.font->handle,Database_GetTitle());
+		Graphics_PlotText(scale,originx,originy,layout->title.x/*-coords->x/2*/,layout->title.y/*-coords->y/2*/,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+	}
 	for (i=0;i<layout->numchildren;i++) {
 		Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
 	}

@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.11 2000/02/25 23:33:00 uid1 Exp $
+	$Id: Drawfile.c,v 1.12 2000/02/26 21:17:06 uid1 Exp $
 
 */
 
@@ -223,7 +223,7 @@ void Drawfile_PlotText(const int scale,const int originx,const int originy,const
 	sizeofpath+=strlen(text)+4;
 	sizeofpath&=~3; /*word align the size*/
 	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
-	bbox=AJWLib_Font_GetWidthAndHeight(font,size*16,text);
+	bbox=AJWLib_Font_GetWidthAndHeightGiven(font,size*16,text);
 	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=1; /*Text object*/
 	object[1]=sizeofpath;

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.51 2000/02/26 18:54:29 uid1 Exp $
+	$Id: Windows.c,v 1.52 2000/02/26 21:17:11 uid1 Exp $
 
 */
 
@@ -304,7 +304,7 @@ void Windows_ResizeWindow(windowdata *windowdata)
 		maxyextent=Desk_TRUE;
 	}
 	/*Set window extent to fit layout size*/
-	Desk_Window_SetExtent(windowdata->handle,(windowdata->scale*(box.min.x-Graphics_WindowBorder()))/100,(windowdata->scale*(box.min.y-Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.x+Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.y+Graphics_WindowBorder()))/100);
+	Desk_Window_SetExtent(windowdata->handle,(windowdata->scale*(box.min.x-Graphics_WindowBorder()))/100,(windowdata->scale*(box.min.y-Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.x+Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.y+Graphics_WindowBorder()+(windowdata->type==wintype_NORMAL ? Graphics_TitleHeight() : 0)))/100);
 	/*Reread window position as it might have changed*/
 	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
 	Desk_Wimp_GetWindowOutline(&outlineblk);

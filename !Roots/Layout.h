@@ -25,7 +25,13 @@ typedef struct childlinelayout {
 	int y;
 } childlinelayout;
 
+typedef struct titlelayout {
+	int x;
+	int y;
+} titlelayout;
+
 typedef struct layout {
+	titlelayout title;
 	personlayout *person;
 	int numpeople;
 	marriagelayout *marriage;
