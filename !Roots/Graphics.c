@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.6  1999/10/24 23:31:30  AJW
+	Added centred text fields
+
 	Revision 1.5  1999/10/24 18:01:43  AJW
 	Added extra field types
 
@@ -96,7 +99,9 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 	else if (!strcmp(values[0],"filledbox")) graphictype=graphictype_FILLEDRECTANGLE;
 	else if (!strcmp(values[0],"text")) graphictype=graphictype_TEXTLABEL;
 	else if (!strcmp(values[0],"field")) graphictype=graphictype_FIELD;
-	else graphictype=graphictype_INVALID;
+	else if (!strcmp(values[0],"centredtext")) graphictype=graphictype_CENTREDTEXTLABEL;
+	else if (!strcmp(values[0],"centredfield")) graphictype=graphictype_CENTREDFIELD;
+	else graphictype=graphictype_INVALID; /*give an error?*/
 	switch (graphictype) {
 		case graphictype_LINE:
 		case graphictype_CHILDLINE:
@@ -183,7 +188,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				else if (!strcmp(values[7],"birthplace")) field=personfieldtype_BIRTHPLACE;
 				else if (!strcmp(values[7],"user1")) field=personfieldtype_USER1;
 				else if (!strcmp(values[7],"user2")) field=personfieldtype_USER2;
-				else if (!strcmp(values[7],"user3")) field=personfieldtype_USER;
+				else if (!strcmp(values[7],"user3")) field=personfieldtype_USER3;
 				else Desk_Error_Report(1,"Syntax error in person file, line %d (unknown field type)",linenum); /*what is field?*/
 				/*Error2 error?*/
 				graphicsdata.personfields[field].plot=Desk_TRUE;
