@@ -55,6 +55,7 @@ void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y);
 int Layout_FindXCoord(layout *layout,elementptr person);
 int Layout_FindYCoord(layout *layout,elementptr person);
 int Layout_FindMarriageXCoord(layout *layout,elementptr marriage);
+int Layout_FindMarriageYCoord(layout *layout,elementptr marriage);
 void Layout_LayoutMarriages(layout *layout);
 void Layout_LayoutLines(layout *layout);
 void Layout_LayoutTitle(layout *layout);
@@ -66,6 +67,7 @@ void Layout_RemovePerson(layout *layout,elementptr person);
 void Layout_RemoveMarriage(layout *layout,elementptr marriage);
 int Layout_GetSize(layout *layout);
 void Layout_Save(layout *layout,FILE *file);
+void Layout_SaveGEDCOM(layout *layout,FILE *file);
 layout *Layout_Load(FILE *file);
 
 #endif

@@ -1,34 +1,36 @@
-HEADERS	=	\
-		Windows.h\
-		Graphics.h\
-		Database.h\
-		Config.h\
-		Layout.h\
-		Drawfile.h\
-		Draw.h\
-		Modules.h\
-		File.h\
-		Print.h
+HEADERS = \
+	Windows.h\
+	Graphics.h\
+	Database.h\
+	Config.h\
+	Layout.h\
+	Drawfile.h\
+	Draw.h\
+	Modules.h\
+	File.h\
+	Print.h
 
-LIBS	=	\
-		L:Stubs.o.asstubs\
-		MemCheck:o.MC\
-		L:AJWLib.o.AJWLib\
-		L:Desk.o.Desk
+LIBS = \
+	L:Stubs.o.asstubs\
+	MemCheck:o.MC\
+	L:AJWLib.o.AJWLib\
+	L:Desk.o.Desk
 
 
-OBJECTS	=	\
-		Modules.o\
-		Graphics.o\
-		Windows.o\
-		Config.o\
-		Layout.o\
-		Draw.o\
-		File.o\
-		Print.o\
-		Drawfile.o\
-		Database.o\
-		!RunImage.o
+OBJECTS = \
+	Modules.o\
+	Graphics.o\
+	Windows.o\
+	Config.o\
+	Layout.o\
+	Draw.o\
+	File.o\
+	Print.o\
+	Drawfile.o\
+	Database.o\
+	!RunImage.o
+
+SOURCES = $(OBJECTS:.o=.c)
 
 TARGET		=	!RunImage
 
@@ -54,14 +56,12 @@ LINK		=	DrLink $(LINKFLAGS)
 
 
 
-$(TARGET):	$(OBJECTS) $(LIBS) $(HEADERS)
+!RunImage: $(OBJECTS) $(HEADERS)
 	$(LINK) -o $@ $(OBJECTS) $(LIBS)
-
-$(OBJECTS):	$(HEADERS)
 
 remove:
 
-clean:	remove
+clean: remove
 	rm !RunImage
 	rm *.o
 

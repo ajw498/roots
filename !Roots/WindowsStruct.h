@@ -39,6 +39,8 @@ int Windows_GetSize(void);
 
 layout *Windows_Save(FILE *file,int *index);
 
+layout *Windows_SaveGEDCOM(FILE *file,int *index);
+
 void Windows_Load(FILE *file);
 
 void Windows_FileModified(void);
