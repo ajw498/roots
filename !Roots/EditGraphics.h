@@ -7,5 +7,7 @@ void EditGraphics_CreateNew(void);
 
 void EditGraphics_Init(void);
 
+void EditGraphics_IconBarMenu(Desk_menu_ptr iconbarmenu,int entry);
+
 #endif
 

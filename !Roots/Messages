@@ -11,7 +11,7 @@ Title.IconBar:<Task.Name>
 Menu.IconBar:Info,Choices...,Edit graphics styles,Quit
 
 Title.GS:Graphics styles
-Menu.GS:Create new...,Edit,Delete
+Menu.GS:Create new...,Edit,Delete,Open directories
 
 Title.Sex:Sex
 Menu.Sex:<Sex.M>,<Sex.F>,<Sex.U>
@@ -48,6 +48,9 @@ Menu.Text:Label,Field
 Title.Just:Justification
 Menu.Just:Left,Right,Centred
 
+Title.Move:Move
+Menu.Move:Don't move,Move by half,Move
+
 Edit.Person:Edit person
 Edit.Marr:Edit marriage
 
@@ -56,6 +59,16 @@ Style.New:NewStyle
 
 Default.Text:Text
 Default.Font:Trinity.Medium
+
+Rect.X:X
+Rect.Y:Y
+Rect.W:Width
+Rect.H:Height
+
+Line.X:X0
+Line.Y:Y0
+Line.W:X1
+Line.H:Y1
 
 Scale.1:33
 Scale.2:80

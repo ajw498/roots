@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.3 2001/06/21 22:12:41 AJW Exp $
+	$Id: EditGraphics.c,v 1.4 2001/06/24 22:30:31 AJW Exp $
 
 */
 
@@ -51,6 +51,7 @@
 #include "EditGraphics.h"
 #include "Draw.h"
 #include "Windows.h"
+#include "Config.h"
 
 
 #include <stdlib.h>
@@ -90,28 +91,41 @@
 #define editshape_EXPAND 26
 #define editshape_BACK 27
 #define editshape_DELETE 28
+#define editshape_CHILD 29
+#define editshape_MOVE 31
+#define editshape_MOVEMENU 30
+#define editshape_XLABEL 1
+#define editshape_YLABEL 9
+#define editshape_WIDTHLABEL 4
+#define editshape_HEIGHTLABEL 13
 
 #define editmisc_ABOVE 29
 #define editmisc_BELOW 4
 #define editmisc_BETWEEN 8
 #define editmisc_THICKNESS 20
 #define editmisc_BORDER 12
-#define editmisc_TITLE 16
+#define editmisc_TITLEHEIGHT 16
 #define editmisc_ABOVEUP 3
 #define editmisc_BELOWUP 6
 #define editmisc_BETWEENUP 10
 #define editmisc_THICKNESSUP 22
 #define editmisc_BORDERUP 14
-#define editmisc_TITLEUP 18
+#define editmisc_TITLEHEIGHTUP 18
 #define editmisc_ABOVEDOWN 31
 #define editmisc_BELOWDOWN 5
 #define editmisc_BETWEENDOWN 9
 #define editmisc_THICKNESSDOWN 21
 #define editmisc_BORDERDOWN 13
-#define editmisc_TITLEDOWN 17
+#define editmisc_TITLEHEIGHTDOWN 17
 #define editmisc_COLOUR 25
 #define editmisc_COLOURMENU 24
-
+#define editmisc_TITLEFONT 38
+#define editmisc_TITLEFONTMENU 37
+#define editmisc_TITLESIZE 33
+#define editmisc_TITLESIZEUP 35
+#define editmisc_TITLESIZEDOWN 34
+#define editmisc_TITLECOLOUR 41
+#define editmisc_TITLECOLOURMENU 40
 
 #define shapemenu_LINE 0
 #define shapemenu_RECTANGLE 1
@@ -150,6 +164,9 @@
 #define edittext_YUP 7
 #define edittext_YDOWN 6
 #define edittext_DELETE 28
+#define edittext_COLOURSEX 29
+#define edittext_MOVE 31
+#define edittext_MOVEMENU 30
 
 #define mainwin_PERSON 0
 #define mainwin_MARRIAGE 1
@@ -158,7 +175,19 @@
 #define mainwin_SAVE 3
 #define mainwin_NAME 5
 
+#define movemenu_DONT 0
+#define movemenu_HALF 1
+#define movemenu_FULL 2
 
+#define colour_WHITE 0xFFFFFF00
+#define colour_RED 0x0000FF00
+#define colour_BLUE 0xFF000000
+
+enum move {
+	move_DONT=movemenu_DONT,
+	move_HALF=movemenu_HALF,
+	move_FULL=movemenu_FULL
+};
 
 typedef struct shapedetails {
 	enum {
@@ -170,6 +199,8 @@ typedef struct shapedetails {
 	int thickness;
 	unsigned int colour;
 	Desk_bool expand;
+	Desk_bool child;
+	enum move move;
 } shapedetails;
 
 typedef struct textdetails {
@@ -186,9 +217,11 @@ typedef struct textdetails {
 	Desk_wimp_rect bbox;
 	int size;
 	unsigned int colour;
-	char label[256]; /*dynamic size?*/
+	char label[256];
 	char font[256];
 	Desk_bool expand;
+	Desk_bool coloursex;
+	enum move move;
 } textdetails;
 
 typedef struct object {
@@ -217,6 +250,9 @@ typedef struct miscdetails {
 	unsigned int colour;
 	int windowborder;
 	int titleheight;
+	int titlesize;
+	char titlefont[256];
+	unsigned int titlecolour;
 } miscdetails;
 
 typedef struct styledetails {
@@ -229,10 +265,10 @@ static styledetails style;
 static persondetails *item;
 static shapedetails *editingshape=NULL;
 static textdetails *editingtext=NULL;
-static Desk_bool editingsize=Desk_FALSE,editingmisc=Desk_FALSE;
+static Desk_bool editingsize=Desk_FALSE,editingmisc=Desk_FALSE,editingstyle=Desk_FALSE;
 
 static Desk_window_handle editwin,toolboxpane,shapewin,sizewin,textwin,mainwin,miscwin;
-static Desk_menu_ptr shapemenu,textmenu,fontmenu,justmenu;
+static Desk_menu_ptr shapemenu,textmenu,fontmenu,justmenu,editmenu=NULL,deletemenu=NULL,editgsmenu,movemenu,movemenu2;
 
 #define BORDER 50
 
@@ -250,8 +286,17 @@ static void EditGraphics_UpdateWindow(void)
 		if (object->type==object_SHAPE) {
 			if (object->object.shape.x<bbox.min.x) bbox.min.x=object->object.shape.x;
 			if (object->object.shape.y<bbox.min.y) bbox.min.y=object->object.shape.y;
-			if (object->object.shape.x+object->object.shape.width>bbox.max.x)  bbox.max.x=object->object.shape.x+object->object.shape.width;
-			if (object->object.shape.y+object->object.shape.height>bbox.max.y) bbox.max.y=object->object.shape.y+object->object.shape.height;
+			if (object->object.shape.type==shape_LINE) {
+				if (object->object.shape.x>bbox.max.x) bbox.max.x=object->object.shape.x;
+				if (object->object.shape.y>bbox.max.y) bbox.max.y=object->object.shape.y;
+				if (object->object.shape.width>bbox.max.x)  bbox.max.x=object->object.shape.width;
+				if (object->object.shape.height>bbox.max.y) bbox.max.y=object->object.shape.height;
+				if (object->object.shape.width<bbox.min.x)  bbox.min.x=object->object.shape.width;
+				if (object->object.shape.height<bbox.min.y) bbox.min.y=object->object.shape.height;
+			} else {
+				if (object->object.shape.x+object->object.shape.width>bbox.max.x)  bbox.max.x=object->object.shape.x+object->object.shape.width;
+				if (object->object.shape.y+object->object.shape.height>bbox.max.y) bbox.max.y=object->object.shape.y+object->object.shape.height;
+			}
 		} else {
 			x=object->object.text.x;
 			if (object->object.text.just==just_RIGHT) x-=object->object.text.bbox.max.x;
@@ -267,7 +312,7 @@ static void EditGraphics_UpdateWindow(void)
 	Desk_Window_ForceWholeRedraw(editwin);
 }
 
-void EditGraphics_CreateNew(void)
+static void EditGraphics_SetStyleDefaults(void)
 {
 	style.person.width=400;
 	style.person.height=200;
@@ -284,36 +329,59 @@ void EditGraphics_CreateNew(void)
 	style.misc.colour=0;
 	style.misc.windowborder=20;
 	style.misc.titleheight=100;
-
-	Desk_Icon_SetText(mainwin,mainwin_NAME,AJWLib_Msgs_TempLookup("Style.New:New"));
+	style.misc.titlesize=20;
+	strcpy(style.misc.titlefont,"Homerton.Bold");
+	style.misc.titlecolour=0;
 
 	editingshape=NULL;
 	editingtext=NULL;
+}
+
+void EditGraphics_CreateNew(void)
+{
+	EditGraphics_SetStyleDefaults();
+	Desk_Icon_SetText(mainwin,mainwin_NAME,AJWLib_Msgs_TempLookup("Style.New:New"));
 
 	Desk_Window_Show(mainwin,Desk_open_CENTERED);
+	editingstyle=Desk_TRUE;
 }
 
 static void EditGraphics_UpdateShapeWindow(void)
 {
 	Desk_Icon_SetText(shapewin,editshape_TYPE,Desk_Menu_GetText(shapemenu,editingshape->type));
+	Desk_Icon_SetText(shapewin,editshape_MOVE,Desk_Menu_GetText(movemenu,editingshape->move));
 	Desk_Icon_SetInteger(shapewin,editshape_X,editingshape->x);
 	Desk_Icon_SetInteger(shapewin,editshape_Y,editingshape->y);
 	Desk_Icon_SetInteger(shapewin,editshape_WIDTH,editingshape->width);
 	Desk_Icon_SetInteger(shapewin,editshape_HEIGHT,editingshape->height);
 	Desk_Icon_SetInteger(shapewin,editshape_THICKNESS,editingshape->thickness);
 	Desk_Icon_SetSelect(shapewin,editshape_EXPAND,editingshape->expand);
+	Desk_Icon_SetSelect(shapewin,editshape_CHILD,editingshape->child);
+	if (editingshape->type==shape_LINE) {
+		Desk_Icon_SetText(shapewin,editshape_XLABEL,AJWLib_Msgs_TempLookup("Line.X:X0"));
+		Desk_Icon_SetText(shapewin,editshape_YLABEL,AJWLib_Msgs_TempLookup("Line.Y:Y0"));
+		Desk_Icon_SetText(shapewin,editshape_WIDTHLABEL,AJWLib_Msgs_TempLookup("Line.W:X1"));
+		Desk_Icon_SetText(shapewin,editshape_HEIGHTLABEL,AJWLib_Msgs_TempLookup("Line.H:Y1"));
+	} else {
+		Desk_Icon_SetText(shapewin,editshape_XLABEL,AJWLib_Msgs_TempLookup("Rect.X:X0"));
+		Desk_Icon_SetText(shapewin,editshape_YLABEL,AJWLib_Msgs_TempLookup("Rect.Y:Y0"));
+		Desk_Icon_SetText(shapewin,editshape_WIDTHLABEL,AJWLib_Msgs_TempLookup("Rect.W:X1"));
+		Desk_Icon_SetText(shapewin,editshape_HEIGHTLABEL,AJWLib_Msgs_TempLookup("Rect.H:Y1"));
+	}
 }
 
 static void EditGraphics_UpdateTextWindow(void)
 {
 	Desk_Icon_SetText(textwin,edittext_TYPE,Desk_Menu_GetText(textmenu,editingtext->type));
 	Desk_Icon_SetText(textwin,edittext_JUST,Desk_Menu_GetText(justmenu,editingtext->just));
+	Desk_Icon_SetText(textwin,edittext_MOVE,Desk_Menu_GetText(movemenu,editingtext->move));
 	Desk_Icon_SetInteger(textwin,edittext_X,editingtext->x);
 	Desk_Icon_SetInteger(textwin,edittext_Y,editingtext->y);
 	Desk_Icon_SetInteger(textwin,edittext_FONTSIZE,editingtext->size);
 	Desk_Icon_SetText(textwin,edittext_LABEL,editingtext->label);
 	Desk_Icon_SetText(textwin,edittext_FONT,editingtext->font);
 	Desk_Icon_SetSelect(textwin,edittext_EXPAND,editingtext->expand);
+	Desk_Icon_SetSelect(textwin,edittext_COLOURSEX,editingtext->coloursex);
 }
 
 static void EditGraphics_ShapeMenuClick(int entry,void *ref)
@@ -331,6 +399,19 @@ static void EditGraphics_ShapeMenuClick(int entry,void *ref)
 			editingshape->type=shape_FILLEDRECTANGLE;
 			break;
 	}
+	EditGraphics_UpdateShapeWindow();
+	EditGraphics_UpdateWindow();
+}
+
+static void EditGraphics_MoveMenuClick(int entry,void *ref)
+{
+	if (ref) {
+		Desk_Icon_SetText(shapewin,editshape_MOVE,Desk_Menu_GetText(movemenu,entry));
+		editingshape->move=(enum move)entry;
+	} else {
+		Desk_Icon_SetText(textwin,edittext_MOVE,Desk_Menu_GetText(movemenu,entry));
+		editingtext->move=(enum move)entry;
+	}
 	EditGraphics_UpdateWindow();
 }
 
@@ -344,16 +425,19 @@ static Desk_bool EditGraphics_FontMenuClick(Desk_event_pollblock *block,void *re
 
 	if (Desk_menu_currentopen!=fontmenu) return Desk_FALSE;
 
-	AJWLib_Assert(editingtext!=NULL);
 	font=Desk_Menu_FontMenuDecode3(block->data.selection);
 
 	Desk_Error2_CheckOS(Desk_SWI(3,2,SWI_Font_FindField,0,font,'F',NULL,&font));
-	d=editingtext->font;
+	if (editingtext) d=editingtext->font; else d=style.misc.titlefont;
 	while (*font>' ' && *font!='\\') *d++=*font++; /*Copy ctrl or space terminated string*/
 	*d='\0';
 
-	Desk_Icon_SetText(textwin,edittext_FONT,editingtext->font);
-	EditGraphics_UpdateWindow();
+	if (editingtext) {
+		Desk_Icon_SetText(textwin,edittext_FONT,editingtext->font);
+		EditGraphics_UpdateWindow();
+	} else {
+		Desk_Icon_SetText(miscwin,editmisc_TITLEFONT,style.misc.titlefont);
+	}
 	AJWLib_Menu_CheckAdjust();
 	return Desk_TRUE;
 }
@@ -489,6 +573,8 @@ static Desk_bool EditGraphics_AddText(Desk_event_pollblock *block,void *ref)
 	strcpy(newtext->object.text.font,AJWLib_Msgs_TempLookup("Default.Font:Trinity.Medium"));
 	newtext->object.text.colour=0; /*black*/
 	newtext->object.text.expand=Desk_FALSE;
+	newtext->object.text.coloursex=Desk_FALSE;
+	newtext->object.text.move=move_DONT;
 	newtext->object.text.bbox=*AJWLib_Font_GetBBoxGiven(newtext->object.text.font,newtext->object.text.size*16,newtext->object.text.label);
 	EditGraphics_UpdateWindow();
 	EditGraphics_OpenTextWindow(&(newtext->object.text));
@@ -540,6 +626,8 @@ static Desk_bool EditGraphics_AddShape(Desk_event_pollblock *block,void *ref)
 	newshape->object.shape.thickness=0;
 	newshape->object.shape.colour=0; /*black*/
 	newshape->object.shape.expand=Desk_FALSE;
+	newshape->object.shape.child=Desk_FALSE;
+	newshape->object.shape.move=move_DONT;
 	EditGraphics_UpdateWindow();
 	EditGraphics_OpenShapeWindow(&(newshape->object.shape));
 	return Desk_TRUE;
@@ -585,7 +673,7 @@ static Desk_bool EditGraphics_UpdateWidthAndHeight(Desk_event_pollblock *block,v
 
 	if (editingsize) {
 		item->width=Desk_Icon_GetInteger(sizewin,editsize_WIDTH);
-		item->height=Desk_Icon_GetInteger(sizewin,editsize_HEIGHT);
+		style.person.height=style.marriage.height=Desk_Icon_GetInteger(sizewin,editsize_HEIGHT);
 	}
 	if (editingshape) {
 		editingshape->x=Desk_Icon_GetInteger(shapewin,editshape_X);
@@ -594,6 +682,7 @@ static Desk_bool EditGraphics_UpdateWidthAndHeight(Desk_event_pollblock *block,v
 		editingshape->height=Desk_Icon_GetInteger(shapewin,editshape_HEIGHT);
 		editingshape->thickness=Desk_Icon_GetInteger(shapewin,editshape_THICKNESS);
 		editingshape->expand=Desk_Icon_GetSelect(shapewin,editshape_EXPAND);
+		editingshape->child=Desk_Icon_GetSelect(shapewin,editshape_CHILD);
 	}
 	if (editingtext) {
 		editingtext->x=Desk_Icon_GetInteger(textwin,edittext_X);
@@ -603,7 +692,8 @@ static Desk_bool EditGraphics_UpdateWidthAndHeight(Desk_event_pollblock *block,v
 		Desk_Icon_GetText(textwin,edittext_LABEL,editingtext->label);
 		Desk_Icon_GetText(textwin,edittext_FONT,editingtext->font);
 		editingtext->expand=Desk_Icon_GetSelect(textwin,edittext_EXPAND);
-		editingtext->bbox=*AJWLib_Font_GetBBoxGiven(editingtext->font,editingtext->size*16,editingtext->label);
+		editingtext->coloursex=Desk_Icon_GetSelect(textwin,edittext_COLOURSEX);
+		if (editingtext->label[0]) editingtext->bbox=*AJWLib_Font_GetBBoxGiven(editingtext->font,editingtext->size*16,editingtext->label); else editingtext->bbox.min.x=editingtext->bbox.min.y=editingtext->bbox.max.x=editingtext->bbox.max.y=0;
 	}
 	EditGraphics_UpdateWindow();
 	return Desk_FALSE;
@@ -628,12 +718,20 @@ static Desk_bool EditGraphics_OpenMiscWindow(Desk_event_pollblock *block,void *r
 
 	if (editingmisc) return Desk_TRUE;
 
+	EditGraphics_ClosePersonWindow(NULL,NULL);
+
+	fontmenu=Desk_Menu_FontMenu3(Desk_FALSE,Desk_Menu_FontMenu_NOTICK); /*Old fontmenu will get automatically freed*/
+	Desk_Event_Claim(Desk_event_MENU,Desk_event_ANY,Desk_event_ANY,EditGraphics_FontMenuClick,NULL);
+	AJWLib_Menu_AttachPopup(miscwin,editmisc_TITLEFONTMENU,editmisc_TITLEFONT,fontmenu,Desk_button_MENU | Desk_button_SELECT);
+
 	Desk_Icon_SetInteger(miscwin,editmisc_ABOVE,style.misc.gapabove);
 	Desk_Icon_SetInteger(miscwin,editmisc_BELOW,style.misc.gapbelow);
 	Desk_Icon_SetInteger(miscwin,editmisc_BETWEEN,style.misc.gapbetween);
 	Desk_Icon_SetInteger(miscwin,editmisc_THICKNESS,style.misc.thickness);
 	Desk_Icon_SetInteger(miscwin,editmisc_BORDER,style.misc.windowborder);
-	Desk_Icon_SetInteger(miscwin,editmisc_TITLE,style.misc.titleheight);
+	Desk_Icon_SetInteger(miscwin,editmisc_TITLEHEIGHT,style.misc.titleheight);
+	Desk_Icon_SetInteger(miscwin,editmisc_TITLESIZE,style.misc.titlesize);
+	Desk_Icon_SetText(miscwin,editmisc_TITLEFONT,style.misc.titlefont);
 
 	Desk_Window_Show(miscwin,Desk_open_NEARLAST);
 	editingmisc=Desk_TRUE;
@@ -652,7 +750,12 @@ static Desk_bool EditGraphics_CloseMiscWindow(Desk_event_pollblock *block,void *
 	style.misc.gapbetween=Desk_Icon_GetInteger(miscwin,editmisc_BETWEEN);
 	style.misc.thickness=Desk_Icon_GetInteger(miscwin,editmisc_THICKNESS);
 	style.misc.windowborder=Desk_Icon_GetInteger(miscwin,editmisc_BORDER);
-	style.misc.titleheight=Desk_Icon_GetInteger(miscwin,editmisc_TITLE);
+	style.misc.titleheight=Desk_Icon_GetInteger(miscwin,editmisc_TITLEHEIGHT);
+	style.misc.titlesize=Desk_Icon_GetInteger(miscwin,editmisc_TITLESIZE);
+	Desk_Icon_GetText(miscwin,editmisc_TITLEFONT,style.misc.titlefont);
+
+	Desk_Event_Release(Desk_event_MENU,Desk_event_ANY,Desk_event_ANY,EditGraphics_FontMenuClick,NULL);
+	AJWLib_Menu_Release(fontmenu);
 
 	Desk_Window_Hide(miscwin);
 	editingmisc=Desk_FALSE;
@@ -665,6 +768,7 @@ static Desk_bool EditGraphics_EditPerson(Desk_event_pollblock *block,void *ref)
 	Desk_UNUSED(ref);
 
 	EditGraphics_ClosePersonWindow(NULL,NULL);
+	EditGraphics_CloseMiscWindow(NULL,NULL);
 	item=&(style.person);
 	Desk_Window_SetTitle(editwin,AJWLib_Msgs_TempLookup("Edit.Person:"));
 
@@ -679,6 +783,7 @@ static Desk_bool EditGraphics_EditMarriage(Desk_event_pollblock *block,void *ref
 	Desk_UNUSED(ref);
 
 	EditGraphics_ClosePersonWindow(NULL,NULL);
+	EditGraphics_CloseMiscWindow(NULL,NULL);
 	item=&(style.marriage);
 	Desk_Window_SetTitle(editwin,AJWLib_Msgs_TempLookup("Edit.Marr:"));
 
@@ -693,7 +798,7 @@ static Desk_bool EditGraphics_CancelStyle(Desk_event_pollblock *block,void *ref)
 
 	Desk_UNUSED(ref);
 
-	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	if (block && block->data.mouse.button.data.menu) return Desk_FALSE;
 
 	item=style.person.objects;
 	while (item) {
@@ -712,20 +817,575 @@ static Desk_bool EditGraphics_CancelStyle(Desk_event_pollblock *block,void *ref)
 	EditGraphics_ClosePersonWindow(NULL,NULL);
 	EditGraphics_CloseMiscWindow(NULL,NULL);
 	Desk_Window_Hide(mainwin);
+	editingstyle=Desk_FALSE;
 	return Desk_TRUE;
 }
+
+static void EditGraphics_PrintObjects(FILE *file,object *object)
+{
+	while (object) {
+		if (object->type==object_SHAPE) {
+			shapedetails *t=&(object->object.shape);
+			char type=t->type==shape_LINE ? 'L' : t->type==shape_RECTANGLE ? 'R' : 'F';
+			fprintf(file,"--*S%cX%dY%dW%dH%dT%dO%u%c%cM%d\n",type,t->x,t->y,t->width,t->height,t->thickness,t->colour,t->expand ? 'E' : 'e',t->child ? 'C' : 'c',t->move);
+		} else {
+			textdetails *t=&(object->object.text);
+			char type,just;
+
+			type=t->type==text_LABEL ? 'A' : 'I';
+			just=t->just==just_LEFT ? 'L' : t->just==just_RIGHT ? 'R' : 'M';
+			fprintf(file,"--*T%c%cX%dY%dS%dC%u%c%cV%dF%s:T%s\n",type,just,t->x,t->y,t->size,t->colour,t->expand ? 'E' : 'e',t->coloursex ? 's' : 'x',t->move,t->font,t->label);
+		}
+		object=object->next;
+	}
+}
+
+#define SKIPNUM {\
+	while ((*p>='0' && *p<='9') || *p=='-') p++;\
+	c=*p;\
+	*p='\0';\
+}
+
+static void EditGraphics_LoadStyle(char *stylename)
+{
+	FILE *file=NULL;
+	char line[256],*p,*n,c;
+	char filename[256];
+	Desk_bool person=Desk_FALSE;
+	object *last=NULL,*object;
+
+	if (editingstyle) EditGraphics_CancelStyle(NULL,NULL);
+	EditGraphics_SetStyleDefaults();
+
+	sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,stylename);
+
+	if (!Desk_File_Exists(filename)) sprintf(filename,"%s.%s.%s",DEFAULTS,GRAPHICSDIR,stylename);
+
+	file=AJWLib_File_fopen(filename,"r");
+	Desk_Error2_Try {
+		while (fgets(line,256,file)) {
+			p=line;
+			while (*p!='\0' && *p!='\n') p++;
+			*p='\0';
+			if (line[0]=='-' && line[1]=='-' && line[2]=='*') {
+				switch (line[3]) {
+					case 'M':
+						p=line+4;
+						c=*p;
+						n=++p;
+						while (c) {
+							switch (c) {
+								case 'A':
+									SKIPNUM;
+									style.misc.gapabove=atoi(n);
+									n=++p;
+									break;
+								case 'B':
+									SKIPNUM;
+									style.misc.gapbelow=atoi(n);
+									n=++p;
+									break;
+								case 'H':
+									SKIPNUM;
+									style.misc.gapbetween=atoi(n);
+									n=++p;
+									break;
+								case 'T':
+									SKIPNUM;
+									style.misc.thickness=atoi(n);
+									n=++p;
+									break;
+								case 'C':
+									SKIPNUM;
+									style.misc.colour=(unsigned int)strtoul(n,NULL,10);
+									n=++p;
+									break;
+								case 'W':
+									SKIPNUM;
+									style.misc.windowborder=atoi(n);
+									n=++p;
+									break;
+								case 'I':
+									SKIPNUM;
+									style.misc.titleheight=atoi(n);
+									n=++p;
+									break;
+								case 'S':
+									SKIPNUM;
+									style.misc.titlesize=atoi(n);
+									n=++p;
+									break;
+								case 'O':
+									SKIPNUM;
+									style.misc.titlecolour=(unsigned int)strtoul(n,NULL,10);
+									n=++p;
+									break;
+								case 'F':
+									c='\0';
+									strcpy(style.misc.titlefont,n);
+									break;
+								default:
+									c=*p++;
+									n=p;
+							}
+						}
+						break;
+					case 'P':
+						person=Desk_TRUE;
+						p=line+4;
+						c=*p;
+						n=++p;
+						while (c) {
+							switch (c) {
+								case 'W':
+									SKIPNUM;
+									style.person.width=atoi(n);
+									n=++p;
+									break;
+								case 'H':
+									SKIPNUM;
+									style.person.height=atoi(n);
+									n=++p;
+									break;
+								default:
+									c=*p++;
+									n=p;
+							}
+						}
+						break;
+					case 'R':
+						person=Desk_FALSE;
+						p=line+4;
+						c=*p;
+						n=++p;
+						while (c) {
+							switch (c) {
+								case 'W':
+									SKIPNUM;
+									style.marriage.width=atoi(n);
+									n=++p;
+									break;
+								case 'H':
+									SKIPNUM;
+									style.marriage.height=atoi(n);
+									n=++p;
+								default:
+									c=*p++;
+									n=p;
+									break;
+							}
+						}
+						break;
+					case 'S':
+	           			object=Desk_DeskMem_Malloc(sizeof(struct object));
+						object->type=object_SHAPE;
+						object->object.shape.type=shape_FILLEDRECTANGLE;
+						object->object.shape.x=0;
+						object->object.shape.y=0;
+						object->object.shape.width=100;
+						object->object.shape.height=100;
+						object->object.shape.thickness=0;
+						object->object.shape.colour=0; /*black*/
+						object->object.shape.expand=Desk_FALSE;
+						object->object.shape.child=Desk_FALSE;
+						object->object.shape.move=move_DONT;
+	           			object->next=NULL;
+						if (person) last=style.person.objects; else last=style.marriage.objects;
+	           			if (last==NULL) {
+	           				if (person) style.person.objects=object; else style.marriage.objects=object;
+	           			} else {
+	           				while (last->next) last=last->next;
+	           				last->next=object;
+	           			}
+						p=line+4;
+						c=*p;
+						n=++p;
+						while (c) {
+							shapedetails *t=&(object->object.shape);
+							switch (c) {
+								case 'R':
+									t->type=shape_RECTANGLE;
+									c=*p;
+									n=++p;
+									break;
+								case 'F':
+									t->type=shape_FILLEDRECTANGLE;
+									c=*p;
+									n=++p;
+									break;
+								case 'L':
+									t->type=shape_LINE;
+									c=*p;
+									n=++p;
+									break;
+								case 'X':
+									SKIPNUM;
+									t->x=atoi(n);
+									n=++p;
+									break;
+								case 'Y':
+									SKIPNUM;
+									t->y=atoi(n);
+									n=++p;
+									break;
+								case 'W':
+									SKIPNUM;
+									t->width=atoi(n);
+									n=++p;
+									break;
+								case 'H':
+									SKIPNUM;
+									t->height=atoi(n);
+									n=++p;
+									break;
+								case 'T':
+									SKIPNUM;
+									t->thickness=atoi(n);
+									n=++p;
+									break;
+								case 'O':
+									SKIPNUM;
+									t->colour=(unsigned int)strtoul(n,NULL,10);
+									n=++p;
+									break;
+								case 'E':
+									t->expand=Desk_TRUE;
+									c=*p;
+									n=++p;
+									break;
+								case 'e':
+									t->expand=Desk_FALSE;
+									c=*p;
+									n=++p;
+									break;
+								case 'C':
+									t->child=Desk_TRUE;
+									c=*p;
+									n=++p;
+									break;
+								case 'c':
+									t->child=Desk_FALSE;
+									c=*p;
+									n=++p;
+									break;
+								case 'M':
+									SKIPNUM;
+									t->move=(enum move)atoi(n);
+									n=++p;
+									break;
+								default:
+									c=*p;
+									n=++p;
+							}
+						}
+						break;
+					case 'T':
+	           			object=Desk_DeskMem_Malloc(sizeof(struct object));
+	           			object->type=object_TEXT;
+						object->object.text.type=text_LABEL;
+						object->object.text.just=just_LEFT;
+						object->object.text.x=0;
+						object->object.text.y=0;
+						object->object.text.size=12;
+						object->object.text.label[0]='\0';
+						object->object.text.font[0]='\0';
+						object->object.text.colour=0;
+						object->object.text.expand=Desk_FALSE;
+						object->object.text.coloursex=Desk_FALSE;
+						object->object.text.move=move_DONT;
+						object->object.text.bbox.min.x=0;
+						object->object.text.bbox.min.y=0;
+						object->object.text.bbox.max.x=10;
+						object->object.text.bbox.max.y=10;
+	           			object->next=NULL;
+						if (person) last=style.person.objects; else last=style.marriage.objects;
+	           			if (last==NULL) {
+	           				if (person) style.person.objects=object; else style.marriage.objects=object;
+	           			} else {
+	           				while (last->next) last=last->next;
+	           				last->next=object;
+	           			}
+						p=line+4;
+						c=*p;
+						n=++p;
+						while (c) {
+							textdetails *t=&(object->object.text);
+							switch (c) {
+								case 'A':
+									t->type=text_LABEL;
+									c=*p;
+									n=++p;
+									break;
+								case 'I':
+									t->type=text_FIELD;
+									c=*p;
+									n=++p;
+									break;
+								case 'L':
+									t->just=just_LEFT;
+									c=*p;
+									n=++p;
+									break;
+								case 'R':
+									t->just=just_RIGHT;
+									c=*p;
+									n=++p;
+									break;
+								case 'M':
+									t->just=just_CENTRED;
+									c=*p;
+									n=++p;
+									break;
+								case 'X':
+									SKIPNUM;
+									t->x=atoi(n);
+									n=++p;
+									break;
+								case 'Y':
+									SKIPNUM;
+									t->y=atoi(n);
+									n=++p;
+									break;
+								case 'S':
+									SKIPNUM;
+									t->size=atoi(n);
+									n=++p;
+									break;
+								case 'V':
+									SKIPNUM;
+									t->move=(enum move)atoi(n);
+									n=++p;
+									break;
+								case 'C':
+									SKIPNUM;
+									t->colour=(unsigned int)strtoul(n,NULL,10);
+									n=++p;
+									break;
+								case 'E':
+									t->expand=Desk_TRUE;
+									c=*p;
+									n=++p;
+									break;
+								case 'e':
+									t->expand=Desk_FALSE;
+									c=*p;
+									n=++p;
+									break;
+								case 's':
+									t->coloursex=Desk_TRUE;
+									c=*p;
+									n=++p;
+									break;
+								case 'x':
+									t->coloursex=Desk_FALSE;
+									c=*p;
+									n=++p;
+									break;
+								case 'F':
+									while (*p!='\0' && *p!=':') p++;
+									c=*p;
+									*p='\0';
+									strcpy(t->font,n);
+									n=++p;
+									break;
+								case 'T':
+									c='\0';
+									strcpy(t->label,n);
+									t->bbox=*AJWLib_Font_GetBBoxGiven(t->font,t->size*16,t->label);
+									break;
+								default:
+									c=*p++;
+									n=p;
+							}
+						}
+						break;
+					default:
+						/*Ignore any unknown lines*/
+						break;
+				}
+			}
+		}
+	} Desk_Error2_Catch {
+		AJWLib_File_fclose(file);
+		Desk_Error2_ReThrow();
+	} Desk_Error2_EndCatch
+	AJWLib_File_fclose(file);
+
+	Desk_Icon_SetText(mainwin,mainwin_NAME,stylename);
+	Desk_Window_Show(mainwin,Desk_open_CENTERED);
+	editingstyle=Desk_TRUE;
+}
+
+static void EditGraphics_StyleMenuClick(int entry,void *ref)
+{
+	if (ref) {
+		char filename[256];
+
+		sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,Desk_Menu_GetText(deletemenu,entry));
+		remove(filename);
+	} else {
+		EditGraphics_LoadStyle(Desk_Menu_GetText(editmenu,entry));
+	}
+}
+
+static Desk_bool EditGraphics_SetUpMenu(Desk_event_pollblock *block,void *ref)
+{
+	char dirname[256];
+	
+	Desk_UNUSED(ref);
+	
+	if (editmenu) {
+		AJWLib_Menu_FullDispose(editmenu);
+		editmenu=NULL;
+	}
+	if (deletemenu) {
+		AJWLib_Menu_FullDispose(deletemenu);
+		deletemenu=NULL;
+	}
+	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
+	Windows_GraphicsStylesMenu(&editmenu,dirname);
+	Windows_GraphicsStylesMenu(&deletemenu,dirname);
+	sprintf(dirname,"%s.%s",DEFAULTS,GRAPHICSDIR);
+	Windows_GraphicsStylesMenu(&editmenu,dirname);
+	AJWLib_Menu_Register(editmenu,EditGraphics_StyleMenuClick,NULL);
+	AJWLib_Menu_Register(deletemenu,EditGraphics_StyleMenuClick,(void *)1);
+	Desk_Menu_AddSubMenu(editgsmenu,ibarmenu_EDIT,editmenu);
+	Desk_Menu_AddSubMenu(editgsmenu,ibarmenu_DELETE,deletemenu);
+	Desk_Wimp_CreateSubMenu(editgsmenu,block->data.message.data.menuwarn.openpos.x,block->data.message.data.menuwarn.openpos.y);
+	return Desk_TRUE;
+}
+
+#define CLAIMFONTS while (object) {\
+	if (object->type==object_TEXT) fprintf(file,"font%c%d=ClaimFont(\"%s\",%d);\n",objectletter,objectnum,object->object.text.font,object->object.text.size);\
+	object=object->next;\
+	objectnum++;\
+}
+
+#define OUTPUTOBJECTS(person) while (object) {\
+	if (object->type==object_SHAPE) {\
+		char *m;\
+		if (object->object.shape.move==move_HALF) m="+mh"; else if (object->object.shape.move==move_FULL) m="+m"; else m="";\
+		if (object->object.shape.child) {\
+			if (objectletter=='p') fprintf(file,"if GetParentsMarriage(person) then "); else fprintf(file,"if GetChild(marriage) then ");\
+		}\
+		switch (object->object.shape.type) {\
+			case shape_RECTANGLE:\
+				fprintf(file,"PlotRectangle(x+%d%s,y+%d,%d%s,%d,%d,%u);",object->object.shape.x,m,object->object.shape.y,object->object.shape.width,object->object.shape.expand ? "+m" : "",object->object.shape.height,object->object.shape.thickness,object->object.shape.colour);\
+				break;\
+			case shape_FILLEDRECTANGLE:\
+				fprintf(file,"PlotRectangleFilled(x+%d%s,y+%d,%d%s,%d,%u);",object->object.shape.x,m,object->object.shape.y,object->object.shape.width,object->object.shape.expand ? "+m" : "",object->object.shape.height,object->object.shape.colour);\
+				break;\
+			case shape_LINE:\
+				fprintf(file,"PlotLine(x+%d%s,y+%d,x+%d%s%s,y+%d,%d,%u);",object->object.shape.x,m,object->object.shape.y,object->object.shape.width,m,object->object.shape.expand ? "+m" : "",object->object.shape.height,object->object.shape.thickness,object->object.shape.colour);\
+				break;\
+		}\
+		if (object->object.shape.child) fprintf(file," end\n"); else fprintf(file,"\n");\
+	} else {\
+		char *m,*j;\
+		if (object->object.text.move==move_HALF) m="+mh"; else if (object->object.text.move==move_FULL) m="+m"; else m="";\
+		fprintf(file,"colour=%d;\n",object->object.text.colour);\
+		if (object->object.text.coloursex && objectletter=='p') {\
+			fprintf(file,"sex=GetField(person,\"sex\");");\
+			fprintf(file,"if sex==\"M\" then colour=%u end\n",colour_BLUE);\
+			fprintf(file,"if sex==\"F\" then colour=%u end\n",colour_RED);\
+		}\
+		if (object->object.text.type==text_LABEL) {\
+			fprintf(file,"text=\"%s\";\n",object->object.text.label);\
+			if (object->object.text.just!=just_LEFT) fprintf(file,"tx=GetTextDimensions(font%c%d,text);\n",objectletter,objectnum);\
+			if (object->object.text.just==just_RIGHT) j="-tx"; else if (object->object.text.just==just_CENTRED) j="-tx/2"; else j="";\
+			fprintf(file,"PlotText(x+%d%s%s,y+%d,font%c%d,%u,colour,text)\n",object->object.text.x,m,j,object->object.text.y,objectletter,objectnum,colour_WHITE);\
+		} else {\
+			fprintf(file,"text=GetField("#person",\"%s\");\n",object->object.text.label);\
+			if (object->object.text.just!=just_LEFT) fprintf(file,"tx=GetTextDimensions(font%c%d,text);\n",objectletter,objectnum);\
+			if (object->object.text.just==just_RIGHT) j="-tx"; else if (object->object.text.just==just_CENTRED) j="-tx/2"; else j="";\
+			fprintf(file,"PlotText(x+%d%s%s,y+%d,font%c%d,%u,colour,text)\n",object->object.text.x,m,j,object->object.text.y,objectletter,objectnum,colour_WHITE);\
+		}\
+	}\
+	object=object->next;\
+	objectnum++;\
+}\
 
 static Desk_bool EditGraphics_SaveStyle(Desk_event_pollblock *block,void *ref)
 {
 	FILE *file;
+	object *object;
+	char filename[256];
+	char objectletter;
+	int objectnum;
+
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	/*Do the actual saving*/
-	file=AJWLib_File_fopen("IDEFS::4.$.op","w");
-	fprintf(file,"-- Roots style file\n-- Saved by the Roots style editor\n");
+
+	sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,Desk_Icon_GetTextPtr(mainwin,mainwin_NAME));
+	file=AJWLib_File_fopen(filename,"w");
+	fprintf(file,"-- Roots style file\n-- Saved by the Roots style editor\n\n--*M");
+	fprintf(file,"A%d",style.misc.gapabove);
+	fprintf(file,"B%d",style.misc.gapbelow);
+	fprintf(file,"H%d",style.misc.gapbetween);
+	fprintf(file,"T%d",style.misc.thickness);
+	fprintf(file,"C%u",style.misc.colour);
+	fprintf(file,"W%d",style.misc.windowborder);
+	fprintf(file,"I%d",style.misc.titleheight);
+	fprintf(file,"S%d",style.misc.titlesize);
+	fprintf(file,"O%u",style.misc.titlecolour);
+	fprintf(file,"F%s\n",style.misc.titlefont);
+
+	fprintf(file,"--*PW%dH%d\n",style.person.width,style.person.height);
+	EditGraphics_PrintObjects(file,style.person.objects);
+
+	fprintf(file,"--*RW%dH%d\n",style.marriage.width,style.marriage.height);
+	EditGraphics_PrintObjects(file,style.marriage.objects);
+
+	fprintf(file,"\n\n");
+	fprintf(file,"gapheightabove=%d;\n",style.misc.gapabove);
+	fprintf(file,"gapheightbelow=%d;\n",style.misc.gapabove);
+	fprintf(file,"personwidth=%d;\n",style.person.width);
+	fprintf(file,"personheight=%d;\n",style.person.height);
+	fprintf(file,"gapwidth=%d;\n",style.misc.gapbetween);
+	fprintf(file,"marriagewidth=%d;\n",style.marriage.width);
+	fprintf(file,"windowborder=%d;\n",style.misc.windowborder);
+	fprintf(file,"titleheight=%d;\n\n",style.misc.titleheight);
+
+	fprintf(file,"fontt0=ClaimFont(\"%s\",%d);\n",style.misc.titlefont,style.misc.titlesize);
+	object=style.person.objects;
+	objectnum=0;
+	objectletter='p';
+	CLAIMFONTS
+	object=style.marriage.objects;
+	objectnum=0;
+	objectletter='m';
+	CLAIMFONTS
+
+	fprintf(file,"\nfunction RedrawLine(x,y,width,height)\n");
+	fprintf(file,"PlotLine(x,y,x+width,y+height,%d,%u);\n",style.misc.thickness,style.misc.colour);
+	fprintf(file,"end\n\n");
+
+	fprintf(file,"function RedrawPerson(person,x,y,width,height)\n");
+	fprintf(file,"m=width-personwidth;\n");
+	fprintf(file,"mh=m/2;\n");
+	object=style.person.objects;
+	objectnum=0;
+	objectletter='p';
+	OUTPUTOBJECTS(person);
+	fprintf(file,"end\n\n");
+
+	fprintf(file,"function RedrawMarriage(marriage,x,y,width,height)\n");
+	fprintf(file,"m=width-marriagewidth;\n");
+	fprintf(file,"mh=m/2;\n");
+	object=style.marriage.objects;
+	objectnum=0;
+	objectletter='m';
+	OUTPUTOBJECTS(marriage);
+	fprintf(file,"end\n\n");
+
+	fprintf(file,"function RedrawTitle(title,x,y,width,height)\n");
+	fprintf(file,"tx=GetTextDimensions(fontt0,title);\n");
+	fprintf(file,"PlotText(x+(width-tx)/2,y+height/2,fontt0,%u,%u,title);\n",colour_WHITE,style.misc.titlecolour);
+	fprintf(file,"end\n\n");
 	AJWLib_File_fclose(file);
 	if (block->data.mouse.button.data.select) EditGraphics_CancelStyle(block,ref);
 	return Desk_TRUE;
 }
+
 static Desk_bool EditGraphics_ShapeColourChoice(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(ref);
@@ -750,10 +1410,8 @@ static Desk_bool EditGraphics_ShapePickColour(Desk_event_pollblock *block,void *
 
 static Desk_bool EditGraphics_MiscColourChoice(Desk_event_pollblock *block,void *ref)
 {
-	Desk_UNUSED(ref);
-
-	style.misc.colour=block->data.words[7];
-	Desk_Icon_ForceRedraw(miscwin,editmisc_COLOUR);
+	if (ref) style.misc.colour=block->data.words[7]; else style.misc.titlecolour=block->data.words[7];
+	if (ref) Desk_Icon_ForceRedraw(miscwin,editmisc_COLOUR) else Desk_Icon_ForceRedraw(miscwin,editmisc_TITLECOLOUR);
 	return Desk_TRUE;
 }
 
@@ -761,11 +1419,15 @@ static Desk_bool EditGraphics_MiscPickColour(Desk_event_pollblock *block,void *r
 {
 	Desk_wimp_rect pos;
 
-	Desk_UNUSED(ref);
 	Desk_UNUSED(block);
 
-	Desk_Icon_ScreenPos(miscwin,editmisc_COLOURMENU,&pos);
-	AJWLib_ColourPicker_Open(colourpicker_MENU,pos.max.x,pos.max.y,style.misc.colour,Desk_FALSE,NULL,EditGraphics_MiscColourChoice,NULL);
+	if (ref) {
+		Desk_Icon_ScreenPos(miscwin,editmisc_COLOURMENU,&pos);
+		AJWLib_ColourPicker_Open(colourpicker_MENU,pos.max.x,pos.max.y,style.misc.colour,Desk_FALSE,NULL,EditGraphics_MiscColourChoice,ref);
+	} else {
+		Desk_Icon_ScreenPos(miscwin,editmisc_TITLECOLOURMENU,&pos);
+		AJWLib_ColourPicker_Open(colourpicker_MENU,pos.max.x,pos.max.y,style.misc.titlecolour,Desk_FALSE,NULL,EditGraphics_MiscColourChoice,ref);
+	}
 	return Desk_TRUE;
 }
 
@@ -791,6 +1453,12 @@ static Desk_bool EditGraphics_TextPickColour(Desk_event_pollblock *block,void *r
 	return Desk_TRUE;
 }
 
+#define SWAP(x,y) {\
+	int t=x;\
+	x=y;\
+	y=t;\
+}
+
 static Desk_bool EditGraphics_MouseClick(Desk_event_pollblock *block,void *ref)
 {
 	int mousex,mousey;
@@ -812,7 +1480,17 @@ static Desk_bool EditGraphics_MouseClick(Desk_event_pollblock *block,void *ref)
 		foundobject=NULL;
 		while (object!=NULL) {
 			if (object->type==object_SHAPE) {
-				if (mousex>object->object.shape.x && mousex<(object->object.shape.x+object->object.shape.width) && mousey>object->object.shape.y && mousey<(object->object.shape.y+object->object.shape.height)) foundobject=object;
+				if (object->object.shape.type==shape_LINE) {
+					int minx=object->object.shape.x;
+					int maxx=object->object.shape.width;
+					int miny=object->object.shape.y;
+					int maxy=object->object.shape.height;
+					if (minx>maxx) SWAP(minx,maxx);
+					if (miny>maxy) SWAP(miny,maxy);
+					if (mousex>minx-4 && mousex<maxx+4 && mousey>miny-4 && mousey<maxy+4) foundobject=object;
+				} else {
+					if (mousex>object->object.shape.x-4 && mousex<(object->object.shape.x+object->object.shape.width+4) && mousey>object->object.shape.y-4 && mousey<(object->object.shape.y+object->object.shape.height+4)) foundobject=object;
+				}
 			} else {
 				int x;
 
@@ -858,7 +1536,7 @@ static Desk_bool EditGraphics_RedrawWindow(Desk_event_pollblock *block,void *ref
 				case object_SHAPE:
 					switch (shape->type) {
 						case shape_LINE:
-							Draw_PlotLine(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,shape->x,shape->y,shape->x+shape->width,shape->y+shape->height,shape->thickness,shape->colour);
+							Draw_PlotLine(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,shape->x,shape->y,shape->width,shape->height,shape->thickness,shape->colour);
 							break;
 						case shape_RECTANGLE:
 							Draw_PlotRectangle(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,shape->x,shape->y,shape->width,shape->height,shape->thickness,shape->colour);
@@ -930,7 +1608,7 @@ static Desk_bool EditGraphics_RedrawMiscWindow(Desk_event_pollblock *block,void 
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
-	Desk_wimp_rect pos;
+	Desk_wimp_rect pos1,pos2;
 
 	blk.window=block->data.openblock.window;
 
@@ -939,10 +1617,12 @@ static Desk_bool EditGraphics_RedrawMiscWindow(Desk_event_pollblock *block,void 
 
 	Desk_Wimp_RedrawWindow(&blk,&more);
 
-	Desk_Icon_ScreenPos(miscwin,editmisc_COLOUR,&pos);
+	Desk_Icon_ScreenPos(miscwin,editmisc_COLOUR,&pos1);
+	Desk_Icon_ScreenPos(miscwin,editmisc_TITLECOLOUR,&pos2);
 
 	while (more) {
-		Draw_PlotRectangleFilled(100,0,0,pos.min.x,pos.min.y,pos.max.x-pos.min.x,pos.max.y-pos.min.y,0,style.misc.colour);
+		Draw_PlotRectangleFilled(100,0,0,pos1.min.x,pos1.min.y,pos1.max.x-pos1.min.x,pos1.max.y-pos1.min.y,0,style.misc.colour);
+		Draw_PlotRectangleFilled(100,0,0,pos2.min.x,pos2.min.y,pos2.max.x-pos2.min.x,pos2.max.y-pos2.min.y,0,style.misc.titlecolour);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 	return Desk_TRUE;
@@ -950,19 +1630,28 @@ static Desk_bool EditGraphics_RedrawMiscWindow(Desk_event_pollblock *block,void 
 
 void EditGraphics_IBarMenuClick(int entry, void *ref)
 {
+	char cmd[256];
+	
 	Desk_UNUSED(ref);
 	
 	switch (entry) {
 		case ibarmenu_NEW:
 			EditGraphics_CreateNew();
 			break;
-/*		case ibarmenu_DIR:
+		case ibarmenu_DIR:
 			sprintf(cmd,"Filer_OpenDir %s.%s",DEFAULTS,GRAPHICSDIR);
 			Desk_Wimp_StartTask(cmd);
 			sprintf(cmd,"Filer_OpenDir %s.%s",choiceswrite,GRAPHICSDIR);
 			Desk_Wimp_StartTask(cmd);
-			break;*/
+			break;
 	}
+}
+
+void EditGraphics_IconBarMenu(Desk_menu_ptr iconbarmenu,int entry)
+{
+	editgsmenu=AJWLib_Menu_CreateFromMsgs("Title.GS:","Menu.GS:",EditGraphics_IBarMenuClick,NULL);
+	Desk_Menu_AddSubMenu(iconbarmenu,entry,editgsmenu);
+	Desk_Menu_Warn(iconbarmenu,entry,Desk_TRUE,EditGraphics_SetUpMenu,NULL);
 }
 
 void EditGraphics_Init(void)
@@ -999,7 +1688,8 @@ void EditGraphics_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_MISC,EditGraphics_OpenMiscWindow,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_CANCEL,EditGraphics_CancelStyle,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,mainwin,mainwin_SAVE,EditGraphics_SaveStyle,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,miscwin,editmisc_COLOURMENU,EditGraphics_MiscPickColour,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,miscwin,editmisc_COLOURMENU,EditGraphics_MiscPickColour,(void *)1);
+	Desk_Event_Claim(Desk_event_CLICK,miscwin,editmisc_TITLECOLOURMENU,EditGraphics_MiscPickColour,NULL);
 	Desk_Event_Claim(Desk_event_CLOSE,miscwin,Desk_event_ANY,EditGraphics_CloseMiscWindow,NULL);
 	Desk_Event_Claim(Desk_event_REDRAW,miscwin,Desk_event_ANY,EditGraphics_RedrawMiscWindow,NULL);
 
@@ -1026,9 +1716,10 @@ void EditGraphics_Init(void)
 	Desk_Icon_InitIncDecHandler(miscwin,editmisc_ABOVE,editmisc_ABOVEUP,editmisc_ABOVEDOWN,Desk_FALSE,5,0,99995,20);
 	Desk_Icon_InitIncDecHandler(miscwin,editmisc_BELOW,editmisc_BELOWUP,editmisc_BELOWDOWN,Desk_FALSE,5,0,99995,20);
 	Desk_Icon_InitIncDecHandler(miscwin,editmisc_BETWEEN,editmisc_BETWEENUP,editmisc_BETWEENDOWN,Desk_FALSE,5,0,99995,20);
-	Desk_Icon_InitIncDecHandler(miscwin,editmisc_THICKNESS,editmisc_THICKNESSUP,editmisc_THICKNESSDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_THICKNESS,editmisc_THICKNESSUP,editmisc_THICKNESSDOWN,Desk_FALSE,1,0,99995,20);
 	Desk_Icon_InitIncDecHandler(miscwin,editmisc_BORDER,editmisc_BORDERUP,editmisc_BORDERDOWN,Desk_FALSE,5,0,99995,20);
-	Desk_Icon_InitIncDecHandler(miscwin,editmisc_TITLE,editmisc_TITLEUP,editmisc_TITLEDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_TITLEHEIGHT,editmisc_TITLEHEIGHTUP,editmisc_TITLEHEIGHTDOWN,Desk_FALSE,5,0,99995,20);
+	Desk_Icon_InitIncDecHandler(miscwin,editmisc_TITLESIZE,editmisc_TITLESIZEUP,editmisc_TITLESIZEDOWN,Desk_FALSE,1,0,99995,20);
 
 
 	shapemenu=AJWLib_Menu_CreateFromMsgs("Title.Shape:","Menu.Shape:",EditGraphics_ShapeMenuClick,NULL);
@@ -1039,5 +1730,10 @@ void EditGraphics_Init(void)
 
 	justmenu=AJWLib_Menu_CreateFromMsgs("Title.Just:","Menu.Just:",EditGraphics_JustMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(textwin,edittext_JUSTMENU,edittext_JUST,justmenu,Desk_button_MENU | Desk_button_SELECT);
+
+	movemenu=AJWLib_Menu_CreateFromMsgs("Title.Move:","Menu.Move:",EditGraphics_MoveMenuClick,NULL);
+	movemenu2=AJWLib_Menu_CreateFromMsgs("Title.Move:","Menu.Move:",EditGraphics_MoveMenuClick,(void *)1);
+	AJWLib_Menu_AttachPopup(textwin,edittext_MOVEMENU,edittext_MOVE,movemenu,Desk_button_MENU | Desk_button_SELECT);
+	AJWLib_Menu_AttachPopup(shapewin,editshape_MOVEMENU,editshape_MOVE,movemenu2,Desk_button_MENU | Desk_button_SELECT);
 
 }
