@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.3  1999/10/11 20:55:56  AJW
+	Modified to use Error2
+
 	Revision 1.2  1999/10/10 20:54:06  AJW
 	Modified to use Desk
 
@@ -37,8 +40,8 @@
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
 #include "AJWLib.Msgs.h"
-#include "AJWLib.Handler.h"
 #include "AJWLib.Icon.h"
+#include "AJWLib.File.h"
 #include "AJWLib.Flex.h"
 #include "AJWLib.Str.h"
 #include "AJWLib.Draw.h"
@@ -52,6 +55,8 @@
 #include "Graphics.h"
 #include "GConfig.h"
 #include "Layout.h"
+
+#define GRAPHICSDIR "<FT$Dir>.Graphics"
 
 graphics graphicsdata;
 
@@ -287,9 +292,10 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 void Graphics_ReadFile(char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
 {
 	FILE *file;
+	char fullfilename[256];
 	int ch=0,line=0;
-	file=fopen(filename,"r");
-	if (file==NULL) { Desk_Error_Report(1,"File error"); /*Proper error*/ return; }
+	sprintf(fullfilename,"%s.%s",GRAPHICSDIR,filename);
+	file=AJWLib_fopen(fullfilename,"r");
 	while (ch!=EOF) {
 		char str[256];
 		int i=-1;
@@ -376,14 +382,14 @@ void Graphics_Init2(void)
 	graphicsdata.siblinglinethickness=0;
 	graphicsdata.siblinglinecolour=0;
 	graphicsdata.numpersonobjects=0;
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1); /*Errors*/
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
 	graphicsdata.nummarriageobjects=0;
 	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
 	for (i=0;i<NUMPERSONFIELDS;i++) graphicsdata.personfields[i].plot=Desk_FALSE;
 	for (i=0;i<NUMMARRIAGEFIELDS;i++) graphicsdata.marriagefields[i].plot=Desk_FALSE;
-	Graphics_ReadFile("Graphics.Person",Graphics_StorePersonDetails);
-	Graphics_ReadFile("Graphics.Dimensions",Graphics_StoreDimensionDetails);
-	Graphics_ReadFile("Graphics.Marriage",Graphics_StoreMarriageDetails);
+	Graphics_ReadFile("Person",Graphics_StorePersonDetails);
+	Graphics_ReadFile("Dimensions",Graphics_StoreDimensionDetails);
+	Graphics_ReadFile("Marriage",Graphics_StoreMarriageDetails);
 }
 
 
