@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.56 2000/11/27 19:04:15 AJW Exp $
+	$Id: Database.c,v 1.57 2000/11/27 20:03:14 AJW Exp $
 
 */
 
@@ -869,6 +869,7 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 		}
 		marriage2=database[marriage2].element.marriage.next;
 	}
+
 	marriage=Database_GetFreeElement(); /*An error is ok, as we haven't altered the structure yet*/
 	database[marriage].type=element_MARRIAGE;
 	database[marriage].selected=Desk_FALSE;
@@ -893,14 +894,23 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 			database[marriage2].element.marriage.previous=marriage;
 			if (database[marriage].element.marriage.previous) database[database[marriage].element.marriage.previous].element.marriage.next=marriage;
 		} else {
-			int fixme; /*Check that the two marriage chains are not actually the same chain, otherwise a circle is created*/
 			/*Both are married already*/
 			while (database[marriage2].element.marriage.next!=none) marriage2=database[marriage2].element.marriage.next;
-			while (database[marriage3].element.marriage.previous!=none) marriage3=database[marriage3].element.marriage.previous;
-			database[marriage2].element.marriage.next=marriage;
-			database[marriage].element.marriage.previous=marriage2;
-			database[marriage3].element.marriage.previous=marriage;
-			database[marriage].element.marriage.next=marriage3;
+			while (database[marriage3].element.marriage.next!=none) marriage3=database[marriage3].element.marriage.next;
+			if (marriage2==marriage3) {
+				/*Both people are already in the marriage chain (but not married to each other)*/
+				/*Add the new marriage to the end of the chain*/
+				database[marriage2].element.marriage.next=marriage;
+				database[marriage].element.marriage.previous=marriage2;
+				database[marriage].element.marriage.next=none;
+			} else {
+				/*Join the two marriage chains together via the new marriage*/
+				while (database[marriage3].element.marriage.previous!=none) marriage3=database[marriage3].element.marriage.previous;
+				database[marriage2].element.marriage.next=marriage;
+				database[marriage].element.marriage.previous=marriage2;
+				database[marriage3].element.marriage.previous=marriage;
+				database[marriage].element.marriage.next=marriage3;
+			}
 		}
 	}
 	database[linked].element.person.marriage=marriage;
