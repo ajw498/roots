@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.20  1999/10/27 16:10:49  AJW
+	Now frees memeory when re laying out
+
 	Revision 1.19  1999/10/27 15:50:20  AJW
 	Handled closing of normal windows
 
@@ -989,21 +992,24 @@ void Graphics_Relayout(void)
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle!=0) {
-			/*Free layout mem first*/
 			switch (windows[i].type) {
 				case wintype_NORMAL:
-					/*windows[i].layout=Layout_LayoutNormal();*/
 					Layout_LayoutLines(windows[i].layout);
 					break;
 				case wintype_DESCENDENTS:
+					Layout_Free(windows[i].layout);
 					windows[i].layout=Layout_LayoutDescendents(windows[i].person,windows[i].generations);
 					break;
 				case wintype_ANCESTORS:
+					Layout_Free(windows[i].layout);
 					windows[i].layout=Layout_LayoutAncestors(windows[i].person,windows[i].generations);
 					break;
 				case wintype_UNLINKED:
+					Layout_Free(windows[i].layout);
 					windows[i].layout=Layout_LayoutUnlinked();
 					break;
+				default:
+					AJWLib_Assert(0);
 			}
 			Graphics_ResizeWindow(&windows[i]);
 			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
