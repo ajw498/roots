@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.3  1999/10/02 18:04:43  AJW
+	Fixed Database_RemoveParents
+
 	Revision 1.2  1999/10/02 17:49:16  AJW
 	Fixed Database_RemoveSpouse
 
@@ -246,25 +249,28 @@ void Database_RemoveSpouse(elementptr person)
 
 void Database_RemoveParents(elementptr person)
 {
-/*	elementptr spouse,marriage,child;
+	elementptr spouse,principal,marriage,child;
 	marriage=Database_GetMarriage(person);
-	spouse=Database_GetSpouse(person);
-	child=Database_GetChild(marriage);
 	if (marriage==none) return;
-	if (Database_GetFather(person)!=none) return;
-	if (Database_GetFather(spouse)!=none) return;
+	if (database[marriage].marriage.next!=none) return;
+	if (database[marriage].marriage.previous!=none) return;
+	spouse=Database_GetSpouseFromMarriage(marriage);
+	principal=Database_GetPrincipalFromMarriage(marriage);
+	child=Database_GetLeftChild(marriage);
 	if (child==none) return;
-	if (Database_GetSiblingRtoL(child)!=none)  return;
+	if (Database_GetMother(principal)!=none) return;
+	if (Database_GetMother(spouse)!=none) return;
+	if (Database_GetSiblingLtoR(child)!=none) return;
 	database[marriage].freeelement.next=database[0].file.freeelement;
 	database[0].file.freeelement=marriage;
 	database[child].person.father=none;
 	database[child].person.mother=none;
-	Database_UnlinkPerson(person);
+	Database_UnlinkPerson(principal);
 	Database_UnlinkPerson(spouse);
-	if (database[0].file.linkedpeople==person) database[0].file.linkedpeople=child;
+	if (database[0].file.linkedpeople==principal) database[0].file.linkedpeople=child;
 	if (database[0].file.linkedpeople==spouse) database[0].file.linkedpeople=child;
 	Modules_ChangedStructure();
-*/}
+}
 
 void Database_RemoveChild(elementptr child)
 {
