@@ -68,11 +68,9 @@ typedef struct marriage {
 } marriage;
 
 typedef struct file {
-	char fileidentifier[10];
-	int versionnumber;
+	int numberofelements;
 	char filetitle[20];
 	char filedescription[200];
-	int numberofelements;
 	elementptr unlinkedpeople;
 	elementptr freeelement;
 	elementptr linkedpeople;
@@ -112,8 +110,8 @@ Desk_bool Database_IsUnlinked(elementptr person);
 void Database_Info(Desk_window_handle infowin);
 void Database_New(void);
 void Database_Init(void);
-void Database_Save(char *filename);
-void Database_Load(char *filename);
+void Database_Save(FILE *file);
+void Database_Load(FILE *file);
 char *Database_GetFilename(void);
 void Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
