@@ -1,4 +1,10 @@
-v1.02 11-Oct-00
+v1.20
+Doesn't barf if fontfix is loaded
+lua graphics styles
+auto sized marriages
+fixed to person marraiges
+
+##v1.02 11-Oct-00
 Changing the file choices now marks the file as modified
 Fixed bug that prevented loading trees with no people in
 Changed line thickness in graphics styles to give finer control
