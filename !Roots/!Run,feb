@@ -1,5 +1,5 @@
-Dir <Obey$Dir>
-Set Roots$Dir <Obey$Dir>
 IconSprites <Obey$Dir>.!Sprites
-WimpSlot -Min 300k
+Set Roots$Dir <Obey$Dir>
+Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0
+WimpSlot -Min 500k -Max 500k
 Run <Obey$Dir>.!RunImage %*0
