@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.60 2000/02/28 23:00:52 uid1 Exp $
+	$Id: Windows.c,v 1.61 2000/02/29 23:52:38 uid1 Exp $
 
 */
 
@@ -1303,9 +1303,9 @@ static void Windows_MainMenuClick(int entry,void *ref)
 				Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
 				Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
 			} else {
-/*				Desk_Icon_Unshade(newviewwin,newview_ANCESTOR);
+				Desk_Icon_Unshade(newviewwin,newview_ANCESTOR);
 				Desk_Icon_Unshade(newviewwin,newview_ANCESTORPERSON);
-*/				Desk_Icon_Unshade(newviewwin,newview_DESCENDENT);
+				Desk_Icon_Unshade(newviewwin,newview_DESCENDENT);
 				Desk_Icon_Unshade(newviewwin,newview_DESCENDENTPERSON);
 /*				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVES);
 				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVESPERSON);
