@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.28 2000/05/14 19:42:44 AJW Exp $
+	$Id: Graphics.c,v 1.29 2000/05/14 22:34:04 AJW Exp $
 
 */
 
@@ -693,19 +693,17 @@ void Graphics_Load(FILE *file)
 
 	Desk_Error2_Try {
 		if (Config_ImportGraphicsStyle()) {
-			sprintf(filename,"%s.%s",GRAPHICSREAD,currentstyle);
+			sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,currentstyle);
 			if (!Desk_File_IsDirectory(filename)) {
-				if (!Desk_File_IsDirectory(CONFIGDIR)) Desk_File_CreateDirectory(CONFIGDIR);
-				if (!Desk_File_IsDirectory(GRAPHICSWRITE)) Desk_File_CreateDirectory(GRAPHICSWRITE);
-				sprintf(filename,"%s.%s",GRAPHICSWRITE,currentstyle);
-				if (!Desk_File_IsDirectory(filename)) Desk_File_CreateDirectory(filename);
-				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Person");
+				sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
+				if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
 				Desk_File_SaveMemory(filename,personfile,strlen(personfile));
-				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Marriage");
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
 				Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
-				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Dimensions");
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
 				Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
-				sprintf(filename,"%s.%s.%s",GRAPHICSWRITE,currentstyle,"Title");
+				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
 				Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
 			}
 		}
@@ -767,7 +765,7 @@ static void Graphics_LoadStyleFile(char *style,char *filename,char **anchor)
 	AJWLib_Assert(style!=NULL);
 	AJWLib_Assert(filename!=NULL);
 	AJWLib_Assert(*anchor==NULL);
-	sprintf(fullfilename,"%s.%s.%s",GRAPHICSREAD,style,filename);
+	sprintf(fullfilename,"%s.%s.%s.%s",choicesread,GRAPHICSDIR,style,filename);
 	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs3("Error.NoFile:File %s does not exist in dir %s",filename,style);
 	size=Desk_File_Size(fullfilename);
 	AJWLib_Flex_Alloc((flex_ptr)anchor,size+1);
@@ -786,7 +784,7 @@ void Graphics_LoadStyle(char *style)
 	AJWLib_Assert(titlefile==NULL);
 	AJWLib_Assert(style!=NULL);
 	Desk_Error2_Try {
-		sprintf(filename,"%s.%s",GRAPHICSREAD,style);
+		sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,style);
 		if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs2("Error.NoDir:Dir %s does not exist",style);
 		Graphics_LoadStyleFile(style,"Person",&personfile);
 		Graphics_LoadStyleFile(style,"Marriage",&marriagefile);

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.63 2000/05/14 19:42:48 AJW Exp $
+	$Id: Windows.c,v 1.64 2000/05/14 22:34:07 AJW Exp $
 
 */
 
@@ -1395,6 +1395,7 @@ static void Windows_OpenFileConfig(void)
 {
 	Desk_filing_dirdata dir;
 	char *name=NULL;
+	char dirname[256];
 	if (fileconfigmenu) {
 		AJWLib_Menu_FullDispose(fileconfigmenu);
 		fileconfigmenu=NULL;
@@ -1405,9 +1406,9 @@ static void Windows_OpenFileConfig(void)
 	Desk_Icon_SetText(fileconfigwin,fileconfig_STYLE,Graphics_GetCurrentStyle());
 	Desk_Window_Show(fileconfigwin,Desk_open_CENTERED);
 	Desk_Icon_SetCaret(fileconfigwin,fileconfig_USER1);
-	if (Desk_File_IsDirectory(GRAPHICSREAD)) {
-		Desk_Filing_OpenDir(GRAPHICSREAD,&dir,256,Desk_readdirtype_NAMEONLY);
-		/*This doesn't seem to work if there are files in both directories in the path*/
+	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
+	if (Desk_File_IsDirectory(dirname)) {
+		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY);
 		do {
 			name=Desk_Filing_ReadDir(&dir);
 			if (name) {

@@ -1,12 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define GRAPHICSREAD "Roots:Graphics"
-#define GRAPHICSWRITE "<Roots$Write>.Graphics"
-#define CONFIGDIR "<Roots$Write>"
-#define CONFIGREAD "Roots:Config"
-#define CONFIGWRITE "<Roots$Write>.Config"
+extern char choicesread[256],choiceswrite[256];
 
+#define GRAPHICSDIR "Graphics"
+#define CONFIGFILE "Config"
 
 char *Config_GraphicsStyle(void);
 
