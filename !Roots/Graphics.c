@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.15 2000/02/25 16:59:24 uid1 Exp $
+	$Id: Graphics.c,v 1.16 2000/02/25 23:33:01 uid1 Exp $
 
 */
 
@@ -539,7 +539,7 @@ void Graphics_LoadStyle(char *style)
 	Graphics_ClaimFonts();
 }
 
-void Graphics_PlotPerson(int originx,int originy,elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
+void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -549,21 +549,21 @@ void Graphics_PlotPerson(int originx,int originy,elementptr person,int x,int y,D
 		int xcoord=0;
 		switch (graphicsdata.person[i].type) {
 			case graphictype_RECTANGLE:
-				Graphics_PlotRectangle(originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Graphics_PlotRectangleFilled(originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_CHILDLINE:
 				if (!child) break;
 				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
 			case graphictype_LINE:
-				Graphics_PlotLine(originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_CENTREDTEXTLABEL:
 /*Won't work for drawfile*/				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
 			case graphictype_TEXTLABEL:
-				Graphics_PlotText(originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
+				Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
 				break;
 		}
 	}
@@ -621,13 +621,13 @@ void Graphics_PlotPerson(int originx,int originy,elementptr person,int x,int y,D
 					strcat(fieldtext,"Unimplemented");
 			}
 /*Doesn't work for drawfile*/			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
-			Graphics_PlotText(originx,originy,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
+			Graphics_PlotText(scale,originx,originy,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
 		}
 	}
-	if (selected) Draw_EORRectangleFilled(originx,originy,x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
+	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
-void Graphics_PlotMarriage(int originx,int originy,int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
+void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -636,18 +636,18 @@ void Graphics_PlotMarriage(int originx,int originy,int x,int y,elementptr marria
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		switch (graphicsdata.marriage[i].type) {
 			case graphictype_RECTANGLE:
-				Graphics_PlotRectangle(originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				Graphics_PlotRectangle(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Graphics_PlotRectangleFilled(originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				Graphics_PlotRectangleFilled(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_CHILDLINE:
 				if (!childline) break;
 			case graphictype_LINE:
-				Graphics_PlotLine(originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				Graphics_PlotLine(scale,originx,originy,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_TEXTLABEL:
-				Graphics_PlotText(originx,originy,x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
+				Graphics_PlotText(scale,originx,originy,x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
 				break;
 		}
 	}
@@ -664,20 +664,20 @@ void Graphics_PlotMarriage(int originx,int originy,int x,int y,elementptr marria
 */				default:
 					strcat(fieldtext,"Unimplemented");
 			}
-			Graphics_PlotText(originx,originy,x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
+			Graphics_PlotText(scale,originx,originy,x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 		}
 	}
-	if (selected) Draw_EORRectangleFilled(originx,originy,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
+	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
-void Graphics_PlotChildren(int originx,int originy,int leftx,int rightx,int y)
+void Graphics_PlotChildren(int scale,int originx,int originy,int leftx,int rightx,int y)
 {
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	Graphics_PlotLine(originx,originy,leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
+	Graphics_PlotLine(scale,originx,originy,leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
 }
 
-void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
+void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -689,13 +689,13 @@ void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *clipr
 	Graphics_PlotRectangleFilled=plotrectfilled;
 	Graphics_PlotText=plottext;
 	for (i=0;i<layout->numchildren;i++) {
-		Graphics_PlotChildren(originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
+		Graphics_PlotChildren(scale,originx,originy,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
 	}
 	for (i=0;i<layout->nummarriages;i++) {
-		Graphics_PlotMarriage(originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
+		Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
 	}
 	for (i=0;i<layout->numpeople;i++) {
-		Graphics_PlotPerson(originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
+		Graphics_PlotPerson(scale,originx,originy,layout->person[i].person,layout->person[i].x,layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
 	}
 }
 

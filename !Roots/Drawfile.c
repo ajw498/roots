@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.10 2000/02/25 16:59:22 uid1 Exp $
+	$Id: Drawfile.c,v 1.11 2000/02/25 23:33:00 uid1 Exp $
 
 */
 
@@ -94,17 +94,17 @@ void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int h
 	object[23]=0; /*End path*/
 }
 
-void Drawfile_PlotRectangle(const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
+void Drawfile_PlotRectangle(const int scale,const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
 {
 	Drawfile_PlotRectangle2(originx+x,originy+y,width,height,linethickness,colour,Desk_FALSE);
 }
 
-void Drawfile_PlotRectangleFilled(const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
+void Drawfile_PlotRectangleFilled(const int scale,const int originx,const int originy,const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
 {
 	Drawfile_PlotRectangle2(originx+x,originy+y,width,height,linethickness,colour,Desk_TRUE);
 }
 
-void Drawfile_PlotLine(const int originx,const int originy,const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour)
+void Drawfile_PlotLine(const int scale,const int originx,const int originy,const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour)
 {
 	int *object;
 	const int sizeofpath=68;
@@ -213,7 +213,7 @@ void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 	object[21]=0; /*Bytes in undo buffer*/
 }
 
-void Drawfile_PlotText(const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
+void Drawfile_PlotText(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
 {
 	int fontnumber=Drawfile_AddFont((char *)font);
 	int *object;
@@ -274,7 +274,7 @@ void Drawfile_Save(const char *filename,layout *layout)
 	drawfile->bbox.min.y=yoffset;
 	drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
 	drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
-	Graphics_Redraw(layout,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+	Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&box,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
 	Drawfile_CreateTable();
 	Drawfile_CreateOptions(papersize,landscape);
 	Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.46 2000/02/25 19:37:51 uid1 Exp $
+	$Id: Windows.c,v 1.47 2000/02/25 23:33:03 uid1 Exp $
 
 */
 
@@ -132,6 +132,7 @@ typedef struct windowdata {
 	elementptr person;
 	int generations;
 	layout *layout;
+	int scale; /*Add scale to save data*/
 } windowdata;
 
 typedef struct savedata {
@@ -163,14 +164,14 @@ static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
 /*Make menuoverperson static local var to be passed as a reference?*/
 
-void Windows_RedrawPerson(Desk_window_handle win,personlayout *person)
+void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 {
-	Desk_Window_ForceRedraw(win,(Draw_GetScaleFactor()*person->x)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*person->y)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*(person->x+Graphics_PersonWidth()))/100+REDRAWOVERLAP,(Draw_GetScaleFactor()*(person->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
+	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*person->x)/100-REDRAWOVERLAP,(windowdata->scale*person->y)/100-REDRAWOVERLAP,(windowdata->scale*(person->x+Graphics_PersonWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(person->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
-void Windows_RedrawMarriage(Desk_window_handle win,marriagelayout *marriage)
+void Windows_RedrawMarriage(windowdata *windowdata,marriagelayout *marriage)
 {
-	Desk_Window_ForceRedraw(win,(Draw_GetScaleFactor()*marriage->x)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*marriage->y)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(Draw_GetScaleFactor()*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
+	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*marriage->x)/100-REDRAWOVERLAP,(windowdata->scale*marriage->y)/100-REDRAWOVERLAP,(windowdata->scale*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
 static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
@@ -191,7 +192,7 @@ static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *wi
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 #endif
-		Graphics_Redraw(windowdata->layout,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,&(blk.cliprect),Desk_TRUE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
+		Graphics_Redraw(windowdata->layout,windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,&(blk.cliprect),Desk_TRUE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 	return Desk_TRUE;
@@ -204,7 +205,7 @@ static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-		Graphics_PlotPerson(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,addparentsperson,332,16-Graphics_PersonHeight(),Desk_FALSE,Desk_FALSE);
+		Graphics_PlotPerson(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,addparentsperson,332,16-Graphics_PersonHeight(),Desk_FALSE,Desk_FALSE);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 	return Desk_TRUE;
@@ -251,13 +252,13 @@ void Windows_UnselectAll(windowdata *windowdata)
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (windowdata->layout->person[i].selected) {
 			windowdata->layout->person[i].selected=Desk_FALSE;
-			Windows_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
+			Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
 		}
 	}
 	for (i=0;i<windowdata->layout->nummarriages;i++) {
 		if (windowdata->layout->marriage[i].selected) {
 			windowdata->layout->marriage[i].selected=Desk_FALSE;
-			Windows_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
+			Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+i);
 		}
 	}
 }
@@ -292,7 +293,7 @@ void Windows_ResizeWindow(windowdata *windowdata)
 		maxyextent=Desk_TRUE;
 	}
 	/*Set window extent to fit layout size*/
-	Desk_Window_SetExtent(windowdata->handle,(Draw_GetScaleFactor()*(box.min.x-Graphics_WindowBorder()))/100,(Draw_GetScaleFactor()*(box.min.y-Graphics_WindowBorder()))/100,(Draw_GetScaleFactor()*(box.max.x+Graphics_WindowBorder()))/100,(Draw_GetScaleFactor()*(box.max.y+Graphics_WindowBorder()))/100);
+	Desk_Window_SetExtent(windowdata->handle,(windowdata->scale*(box.min.x-Graphics_WindowBorder()))/100,(windowdata->scale*(box.min.y-Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.x+Graphics_WindowBorder()))/100,(windowdata->scale*(box.max.y+Graphics_WindowBorder()))/100);
 	/*Reread window position as it might have changed*/
 	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
 	Desk_Wimp_GetWindowOutline(&outlineblk);
@@ -381,15 +382,15 @@ void Windows_PlotDragBox(dragdata *dragdata)
 	blk.rect.max.y=INFINITY;
 	Desk_Wimp_UpdateWindow(&blk,&more);
 	while (more) {
-		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,EORCOLOUR);
-		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,dragdata->persony,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,EORCOLOURRED);
+		Draw_EORRectangle(dragdata->windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,EORCOLOUR);
+		Draw_EORRectangle(dragdata->windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,dragdata->persony,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,EORCOLOURRED);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 }
 
 void Windows_DragEnd(void *ref)
 {
-	/*User has finsihed a drag*/
+	/*User has finished a drag*/
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
 	dragdata *dragdata=ref;
@@ -399,6 +400,7 @@ void Windows_DragEnd(void *ref)
 	if (mouseblk.window==addparentswin) {
 		if (initialperson==addparentsperson) return;
 		if (Database_IsUnlinked(initialperson)) {
+			/*Add parents*/
 			int childx,childy;
 			Desk_Window_Hide(addparentswin);
 			Database_AddParents(addparentschild,addparentsperson,initialperson);
@@ -414,77 +416,97 @@ void Windows_DragEnd(void *ref)
 			return;
 		}
 	}
+	/*Find destination window*/
 	for (i=0;i<MAXWINDOWS;i++) if (mouseblk.window==windows[i].handle) window=i;
 	if (window==-1) return;
 	if (dragdata->windowdata->type==wintype_NORMAL) {
+		/*We are moving people/marriages*/
 		int mousex;
-		/*act as if drag had ended on same win as started on*/
+		/*Act as if drag had ended on same win as started on*/
 		if (dragdata->plotted) Windows_PlotDragBox(dragdata);
+		/*Find mouse position relative to window origin and independant of current scale*/
 		Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
-		mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+		mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
+		/*Move all people/marriages that were selected*/
 		Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex);
 		Layout_LayoutLines(dragdata->windowdata->layout);
 		Windows_ResizeWindow(dragdata->windowdata);
 		Desk_Window_ForceWholeRedraw(dragdata->windowdata->handle);
 	} else if (dragdata->windowdata->type==wintype_UNLINKED) {
 		if (windows[window].type==wintype_NORMAL) {
+			/*We are adding a person to the layout*/
 			AJWLib_Assert(Database_IsUnlinked(initialperson));
 			if (Database_GetLinked()==none) {
+				/*The layout is empty*/
 				Database_LinkPerson(initialperson);
 				Layout_AddPerson(windows[window].layout,initialperson,0,0);
 				return;
-			}
-			Desk_Window_GetCoords(mouseblk.window,&blk);
-			mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
-			mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
-			for (i=0;i<windows[window].layout->numpeople;i++) {
-				if (mousex>=windows[window].layout->person[i].x && mousex<=windows[window].layout->person[i].x+Graphics_PersonWidth()) {
-					if (mousey>=windows[window].layout->person[i].y && mousey<=windows[window].layout->person[i].y+Graphics_PersonHeight()) {
-						elementptr finalperson=windows[window].layout->person[i].person;
-						AJWLib_Assert(initialperson!=finalperson);
-						if (Database_GetMarriage(finalperson) && Database_GetFather(finalperson)==none) {
-							addparentsperson=initialperson;
-							addparentschild=finalperson;
-							Desk_Window_SetExtent(addparentswin,0,304>Graphics_PersonHeight()+32 ? -304 : -Graphics_PersonHeight()-32,348+Graphics_PersonWidth(),0);
-							Desk_Window_ForceWholeRedraw(addparentswin);
-							Desk_Window_Show(addparentswin,Desk_open_CENTERED);
-						} else {
-							Database_Marry(finalperson,initialperson);
-							Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->person[i].x+Graphics_PersonWidth()+Graphics_MarriageWidth(),windows[window].layout->person[i].y);
-							Layout_AddMarriage(windows[window].layout,Database_GetMarriage(finalperson),windows[window].layout->person[i].x+Graphics_PersonWidth(),windows[window].layout->person[i].y);
+			} else {
+				/*There are already people on the layout*/
+				Desk_Window_GetCoords(mouseblk.window,&blk);
+				/*Find mouse position relative to window origin and independant of current scale*/
+				mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windows[window].scale;
+				mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windows[window].scale;
+				/*See if we were dropped on a person*/
+				for (i=0;i<windows[window].layout->numpeople;i++) {
+					if (mousex>=windows[window].layout->person[i].x && mousex<=windows[window].layout->person[i].x+Graphics_PersonWidth()) {
+						if (mousey>=windows[window].layout->person[i].y && mousey<=windows[window].layout->person[i].y+Graphics_PersonHeight()) {
+							elementptr finalperson=windows[window].layout->person[i].person;
+							AJWLib_Assert(initialperson!=finalperson);
+							if (Database_GetMarriage(finalperson) && Database_GetFather(finalperson)==none) {
+								/*We could be adding parents or creating a second marriage, so give the user a choice*/
+								addparentsperson=initialperson;
+								addparentschild=finalperson;
+								Desk_Window_SetExtent(addparentswin,0,304>Graphics_PersonHeight()+32 ? -304 : -Graphics_PersonHeight()-32,348+Graphics_PersonWidth(),0);
+								Desk_Window_ForceWholeRedraw(addparentswin);
+								Desk_Window_Show(addparentswin,Desk_open_CENTERED);
+							} else {
+								/*Must be a first marriage*/
+								Database_Marry(finalperson,initialperson);
+								Layout_AddPerson(windows[window].layout,initialperson,windows[window].layout->person[i].x+Graphics_PersonWidth()+Graphics_MarriageWidth(),windows[window].layout->person[i].y);
+								Layout_AddMarriage(windows[window].layout,Database_GetMarriage(finalperson),windows[window].layout->person[i].x+Graphics_PersonWidth(),windows[window].layout->person[i].y);
+							}
+							/*Nothing else to do*/
+							return;
 						}
-						return;
 					}
 				}
-			}
-			for (i=0;i<windows[window].layout->nummarriages;i++) {
-				if (mousex>=windows[window].layout->marriage[i].x && mousex<=windows[window].layout->marriage[i].x+Graphics_MarriageWidth()) {
-					if (mousey>=windows[window].layout->marriage[i].y && mousey<=windows[window].layout->marriage[i].y+Graphics_PersonHeight()) {
-						elementptr person;
-						int x=-INFINITY;
-						Database_AddChild(windows[window].layout->marriage[i].marriage,initialperson);
-						windows[window].layout->marriage[i].childline=Desk_TRUE;
-						person=initialperson;
-						do {
-							int i;
-							for (i=0;i<windows[window].layout->numpeople;i++) {
-								if (windows[window].layout->person[i].person==person) {
-									if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+				/*See if we were dropped on a marriage*/
+				for (i=0;i<windows[window].layout->nummarriages;i++) {
+					if (mousex>=windows[window].layout->marriage[i].x && mousex<=windows[window].layout->marriage[i].x+Graphics_MarriageWidth()) {
+						if (mousey>=windows[window].layout->marriage[i].y && mousey<=windows[window].layout->marriage[i].y+Graphics_PersonHeight()) {
+							/*Must be adding a child*/
+							elementptr person;
+							int x=-INFINITY;
+							Database_AddChild(windows[window].layout->marriage[i].marriage,initialperson);
+							windows[window].layout->marriage[i].childline=Desk_TRUE;
+							person=initialperson;
+							do {
+								int i;
+								for (i=0;i<windows[window].layout->numpeople;i++) {
+									if (windows[window].layout->person[i].person==person) {
+										/*Find coords of furthest right hand sibling*/
+										if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+									}
+								}
+							} while ((person=Database_GetSiblingLtoR(person))!=none);
+							person=initialperson;
+							while ((person=Database_GetSiblingRtoL(person))!=none) {
+								int i;
+								for (i=0;i<windows[window].layout->numpeople;i++) {
+									if (windows[window].layout->person[i].person==person) {
+										/*Find coords of furthest left hand sibling*/
+										if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
+									}
 								}
 							}
-						} while ((person=Database_GetSiblingLtoR(person))!=none);
-						person=initialperson;
-						while ((person=Database_GetSiblingRtoL(person))!=none) {
-							int i;
-							for (i=0;i<windows[window].layout->numpeople;i++) {
-								if (windows[window].layout->person[i].person==person) {
-									if (windows[window].layout->person[i].x>x) x=windows[window].layout->person[i].x;
-								}
+							if (x==-INFINITY) {
+								/*There must have been no siblings, therefore centre under marriage*/
+								x=windows[window].layout->marriage[i].x-Graphics_PersonWidth()-Graphics_GapWidth()+Graphics_MarriageWidth()/2-Graphics_PersonWidth()/2;
 							}
+							Layout_AddPerson(windows[window].layout,initialperson,x+Graphics_PersonWidth()+Graphics_GapWidth(),windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
+							return;
 						}
-						if (x==-INFINITY) x=windows[window].layout->marriage[i].x-Graphics_PersonWidth()-Graphics_GapWidth()+Graphics_MarriageWidth()/2-Graphics_PersonWidth()/2;
-						Layout_AddPerson(windows[window].layout,initialperson,x+Graphics_PersonWidth()+Graphics_GapWidth(),windows[window].layout->marriage[i].y-Graphics_PersonHeight()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow());
-						return;
 					}
 				}
 			}
@@ -500,13 +522,13 @@ void Windows_SelectDragEnd(void *ref)
 	int mousex,mousey,i;
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
-	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
-	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale;
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
 		if (mousex>dragdata->windowdata->layout->person[i].x && dragdata->oldmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() || mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->oldmousex>dragdata->windowdata->layout->person[i].x) {
 			if (mousey>dragdata->windowdata->layout->person[i].y && dragdata->oldmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->person[i].y) {
 				dragdata->windowdata->layout->person[i].selected=(Desk_bool)!dragdata->windowdata->layout->person[i].selected;
-				Windows_RedrawPerson(dragdata->windowdata->handle,dragdata->windowdata->layout->person+i);
+				Windows_RedrawPerson(dragdata->windowdata,dragdata->windowdata->layout->person+i);
 			}
 		}
 	}
@@ -514,7 +536,7 @@ void Windows_SelectDragEnd(void *ref)
 		if (mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->oldmousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() || mousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() && dragdata->oldmousex>dragdata->windowdata->layout->marriage[i].x) {
 			if (mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->oldmousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->marriage[i].y) {
 				dragdata->windowdata->layout->marriage[i].selected=(Desk_bool)!dragdata->windowdata->layout->marriage[i].selected;
-				Windows_RedrawMarriage(dragdata->windowdata->handle,dragdata->windowdata->layout->marriage+i);
+				Windows_RedrawMarriage(dragdata->windowdata,dragdata->windowdata->layout->marriage+i);
 			}
 		}
 	}
@@ -582,7 +604,7 @@ void Windows_DragFn(void *ref)
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Wimp_GetWindowState(dragdata->windowdata->handle,&blk);
 	Desk_Window_GetInfo3(dragdata->windowdata->handle,&infoblk);
-	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/Draw_GetScaleFactor();
+	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/dragdata->windowdata->scale;
 	if (mousex!=dragdata->oldmousex) {
 		/*Unplot drag box if it has moved*/
 		Windows_PlotDragBox(dragdata);
@@ -635,8 +657,8 @@ void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdat
 	int mousex,mousey;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
-	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windowdata->scale;
 	dragblk.type=Desk_drag_INVISIBLE;
 	dragdata.coords=Layout_FindExtent(windowdata->layout,Desk_TRUE);
 	dragdata.coords.min.x-=mousex;
@@ -710,13 +732,13 @@ void Windows_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowd
 	int mousex,mousey;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
-	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windowdata->scale;
 	dragblk.type=Desk_drag_FIXEDBOX;
-	dragblk.screenrect.min.x=(Draw_GetScaleFactor()*x)/100+(blk.screenrect.min.x-blk.scroll.x);
-	dragblk.screenrect.max.x=(Draw_GetScaleFactor()*(x+Graphics_PersonWidth()))/100+(blk.screenrect.min.x-blk.scroll.x);
-	dragblk.screenrect.min.y=(Draw_GetScaleFactor()*y)/100+(blk.screenrect.max.y-blk.scroll.y);
-	dragblk.screenrect.max.y=(Draw_GetScaleFactor()*(y+Graphics_PersonHeight()))/100+(blk.screenrect.max.y-blk.scroll.y);
+	dragblk.screenrect.min.x=(windowdata->scale*x)/100+(blk.screenrect.min.x-blk.scroll.x);
+	dragblk.screenrect.max.x=(windowdata->scale*(x+Graphics_PersonWidth()))/100+(blk.screenrect.min.x-blk.scroll.x);
+	dragblk.screenrect.min.y=(windowdata->scale*y)/100+(blk.screenrect.max.y-blk.scroll.y);
+	dragblk.screenrect.max.y=(windowdata->scale*(y+Graphics_PersonHeight()))/100+(blk.screenrect.max.y-blk.scroll.y);
 	dragblk.parent.min.y=dragblk.screenrect.min.y-mouseblk.pos.y;
 	dragblk.parent.max.y=Desk_screen_size.y+dragblk.screenrect.max.y-mouseblk.pos.y;
 	dragblk.parent.min.x=dragblk.screenrect.min.x-mouseblk.pos.x;
@@ -743,8 +765,8 @@ void Windows_StartDragSelect(windowdata *windowdata)
 	int mousex,mousey;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
-	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windowdata->scale;
 	dragblk.type=Desk_drag_RUBBERBOX;
 	dragblk.screenrect.min.x=mouseblk.pos.x;
 	dragblk.screenrect.max.x=mouseblk.pos.x;
@@ -768,8 +790,8 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	int mousex,mousey,i;
 	Desk_convert_block blk;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
-	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
-	mousey=((block->data.mouse.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
+	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
+	mousey=((block->data.mouse.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/windowdata->scale;
 	menuoverperson=none;
 	menuoverwindow=windowdata;
 	AJWLib_Menu_Shade(personmenu,personmenu_ADD);
@@ -785,14 +807,14 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 						if (!windowdata->layout->person[i].selected) {
 							Windows_UnselectAll(windowdata);
 							windowdata->layout->person[i].selected=Desk_TRUE;
-							Windows_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
+							Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
 						}
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.clickadjust) {
 					if (windowdata->type==wintype_NORMAL) {
 						windowdata->layout->person[i].selected=(Desk_bool)!windowdata->layout->person[i].selected;
-						Windows_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
+						Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.menu) {
@@ -863,6 +885,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		sprintf(buffer,"%d",File_GetSize()); /*kbytes*/
 		Desk_Icon_SetText(fileinfowin,info_SIZE,buffer);
 		Desk_Icon_SetText(fileinfowin,info_DATE,File_GetDate());
+		Desk_Icon_SetInteger(scalewin,scale_TEXT,windowdata->scale);
 		Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 		return Desk_TRUE;
 	}
@@ -877,14 +900,14 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 						if (!windowdata->layout->marriage[i].selected) {
 							Windows_UnselectAll(windowdata);
 							windowdata->layout->marriage[i].selected=Desk_TRUE;
-							Windows_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
+							Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+i);
 						}
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.clickadjust) {
 					if (windowdata->type==wintype_NORMAL) {
 						windowdata->layout->marriage[i].selected=(Desk_bool)!windowdata->layout->marriage[i].selected;
-						Windows_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
+						Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+i);
 						return Desk_TRUE;
 					}
 				} else if (block->data.mouse.button.data.dragselect) {
@@ -1071,6 +1094,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations)
 	windows[newwindow].type=type;
 	windows[newwindow].person=person;
 	windows[newwindow].generations=generations;
+	windows[newwindow].scale=100;
 	switch (type) {
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
@@ -1287,7 +1311,11 @@ Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 
 Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 {
-	int i,scale;
+	Desk_wimp_rect bbox;
+	int scale,xscale,yscale,xwindowborders,ywindowborders;
+	Desk_window_state stateblk;
+	Desk_window_outline outlineblk;
+	outlineblk.window=menuoverwindow->handle;
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	switch (block->data.mouse.icon) {
 		case scale_SIZE1:
@@ -1298,7 +1326,7 @@ Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 		case scale_SIZE2:
 			AJWLib_Msgs_SetText(scalewin,scale_TEXT,"Scale.2:100");
 			Desk_Icon_SetCaret(scalewin,scale_TEXT);
-			return Desk_TRUE;;
+			return Desk_TRUE;
 			break;
 		case scale_SIZE3:
 			AJWLib_Msgs_SetText(scalewin,scale_TEXT,"Scale.3:100");
@@ -1311,21 +1339,26 @@ Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 			return Desk_TRUE;
 			break;
 		case scale_FIT:
-			/*Layout_FindExtent(layout,);*/
-			/*AJWLib_Msgs_SetText(scalewin,block->data.mouse.icon,"");*/
+			bbox=Layout_FindExtent(menuoverwindow->layout,Desk_FALSE);
+			Desk_Wimp_GetWindowState(menuoverwindow->handle,&stateblk);
+			Desk_Wimp_GetWindowOutline(&outlineblk);
+			xwindowborders=(outlineblk.screenrect.max.x-outlineblk.screenrect.min.x)-(stateblk.openblock.screenrect.max.x-stateblk.openblock.screenrect.min.x);
+			ywindowborders=(outlineblk.screenrect.max.y-outlineblk.screenrect.min.y)-(stateblk.openblock.screenrect.max.y-stateblk.openblock.screenrect.min.y);
+			xscale=(Desk_screen_size.x-xwindowborders)*100/(bbox.max.x-bbox.min.x+2*Graphics_WindowBorder());
+			yscale=(Desk_screen_size.y-ywindowborders)*100/(bbox.max.y-bbox.min.y+2*Graphics_WindowBorder());
+			scale=Desk_MIN(xscale,yscale);
+			if (scale<1) scale=1;
+			if (scale>999) scale=999;
+			Desk_Icon_SetInteger(scalewin,scale_TEXT,scale);
 			return Desk_TRUE;
 			break;
 		case scale_OK:
 			scale=Desk_Icon_GetInteger(scalewin,scale_TEXT);
-			if (scale<1) scale=100;
-			Draw_SetScaleFactor(scale);
+			if (scale<1) scale=1;
+			menuoverwindow->scale=scale;
+			Windows_ResizeWindow(menuoverwindow);
+			Desk_Window_ForceWholeRedraw(menuoverwindow->handle);
 			if (block->data.mouse.button.data.select) Desk_Window_Hide(scalewin);
-				for (i=0;i<MAXWINDOWS;i++) {
-					if (windows[i].handle) {
-						Desk_Window_ForceWholeRedraw(windows[i].handle);
-						Windows_ResizeWindow(&(windows[i]));
-					}
-				}
 			break;
 	}
 	return Desk_FALSE;
@@ -1337,7 +1370,6 @@ void Windows_Init(void)
 	numwindows=0;
 	for (i=0;i<MAXWINDOWS;i++) windows[i].handle=0;
 	Desk_Drag_Initialise(Desk_TRUE);
-	Draw_SetScaleFactor(200);
 	newviewwin=Desk_Window_Create("NewView",Desk_template_TITLEMIN);
 	Desk_Icon_InitIncDecHandler(newviewwin,newview_GENERATIONS,newview_UP,newview_DOWN,Desk_FALSE,1,1,999,10);
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_NORMAL);
