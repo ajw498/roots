@@ -2,7 +2,8 @@ v1.11 ??-Feb-01
 Added ability to stretch people to fit their name length
 Increased maximum length of text that a field can contain to 255 chars
 Added support for GEDCOM CONT (continuation) and CONC (concatenation) tags
-
+Fixed bug that greyed out marriage submenu when auto sized marriages were used
+ 
 v1.10 29-Nov-00
 Improved graphics styles - uses Lua as a scripting language
 A few keyboard shortcuts added

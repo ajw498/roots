@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.58 2001/02/03 13:37:24 AJW Exp $
+	$Id: Database.c,v 1.59 2001/02/03 20:26:13 AJW Exp $
 
 */
 
@@ -615,14 +615,17 @@ void Database_RemoveElement(layout *layout,elementptr element)
 			database[child].element.person.siblingsltor=none;
 			child=temp;
 		}
-	} else {
+		Layout_RemoveElement(layout,element);
+		Database_FreeElement(element);
+		Modules_ChangedStructure();
+	} else if (database[element].type==element_PERSON) {
 		Database_UnlinkFromSiblingsAndParents(element,database[element].element.person.parentsmarriage);
 		Layout_RemoveElement(layout,database[element].element.person.marriage);
 		Database_RemoveElement(layout,database[element].element.person.marriage);
+		Layout_RemoveElement(layout,element);
+		Database_FreeElement(element);
+		Modules_ChangedStructure();
 	}
-	Layout_RemoveElement(layout,element);
-	Database_FreeElement(element);
-	Modules_ChangedStructure();
 }
 
 void Database_UnlinkFromSiblingsAndParents(elementptr person,elementptr marriage)
