@@ -28,8 +28,8 @@ typedef enum personfieldtype {
 
 typedef enum marriagefieldtype {
 	marriagefieldtype_PLACE=0,
-	/*etc*/
-	marriagefieldtype_DATE
+	marriagefieldtype_DATE,
+	marriagefieldtype_DIVORCE
 } marriagefieldtype;
 
 typedef struct textproperties {
