@@ -1,0 +1,26 @@
+
+LIBS = \
+	L:Stubs.o.asstubs\
+	L:AJWLib.o.AJWLib\
+	L:Desk.o.Desk
+
+
+
+
+INCLUDE	=	C:
+
+CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -fah -DSHAREWARE_STANDALONE
+LINKFLAGS	=	$(LINKEXTRA) -d
+
+CC		=	cc -c $(CCFLAGS)
+LINK		=	DrLink $(LINKFLAGS)
+
+CalcVal: calcval.o
+	$(LINK) -o CalcVal calcval.o $(LIBS)
+
+
+calcval.o: !Roots/Shareware.c !Roots/Shareware.h
+	$(CC) !Roots/Shareware.c -o calcval.o
+
+
+
