@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.85 2000/09/25 18:44:18 AJW Exp $
+	$Id: Windows.c,v 1.86 2000/09/26 12:13:14 AJW Exp $
 
 */
 
@@ -92,7 +92,6 @@
 #define selectmenu_SIBLINGS 2
 #define selectmenu_SPOUSES 3
 
-/*#define newview_UNLINKED 1*/
 #define newview_NORMAL 0
 #define newview_ANCESTOR 2
 #define newview_DESCENDENT 3
@@ -157,7 +156,6 @@ typedef struct savedata {
 	int generations;
 	int scale;
 	Desk_convert_block coords;
-	int reserved[4]; /*Should be set to zero*/
 } savedata;
 
 typedef enum dragtype {
@@ -929,7 +927,7 @@ static void Windows_SetUpMenu(void)
 	}
 	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
 	if (Desk_File_IsDirectory(dirname)) {
-		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY);
+		Desk_Filing_OpenDir(dirname,&dir,256,Desk_readdirtype_NAMEONLY); /*Does this cope with long filenames?*/
 		do {
 			name=Desk_Filing_ReadDir(&dir);
 			if (name) {
