@@ -11,5 +11,5 @@ Box,0,0,40,15,0,000000
 #This line is only plotted if the person is shown as a child
 ChildLine,20,15,20,25,0,000000
 #Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
-CentredField,20,7,12,FF0000,FFFFFF,Trinity.Medium,FullName
+CentredField,20,7,15,FF0000,FFFFFF,Corpus.Medium,FullName
 
