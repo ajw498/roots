@@ -1,9 +1,9 @@
 /*
-	FT - Main program
+	Roots - Main program
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.27 2000/09/21 10:08:11 AJW Exp $
+	$Id: Main.c,v 1.28 2000/09/22 13:10:57 AJW Exp $
 	
 */
 
@@ -43,11 +43,17 @@
 #include "Modules.h"
 #include "Windows.h"
 #include "File.h"
-#include "config.h"
+#include "Config.h"
+#include "Shareware.h"
 
+#define COPYRIGHT "© Alex Waugh 2000"
 
 #define quiticon_DISCARD 0
 #define quiticon_CANCEL 2
+
+#define proginfo_AUTHOR 2
+#define proginfo_VERSION 3
+#define proginfo_LICENCE 9
 
 #define iconbarmenu_INFO 0
 #define iconbarmenu_CHOICES 1
@@ -55,7 +61,7 @@
 #define iconbarmenu_QUIT 3
 
 
-static Desk_window_handle infowin,quitwin;
+static Desk_window_handle proginfowin,quitwin;
 static Desk_menu_ptr iconbarmenu;
 static char *taskname=NULL,*errbad=NULL;
 
@@ -147,18 +153,21 @@ int main(int argc,char *argv[])
 		Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
 		Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
 		Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
-		infowin=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","© Alex Waugh 1999,2000",ROOTS_VERSION);
 		Desk_Template_LoadFile("Templates");
 		quitwin=Desk_Window_Create("Quit",Desk_template_TITLEMIN);
+		proginfowin=Desk_Window_Create("ProgInfo",Desk_template_TITLEMIN);
+		Desk_Icon_SetText(proginfowin,proginfo_AUTHOR,COPYRIGHT);
+		Desk_Icon_SetText(proginfowin,proginfo_VERSION,ROOTS_VERSION);
 		AJWLib_Window_RegisterDCS(quitwin,quiticon_DISCARD,quiticon_CANCEL,-1,NULL,NULL);
 		iconbarmenu=AJWLib_Menu_CreateFromMsgs("Title.IconBar:","Menu.IconBar:Info,Quit",IconBarMenuClick,NULL);
-		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)infowin);
+		Desk_Menu_AddSubMenu(iconbarmenu,iconbarmenu_INFO,(Desk_menu_ptr)proginfowin);
 		AJWLib_Menu_Attach(Desk_window_ICONBAR,Desk_event_ANY,iconbarmenu,Desk_button_MENU);
 		Desk_Event_Claim(Desk_event_CLICK,Desk_window_ICONBAR,Desk_event_ANY,IconBarClick,NULL);
 		Desk_EventMsg_Claim(Desk_message_DATALOAD,Desk_event_ANY,ReceiveDrag,NULL);
 		Desk_EventMsg_Claim(Desk_message_DATAOPEN,Desk_event_ANY,ReceiveDataOpen,NULL);
 		AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
 		Modules_Init();
+		Desk_Icon_SetText(proginfowin,proginfo_LICENCE,Shareware_GetUser());
 	} Desk_Error2_Catch {
 		Desk_Hourglass_Off();
 		AJWLib_Error2_Report("Fatal error while initialising (%s)");
@@ -176,8 +185,12 @@ int main(int argc,char *argv[])
 			Desk_Event_Poll();
 		} Desk_Error2_Catch {
 			Desk_os_error errblk={1,""};
-			sprintf(errblk.errmess,errbad,AJWLib_Error2_Describe(&Desk_Error2_globalblock));
-			if (Desk_Wimp_ReportErrorR(&errblk,3,taskname)==Desk_wimp_reporterror_button_CANCEL) return EXIT_FAILURE;
+			if (Shareware_GetErrorStatus()) {
+				AJWLib_Error2_Report("%s");
+			} else {
+				sprintf(errblk.errmess,errbad,AJWLib_Error2_Describe(&Desk_Error2_globalblock));
+				if (Desk_Wimp_ReportErrorR(&errblk,3,taskname)==Desk_wimp_reporterror_button_CANCEL) return EXIT_FAILURE;
+			}
 		} Desk_Error2_EndCatch
 	}
 	return EXIT_SUCCESS;

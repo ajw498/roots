@@ -1,8 +1,8 @@
 /*
-	FT - Database
+	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.41 2000/09/21 11:33:06 AJW Exp $
+	$Id: Database.c,v 1.42 2000/09/22 13:10:54 AJW Exp $
 
 */
 
@@ -34,6 +34,7 @@
 #include "File.h"
 #include "Layout.h"
 #include "Config.h"
+#include "Shareware.h"
 
 
 #define editpersonicon_SURNAME 1
@@ -685,6 +686,7 @@ static elementptr Database_GetFreeElement(void)
 	elementptr newelement=none;
 	AJWLib_Assert(database!=NULL);
 	if ((newelement=database[0].element.file.freeelement)==none) {
+		if (database[0].element.file.numberofelements>UNREGISTEREDMAXPEOPLE) Shareware_CheckRegistered();
 		AJWLib_Flex_Extend((flex_ptr)&database,sizeof(databaseelement)*(database[0].element.file.numberofelements+1));
 		newelement=database[0].element.file.numberofelements++;
 	} else {
