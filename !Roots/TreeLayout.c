@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.6  1999/09/29 17:12:11  AJW
+	Corrected childline status in Layout_AddMarriage
+
 	Revision 1.5  1999/09/29 17:07:25  AJW
 	Added Layout_FindYCoord
 
@@ -114,7 +117,7 @@ void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
 		layout->marriage[layout->nummarriages].x=x;
 		layout->marriage[layout->nummarriages].y=y;
 		layout->marriage[layout->nummarriages].marriage=marriage;
-		layout->marriage[layout->nummarriages].childline=FALSE;
+		layout->marriage[layout->nummarriages].childline=(Database_GetLeftChild(marriage)==none ? FALSE : TRUE);
 		layout->marriage[layout->nummarriages].selected=FALSE;
 		layout->nummarriages++;
 }
