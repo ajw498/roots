@@ -109,6 +109,7 @@ Desk_bool Database_IsFirstMarriage(elementptr marriage);
 Desk_bool Database_IsUnlinked(elementptr person);
 void Database_Info(Desk_window_handle infowin);
 void Database_New(void);
+void Database_Remove(void);
 void Database_Init(void);
 void Database_Save(FILE *file);
 void Database_Load(FILE *file);
