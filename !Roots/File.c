@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.2  2000/01/13 17:02:09  AJW
+	Altered to be a SaveHandler for Desk_Save_* fns
+
 	Revision 1.1  2000/01/11 17:10:49  AJW
 	Initial revision
 
@@ -50,12 +53,13 @@
 #include "GConfig.h"
 #include "Config.h"
 #include "Layout.h"
+#include "File.h"
 
 #define FILEID "Root"
 #define FILEVERSION 100
 
 
-void File_SaveFile(const char *filename)
+Desk_bool File_SaveFile(char *filename,void *ref)
 {
 	FILE *file;
 	char fileid[]=FILEID;
@@ -66,5 +70,7 @@ void File_SaveFile(const char *filename)
 	Database_Save(file);
 	/*Layouts();*/
 	AJWLib_File_fclose(file);
+	/*Error handling*/
+	return Desk_TRUE;
 }
 
