@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.67 2000/06/17 21:25:53 AJW Exp $
+	$Id: Windows.c,v 1.68 2000/06/17 22:43:07 AJW Exp $
 
 */
 
@@ -1201,6 +1201,8 @@ void Windows_CloseNewView(void)
 static void Windows_OpenWindowCentered(windowdata *windowdata,Desk_convert_block *coords)
 {
 	Desk_window_openblock blk;
+	Desk_window_info infoblk;
+	Desk_window_outline outlineblk;
 	AJWLib_Assert(windowdata!=NULL);
 	blk.window=windowdata->handle;
 	blk.behind=-1;
@@ -1208,6 +1210,11 @@ static void Windows_OpenWindowCentered(windowdata *windowdata,Desk_convert_block
 	blk.screenrect.max.x=INFINITY;
 	blk.screenrect.min.y=-INFINITY;
 	blk.screenrect.max.y=Desk_screen_size.y;
+	Desk_Window_GetInfo3(blk.window,&infoblk);
+	outlineblk.window=blk.window;
+	Desk_Wimp_GetWindowOutline(&outlineblk);
+	blk.screenrect.max.y-=(outlineblk.screenrect.max.y-infoblk.block.screenrect.max.y);
+	blk.screenrect.min.x+=(infoblk.block.screenrect.min.x-outlineblk.screenrect.min.x);
 	if (windowdata->type!=wintype_UNLINKED) {
 		Desk_wimp_rect bbox=Layout_FindExtent(windowdata->layout,Desk_FALSE);
 		blk.screenrect.min.x=Desk_screen_size.x/2-((Graphics_WindowBorder()+bbox.max.x-bbox.min.x)*windowdata->scale)/200;
