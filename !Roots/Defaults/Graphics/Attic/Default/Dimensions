@@ -16,3 +16,5 @@ SecondMarriageGap,3
 WindowBorder,4
 #Height of gap between people in the unlinked window
 GapHeightUnlinked,4
+#Height, font size, colour RRGGBB, background colour RRGGBB, and font of file title
+FileTitle,15,24,000000,FFFFFF,Trinity.Medium

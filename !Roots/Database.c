@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.21 2000/02/26 18:54:27 uid1 Exp $
+	$Id: Database.c,v 1.22 2000/02/26 21:17:05 uid1 Exp $
 
 */
 
@@ -713,7 +713,7 @@ void Database_New(void)
 	database[0].element.file.unlinkedpeople=0;
 	database[0].element.file.linkedpeople=0;
 	database[0].element.file.freeelement=0;
-	strcpy(database[0].element.file.filetitle,AJWLib_Msgs_TempLookup("Tree.Title:"));
+	strcpy(database[0].element.file.filetitle,AJWLib_Msgs_TempLookup("Tree.Title:Title"));
 	strcpy(database[0].element.file.userdesc[0],Config_UserDesc(1));
 	strcpy(database[0].element.file.userdesc[1],Config_UserDesc(2));
 	strcpy(database[0].element.file.userdesc[2],Config_UserDesc(3));

@@ -97,6 +97,8 @@ typedef struct graphics {
 	int gapheightunlinked;
 	int siblinglinethickness;
 	int siblinglinecolour;
+	int titleheight;
+	textproperties title;
 	int numpersonobjects;
 	object *person;
 	int nummarriageobjects;
@@ -125,6 +127,8 @@ int Graphics_MarriageWidth(void);
 int Graphics_SecondMarriageGap(void);
 
 int Graphics_WindowBorder(void);
+
+int Graphics_TitleHeight(void);
 
 void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext);
 
