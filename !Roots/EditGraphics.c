@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.6 2001/07/01 23:06:48 AJW Exp $
+	$Id: EditGraphics.c,v 1.7 2001/07/02 20:04:36 AJW Exp $
 
 */
 
@@ -79,10 +79,10 @@
 #define editshape_X 0
 #define editshape_XUP 3
 #define editshape_XDOWN 2
-#define editshape_Y 8
+#define editshape_Y 7
 #define editshape_YUP 11
 #define editshape_YDOWN 10
-#define editshape_WIDTH 7
+#define editshape_WIDTH 8
 #define editshape_WIDTHUP 6
 #define editshape_WIDTHDOWN 5
 #define editshape_HEIGHT 12
@@ -100,12 +100,12 @@
 #define editshape_HEIGHTLABEL 13
 #define editshape_BOXLABEL 34
 
-#define editmisc_ABOVE 29
-#define editmisc_BELOW 4
-#define editmisc_BETWEEN 8
+#define editmisc_ABOVE 4
+#define editmisc_BELOW 8
+#define editmisc_BETWEEN 12
 #define editmisc_THICKNESS 20
-#define editmisc_BORDER 12
-#define editmisc_TITLEHEIGHT 16
+#define editmisc_BORDER 16
+#define editmisc_TITLEHEIGHT 29
 #define editmisc_ABOVEUP 3
 #define editmisc_BELOWUP 6
 #define editmisc_BETWEENUP 10
@@ -345,6 +345,7 @@ void EditGraphics_CreateNew(void)
 	Desk_Icon_SetText(mainwin,mainwin_NAME,AJWLib_Msgs_TempLookup("Style.New:New"));
 
 	Desk_Window_Show(mainwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(mainwin,mainwin_NAME);
 	editingstyle=Desk_TRUE;
 }
 
@@ -384,6 +385,7 @@ static void EditGraphics_UpdateTextWindow(void)
 	Desk_Icon_SetText(textwin,edittext_FONT,editingtext->font);
 	Desk_Icon_SetSelect(textwin,edittext_EXPAND,editingtext->expand);
 	Desk_Icon_SetShade(textwin,edittext_EXPAND,item==&(style.marriage) || editingtext->type==text_LABEL);
+	Desk_Icon_SetShade(textwin,edittext_COLOURSEX,item==&(style.marriage));
 	Desk_Icon_SetSelect(textwin,edittext_COLOURSEX,editingtext->coloursex);
 }
 
@@ -510,6 +512,7 @@ static Desk_bool EditGraphics_OpenEditSizeWindow(Desk_event_pollblock *block,voi
 	Desk_Icon_SetInteger(sizewin,editsize_WIDTH,item->width);
 	Desk_Icon_SetInteger(sizewin,editsize_HEIGHT,item->height);
 	Desk_Window_Show(sizewin,Desk_open_NEARLAST);
+	Desk_Icon_SetCaret(sizewin,editsize_WIDTH);
 	editingsize=Desk_TRUE;
 	return Desk_TRUE;
 }
@@ -534,6 +537,7 @@ static void EditGraphics_OpenTextWindow(textdetails *newtext)
 	}
 	editingtext=newtext;
 	Desk_Icon_ForceRedraw(textwin,edittext_COLOUR);
+	Desk_Icon_SetCaret(textwin,edittext_X);
 	EditGraphics_UpdateTextWindow();
 }
 
@@ -590,6 +594,7 @@ static void EditGraphics_OpenShapeWindow(shapedetails *newshape)
 	if (editingshape==NULL) Desk_Window_Show(shapewin,Desk_open_NEARLAST);
 	editingshape=newshape;
 	Desk_Icon_ForceRedraw(shapewin,editshape_COLOUR);
+	Desk_Icon_SetCaret(shapewin,editshape_X);
 	EditGraphics_UpdateShapeWindow();
 }
 
@@ -739,6 +744,7 @@ static Desk_bool EditGraphics_OpenMiscWindow(Desk_event_pollblock *block,void *r
 	Desk_Icon_SetText(miscwin,editmisc_TITLEFONT,style.misc.titlefont);
 
 	Desk_Window_Show(miscwin,Desk_open_NEARLAST);
+	Desk_Icon_SetCaret(miscwin,editmisc_ABOVE);
 	editingmisc=Desk_TRUE;
 	return Desk_TRUE;
 }
@@ -782,6 +788,7 @@ static Desk_bool EditGraphics_EditPerson(Desk_event_pollblock *block,void *ref)
 	Desk_Icon_SetText(textwin,edittext_EXPAND,AJWLib_Msgs_TempLookup("Exp.Person:expand"));
 
 	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(editwin,-1);
 	EditGraphics_UpdateWindow();
 	return Desk_TRUE;
 }
@@ -801,6 +808,7 @@ static Desk_bool EditGraphics_EditMarriage(Desk_event_pollblock *block,void *ref
 	Desk_Icon_SetText(textwin,edittext_EXPAND,AJWLib_Msgs_TempLookup("Exp.Marr:expand"));
 
 	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(editwin,-1);
 	EditGraphics_UpdateWindow();
 	return Desk_TRUE;
 }
@@ -1226,6 +1234,7 @@ static void EditGraphics_LoadStyle(char *stylename)
 
 	Desk_Icon_SetText(mainwin,mainwin_NAME,stylename);
 	Desk_Window_Show(mainwin,Desk_open_CENTERED);
+	Desk_Icon_SetCaret(mainwin,mainwin_NAME);
 	editingstyle=Desk_TRUE;
 }
 
