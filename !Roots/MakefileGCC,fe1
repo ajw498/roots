@@ -1,0 +1,47 @@
+HEADERS	=	\
+		h.GConfig\
+		h.Graphics\
+		h.Database\
+		h.Config\
+		h.Layout\
+		h.Modules
+
+LIBS	=	\
+		C:AJWLib.o.AJWLib\
+		C:Desk.o.debug.stderr\
+		C:Desk.o.Desk\
+		C:swiv.o.swiv
+
+
+OBJECTS	=	\
+		o.Modules\
+		o.Graphics\
+		o.GConfig\
+		o.Config\
+		o.Layout\
+		o.Reports\
+		o.Database\
+		o.!RunImage
+
+INCLUDE	=	L:
+
+TARGET		=	!RunImage
+
+CCFLAGS		=	$(CCEXTRA) -mthrowback -I$(INCLUDE)
+LINKFLAGS	=	$(LINKEXTRA) -d
+
+CC		=	gcc -c $(CCFLAGS)
+LINK		=	DrLink $(LINKFLAGS)
+
+
+
+o.%: c.% $(HEADERS) $(LIBS)
+	$(CC) $< -o $@
+
+%:: c.%
+
+
+
+$(TARGET):	$(OBJECTS) $(LIBS)
+	gcc -o $@ $(OBJECTS) $(LIBS)
+

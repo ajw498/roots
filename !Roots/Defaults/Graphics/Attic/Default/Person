@@ -1,0 +1,15 @@
+#FilledBox,x,y,width,height,RRGGBB
+FilledBox,0,0,250,100,F5F5F5
+#Box,x,y,width,height,linewidth,RRGGBB
+Box,0,0,250,100,0,000000
+#Text,x,y,size,RRGGBB,RRGGBB (background),font,text
+#Text,70,50,12,000000,FFFFFF,Trinity.Medium.Italic,This is a label
+#CentredText,70,70,12,0000FF,FFFFFF,Trinity.Medium.Italic,This is a centred label
+#Line,x,y,x1,y1,linewidth,RRGGBB
+#Line,0,0,100,50,0,000000
+#ChildLine,x,y,x1,y1,linewidth,RRGGBB
+#This line is only plotted if the person is shown as a child
+ChildLine,125,100,125,140,0,000000
+#Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
+CentredField,125,40,12,FF0000,FFFFFF,Trinity.Medium,FullName
+

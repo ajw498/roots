@@ -1,0 +1,53 @@
+HEADERS	=	\
+		h.Windows\
+		h.Graphics\
+		h.Database\
+		h.Config\
+		h.Layout\
+		h.Drawfile\
+		h.Draw\
+		h.Modules\
+		h.File
+
+LIBS	=	\
+		C:Stubs.o.asstubs\
+		C:AJWLib.o.AJWLib\
+		C:Desk.o.debug.stderr\
+		C:Desk.o.Desk
+
+
+OBJECTS	=	\
+		o.Modules\
+		o.Graphics\
+		o.Windows\
+		o.Config\
+		o.Layout\
+		o.Reports\
+		o.Draw\
+		o.File\
+		o.Drawfile\
+		o.Database\
+		o.!RunImage
+
+INCLUDE	=	C:
+
+TARGET		=	!RunImage
+
+CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE)
+LINKFLAGS	=	$(LINKEXTRA) -d
+
+CC		=	cc -c $(CCFLAGS)
+LINK		=	DrLink $(LINKFLAGS)
+
+
+
+o.%: c.% $(HEADERS) $(LIBS)
+	$(CC) $< -o $@
+
+%:: c.%
+
+
+
+$(TARGET):	$(OBJECTS) $(LIBS)
+	$(LINK) -o $@ $(OBJECTS) $(LIBS)
+
