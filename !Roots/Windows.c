@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.6  1999/10/02 18:46:15  AJW
+	Added unlinking of people
+
 	Revision 1.5  1999/09/29 17:31:05  AJW
 	Add people to layout when linking/marrying etc
 
@@ -419,7 +422,7 @@ void Graphics_DragEnd(void *ref)
 			Layout_AddPerson(windows[window].layout,addparentsperson,childx-(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
 			Layout_AddPerson(windows[window].layout,initialperson,childx+(Graphics_PersonWidth()+Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
 			Layout_AddMarriage(windows[window].layout,Database_GetMarriage(initialperson),childx+(Graphics_PersonWidth()-Graphics_MarriageWidth())/2,childy+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow());
-			for (i=0;i<windows[window].layout->numpeople;i++) if (windows[window].layout->person[i].person==addparentschild) windows[window].layout->person[i].child=TRUE;
+			Layout_AlterChildline(windows[window].layout,addparentschild,TRUE);
 			return;
 		}
 	}
@@ -758,12 +761,33 @@ BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 						return TRUE;
 					}
 				} else if (block->data.mouse.button.data.menu) {
+					elementptr marriage;
 					menuoverperson=windowdata->layout->person[i].person;
 					menuoverwindow=windowdata;
 					if (windowdata->type==wintype_NORMAL) {
 						Menu_UnShade(mainmenu,mainmenu_PERSON);
 						Menu_UnShade(mainmenu,mainmenu_SELECT);
-						Menu_UnShade(personmenu,personmenu_UNLINK);
+						if ((marriage=Database_GetMarriage(menuoverperson))==none) {
+							Menu_UnShade(personmenu,personmenu_UNLINK);
+						} else if (Database_GetMother(menuoverperson)) {
+							/*no*/
+						} else if (Database_GetLeftChild(marriage)) {
+							/*maybe*/
+							elementptr principal,spouse;
+							principal=Database_GetPrincipalFromMarriage(marriage);
+							spouse=Database_GetSpouseFromMarriage(marriage);
+							if (Database_GetMarriageLtoR(Database_GetMarriageLtoR(principal))==none) {
+								if (Database_GetMother(principal)==none && Database_GetMother(spouse)==none) {
+									if (Database_GetSiblingLtoR(Database_GetLeftChild(marriage))==none) {
+										Menu_UnShade(personmenu,personmenu_UNLINK);
+									}
+								}
+							}
+						} else if (Database_GetPrincipalFromMarriage(marriage)!=menuoverperson) {
+							Menu_UnShade(personmenu,personmenu_UNLINK);
+						} else if (Database_GetMarriageLtoR(Database_GetMarriageLtoR(menuoverperson))==none) {
+							Menu_UnShade(personmenu,personmenu_UNLINK);
+						}
 					} else if (windowdata->type==wintype_UNLINKED) {
 						Menu_UnShade(personmenu,personmenu_DELETE);
 					}
@@ -979,6 +1003,7 @@ BOOL Graphics_NewViewOk(event_pollblock *block,void *ref)
 
 void Graphics_PersonMenuClick(int entry,void *ref)
 {
+	elementptr mother,marriage,mothermarriage;
 	switch (entry) {
 		case personmenu_ADD:
 			Database_Add();
@@ -987,9 +1012,29 @@ void Graphics_PersonMenuClick(int entry,void *ref)
 			Database_Delete(menuoverperson);
 			break;
 		case personmenu_UNLINK:
-			if (Database_GetMarriage(menuoverperson)==none) {
-				Database_RemoveChild(menuoverperson);
+			mother=Database_GetMother(menuoverperson);
+			marriage=Database_GetMarriage(menuoverperson);
+			mothermarriage=Database_GetMarriage(mother);
+			if (marriage==none) {
 				Layout_RemovePerson(menuoverwindow->layout,menuoverperson);
+				Database_RemoveChild(menuoverperson);
+				if (Database_GetLeftChild(mothermarriage)==none) Layout_AlterMarriageChildline(menuoverwindow->layout,mothermarriage,FALSE);
+			} else if (mother==none) {
+				if (Database_GetLeftChild(marriage)) {
+					Layout_RemovePerson(menuoverwindow->layout,Database_GetPrincipalFromMarriage(marriage));
+					Layout_RemovePerson(menuoverwindow->layout,Database_GetSpouseFromMarriage(marriage));
+					Layout_RemoveMarriage(menuoverwindow->layout,marriage);
+					Layout_AlterChildline(menuoverwindow->layout,Database_GetLeftChild(marriage),FALSE);
+					Database_RemoveParents(menuoverperson);
+				} else {
+					if (Database_GetMarriageRtoL(menuoverperson)!=none || Database_GetMarriageLtoR(Database_GetMarriageLtoR(menuoverperson))==none) {
+						Layout_RemovePerson(menuoverwindow->layout,menuoverperson);
+						Layout_RemoveMarriage(menuoverwindow->layout,marriage);
+						Database_RemoveSpouse(menuoverperson);
+					}
+				}
+			} else {
+				/*cannot unlink*/
 			}
 			break;
 	}
