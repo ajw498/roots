@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 
 typedef struct personlayout {
 	int x;
@@ -36,6 +36,7 @@ layout *Layout_LayoutUnlinked(void);
 layout *Layout_LayoutNormal(void);
 layout *Layout_LayoutDescendents(elementptr person, int generations);
 layout *Layout_LayoutAncestors(elementptr person, int generations);
+void Layout_Free(layout *layout);
 Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection);
 Desk_bool Layout_Selected(layout *layout,elementptr person);
 void Layout_AlterChildline(layout *layout,elementptr person,Desk_bool on);
