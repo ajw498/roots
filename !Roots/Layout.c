@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.24 2000/02/27 00:47:55 uid1 Exp $
+	$Id: Layout.c,v 1.25 2000/02/28 00:21:57 uid1 Exp $
 
 */
 
@@ -51,28 +51,38 @@ void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doa
 layout *Layout_LayoutUnlinked(void)
 {
 	elementptr person=none;
-	layout *layout;
+	layout *layout=NULL;
 	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),sizeof(personlayout));
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
-	/*Free layouts if there is a Flex error?*/
+	layout->person=NULL;
+	layout->marriage=NULL;
+	layout->children=NULL;
 	layout->nummarriages=0;
 	layout->numchildren=0;
 	layout->numpeople=0;
 	layout->title.x=INFINITY;
 	layout->title.y=INFINITY;
-	person=Database_GetUnlinked(person);
-	while (person!=none) {
-		AJWLib_Flex_Extend((flex_ptr)&(layout->person),sizeof(personlayout)*(layout->numpeople+1));
-		layout->person[layout->numpeople].x=0;
-		layout->person[layout->numpeople].y=-(Graphics_UnlinkedGapHeight()+Graphics_PersonHeight())*(layout->numpeople-1);
-		layout->person[layout->numpeople].person=person;
-		layout->person[layout->numpeople].child=Desk_FALSE;
-		layout->person[layout->numpeople].selected=Desk_FALSE;
+	Desk_Error2_Try {
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
 		person=Database_GetUnlinked(person);
-		layout->numpeople++;
-	}
+		while (person!=none) {
+			AJWLib_Flex_Extend((flex_ptr)&(layout->person),sizeof(personlayout)*(layout->numpeople+1));
+			layout->person[layout->numpeople].x=0;
+			layout->person[layout->numpeople].y=-(Graphics_UnlinkedGapHeight()+Graphics_PersonHeight())*(layout->numpeople-1);
+			layout->person[layout->numpeople].person=person;
+			layout->person[layout->numpeople].child=Desk_FALSE;
+			layout->person[layout->numpeople].selected=Desk_FALSE;
+			person=Database_GetUnlinked(person);
+			layout->numpeople++;
+		}
+	} Desk_Error2_Catch {
+		if (layout->person) AJWLib_Flex_Free((flex_ptr)&(layout->person));
+		if (layout->marriage) AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
+		if (layout->children) AJWLib_Flex_Free((flex_ptr)&(layout->children));
+		free(layout);
+		Desk_Error2_ReThrow();
+	} Desk_Error2_EndCatch
 	return layout;
 }
 
@@ -90,7 +100,7 @@ void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,Desk_bool 
 	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) layout->marriage[i].childline=on;
 }
 
-void Layout_AddTitle(layout *layout)
+static void Layout_AddTitle(layout *layout)
 {
 	Desk_wimp_rect bbox;
 	AJWLib_Assert(layout!=NULL);
@@ -165,7 +175,7 @@ int Layout_FindMarriageXCoord(layout *layout,elementptr marriage)
 	return 0;
 }
 
-void Layout_ExtendGeneration(int generation)
+static void Layout_ExtendGeneration(int generation)
 {
 	int i;
 	if (generation<mingeneration) {
@@ -186,7 +196,7 @@ void Layout_ExtendGeneration(int generation)
 	}
 }
 
-void Layout_PlotChildLine(layout *layout,elementptr person,int y)
+static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 {
 	int i;
 	AJWLib_Assert(layout!=NULL);
@@ -263,7 +273,7 @@ Desk_Window_ForceRedraw(-1,0,0,100000,100000);
 #endif
 }
 
-void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y,Desk_bool children)
+static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y,Desk_bool children)
 {
 	elementptr marriage;
 	AJWLib_Assert(layout!=NULL);
@@ -297,7 +307,7 @@ int Layout_FindChildCoords(layout *layout,elementptr marriage)
 	return (leftx+rightx+Graphics_PersonWidth())/2;
 }
 
-void Layout_Add(layout *layout,elementptr person,int generation,Desk_bool dummy1,Desk_bool dummy2)
+static void Layout_Add(layout *layout,elementptr person,int generation,Desk_bool dummy1,Desk_bool dummy2)
 {
 	int i,amount;
 	elementptr marriage;
@@ -322,7 +332,7 @@ void Layout_Add(layout *layout,elementptr person,int generation,Desk_bool dummy1
 	}
 }
 
-void Layout_Select(layout *layout,elementptr person,int dummy0,Desk_bool dummy1,Desk_bool dummy2)
+static void Layout_Select(layout *layout,elementptr person,int dummy0,Desk_bool dummy1,Desk_bool dummy2)
 {
 	int i;
 	elementptr marriage;
@@ -345,7 +355,7 @@ void Layout_Select(layout *layout,elementptr person,int dummy0,Desk_bool dummy1,
 	}
 }
 
-void Layout_Plot(layout *layout,elementptr person,int generation,Desk_bool lefttoright,Desk_bool child)
+static void Layout_Plot(layout *layout,elementptr person,int generation,Desk_bool lefttoright,Desk_bool child)
 {
 	elementptr marriage;
 	AJWLib_Assert(layout!=NULL);
@@ -592,99 +602,134 @@ layout *Layout_LayoutNormal(void)
 {
 	elementptr person=none;
 	layout *layout;
+	AJWLib_Assert(spaces==NULL);
 	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
-	/*Free others if errors?*/
-	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
-	spaces[0].minx=0;
-	spaces[0].maxx=0;
-	mingeneration=0;
-	maxgeneration=0;
+    layout->person=NULL;
+    layout->marriage=NULL;
+    layout->children=NULL;
 	layout->numpeople=0;
 	layout->nummarriages=0;
 	layout->numchildren=0;
-	if (Config_Title()) {
-		layout->title.x=0;
-		layout->title.y=0;
-	} else {
-		layout->title.x=INFINITY;
-		layout->title.y=INFINITY;
-	}
-	person=Database_GetLinked();
-	while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
-	firstplot=2;
-	Layout_TraverseTree(layout,person,2,2,Desk_TRUE,Desk_TRUE,Desk_TRUE,0,Layout_Plot);
-	Layout_LayoutMarriages(layout);
-	Layout_LayoutLines(layout);
-	AJWLib_Flex_Free((flex_ptr)&spaces);
-	Layout_AddTitle(layout);
+    Desk_Error2_Try {
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
+		spaces[0].minx=0;
+		spaces[0].maxx=0;
+		mingeneration=0;
+		maxgeneration=0;
+		if (Config_Title()) {
+			layout->title.x=0;
+			layout->title.y=0;
+		} else {
+			layout->title.x=INFINITY;
+			layout->title.y=INFINITY;
+		}
+		person=Database_GetLinked();
+		while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
+		firstplot=2;
+		Layout_TraverseTree(layout,person,2,2,Desk_TRUE,Desk_TRUE,Desk_TRUE,0,Layout_Plot);
+		Layout_LayoutMarriages(layout);
+		Layout_LayoutLines(layout);
+		AJWLib_Flex_Free((flex_ptr)&spaces);
+		Layout_AddTitle(layout);
+	} Desk_Error2_Catch {
+		if (spaces) AJWLib_Flex_Free((flex_ptr)&spaces);
+		if (layout->person) AJWLib_Flex_Free((flex_ptr)&(layout->person));
+		if (layout->marriage) AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
+		if (layout->children) AJWLib_Flex_Free((flex_ptr)&(layout->children));
+		free(layout);
+		Desk_Error2_ReThrow();
+	} Desk_Error2_EndCatch
 	return layout;
 }
 
 layout *Layout_LayoutDescendents(elementptr person,int generations)
 {
-	layout *layout;
+	layout *layout=NULL;
 	AJWLib_Assert(person!=none);
+	AJWLib_Assert(spaces==NULL);
 	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
-	/*free others if an error occours?*/
-	spaces[0].minx=0;
-	spaces[0].maxx=0;
-	mingeneration=0;
-	maxgeneration=0;
-	numgenerations=generations;
+	layout->person=NULL;
+	layout->marriage=NULL;
+	layout->children=NULL;
 	layout->numpeople=0;
 	layout->nummarriages=0;
 	layout->numchildren=0;
-	layout->title.x=INFINITY;
-	layout->title.y=INFINITY;
-	largenumber=0;
-	firstplot=Desk_TRUE;
-	Layout_TraverseDescendentTree(layout,person,2,0,Layout_Plot);
-	Layout_LayoutMarriages(layout);
-	Layout_LayoutLines(layout);
-	AJWLib_Flex_Free((flex_ptr)&spaces);
+	Desk_Error2_Try {
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
+		spaces[0].minx=0;
+		spaces[0].maxx=0;
+		mingeneration=0;
+		maxgeneration=0;
+		numgenerations=generations;
+		layout->title.x=INFINITY;
+		layout->title.y=INFINITY;
+		largenumber=0;
+		firstplot=Desk_TRUE;
+		Layout_TraverseDescendentTree(layout,person,2,0,Layout_Plot);
+		Layout_LayoutMarriages(layout);
+		Layout_LayoutLines(layout);
+		AJWLib_Flex_Free((flex_ptr)&spaces);
+	} Desk_Error2_Catch {
+		if (spaces) AJWLib_Flex_Free((flex_ptr)&spaces);
+		if (layout->person) AJWLib_Flex_Free((flex_ptr)&(layout->person));
+		if (layout->marriage) AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
+		if (layout->children) AJWLib_Flex_Free((flex_ptr)&(layout->children));
+		free(layout);
+		Desk_Error2_ReThrow();
+	} Desk_Error2_EndCatch
 	return layout;
 }
 
 layout *Layout_LayoutAncestors(elementptr person,int generations)
 {
-	layout *layout;
+	layout *layout=NULL;
 	AJWLib_Assert(person!=none);
+	AJWLib_Assert(spaces==NULL);
 	layout=Desk_DeskMem_Malloc(sizeof(struct layout));
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
-	AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
-	/*Free others if errors?*/
-	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
-	/*free others if an error occours?*/
-	spaces[0].minx=0;
-	spaces[0].maxx=0;
-	mingeneration=0;
-	maxgeneration=0;
-	numgenerations=generations;
+	layout->person=NULL;
+	layout->marriage=NULL;
+	layout->children=NULL;
 	layout->numpeople=0;
 	layout->nummarriages=0;
 	layout->numchildren=0;
-	layout->title.x=INFINITY;
-	layout->title.y=INFINITY;
-	largenumber=0;
-	firstplot=Desk_TRUE;
-	Layout_TraverseAncestorTree(layout,person,2,2,Desk_TRUE,0,Layout_Plot);
-	Layout_LayoutMarriages(layout);
-	Layout_LayoutLines(layout);
-	AJWLib_Flex_Free((flex_ptr)&spaces);
+	Desk_Error2_Try {
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->person),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->marriage),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(layout->children),1);
+		AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
+		spaces[0].minx=0;
+		spaces[0].maxx=0;
+		mingeneration=0;
+		maxgeneration=0;
+		numgenerations=generations;
+		layout->title.x=INFINITY;
+		layout->title.y=INFINITY;
+		largenumber=0;
+		firstplot=Desk_TRUE;
+		Layout_TraverseAncestorTree(layout,person,2,2,Desk_TRUE,0,Layout_Plot);
+		Layout_LayoutMarriages(layout);
+		Layout_LayoutLines(layout);
+		AJWLib_Flex_Free((flex_ptr)&spaces);
+	} Desk_Error2_Catch {
+		if (spaces) AJWLib_Flex_Free((flex_ptr)&spaces);
+		if (layout->person) AJWLib_Flex_Free((flex_ptr)&(layout->person));
+		if (layout->marriage) AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
+		if (layout->children) AJWLib_Flex_Free((flex_ptr)&(layout->children));
+		free(layout);
+		Desk_Error2_ReThrow();
+	} Desk_Error2_EndCatch
 	return layout;
 }
 
 void Layout_Free(layout *layout)
 {
-	AJWLib_Assert(layout!=NULL);
+	AJWLib_AssertWarning(layout!=NULL);
 	if (layout==NULL) return;
 	AJWLib_Flex_Free((flex_ptr)&(layout->person));
 	AJWLib_Flex_Free((flex_ptr)&(layout->marriage));

@@ -49,9 +49,38 @@ Scale.4:120
 
 Tree.Title:Family Tree
 
+File.Draw:Drawfile
+File.Tree:Untitled
+
+Mod.Yes:YES
+Mod.No:NO
+
 Win.Desc:Descendents of
 Win.Anc:Ancestors of
 Win.Unlkd:Unlinked
 
-Error.NoMem:Not enough free memory
-Error.Fatal:Sorry, <Task.Name> has suffered an internal error (%s) and must exit immediately
+Error.NoMem:Not enough free memory.
+Error.Prncpl:You are not marrying the principal person.
+Error.ConfigL:Error loading the choices file (%s)
+Error.ConfigS:Error saving the choices file (%s)
+Error.Load:Unable to load file: %s.
+Error.DrawS:Unable to save drawfile: %s.
+Error.Save:Unable to save file: %s.
+Error.NoLoad:You cannot load a file while there is another file already loaded
+Error.NotRoot:This is not a Roots file or is corrupt.
+Error.TooNew:This file was created in a later version of Roots and is not compatible with this version.
+Error.New:Warning: This file was created in a later version of Roots, but I will try to load it anyway.
+Error.TwoData:Warning: This file has more than one database. Using the first one encountered.
+Error.TwoLay:Warning: This file has more than one layout. Using the first one encountered.
+Error.TwoGra:Warning: This file has more than one graphics style. Using the first one encountered.
+Error.BadTag:Warning: This file contains an unknown object (type %d). Ignoring it.
+Error.Corrupt:This file is corrupt.
+Error.BadDrag:Data transfer failed: reciever died
+Error.SynD:Syntax error in dimensions file, line %d
+Error.SynP:Syntax error in person file, line %d
+Error.SynM:Syntax error in marriage file, line %d
+Error.NoDir:Cannot find graphics style %s
+Error.NoFile:Cannot find %s file in graphics style %s
+Error.NufWin:You cannot have more than %d windows open at once
+Error.Bad:Sorry, <Task.Name> has suffered an error (%s). Click Ok to continue or Cancel to quit.
+Error.Fatal:Sorry, <Task.Name> has suffered an internal error (%s) and must exit immediately.

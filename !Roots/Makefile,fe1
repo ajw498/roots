@@ -12,7 +12,6 @@ HEADERS	=	\
 LIBS	=	\
 		L:Stubs.o.asstubs\
 		L:AJWLib.o.AJWLib\
-		L:Desk.o.debug.stderr\
 		L:Desk.o.Desk
 
 
@@ -33,7 +32,7 @@ INCLUDE	=	C:
 
 TARGET		=	!RunImage
 
-CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE)
+CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2
 LINKFLAGS	=	$(LINKEXTRA) -d
 
 CC		=	cc -c $(CCFLAGS)
