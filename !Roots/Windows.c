@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.24  2000/01/06 17:19:14  AJW
+	Calls Draw_Save
+
 	Revision 1.23  1999/10/30 20:08:56  AJW
 	Added Graphics_ChangedLayout
 
@@ -121,6 +124,7 @@
 #include "GConfig.h"
 #include "Config.h"
 #include "Layout.h"
+#include "Draw.h"
 
 /*	Macros  */
 
@@ -1207,6 +1211,16 @@ Desk_bool Graphics_NewViewOk(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
+void Graphics_ExportClick(int entry,void *ref)
+{
+	switch (entry) {
+		case exportmenu_DRAW:
+			Draw_Save("Fred",menuoverwindow->layout);
+			/*menu over window is only valid if menu was clicked over a person!*/
+			break;
+	}
+}
+
 void Graphics_PersonMenuClick(int entry,void *ref)
 {
 	elementptr mother,marriage,mothermarriage;
@@ -1334,7 +1348,7 @@ void Graphics_Init(void)
 	fileinfowin=Desk_Window_Create("FileInfo",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_REDRAW,addparentswin,Desk_event_ANY,Graphics_RedrawAddParents,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,addparentswin,addparents_SECONDMARRIAGE,Graphics_AddParentsClick,NULL);
-	exportmenu=AJWLib_Menu_CreateFromMsgs("Title.Export:","Menu.Export:",NULL,NULL);
+	exportmenu=AJWLib_Menu_CreateFromMsgs("Title.Export:","Menu.Export:",Graphics_ExportClick,NULL);
 	filemenu=AJWLib_Menu_CreateFromMsgs("Title.File:","Menu.File:",NULL,NULL);
 	personmenu=AJWLib_Menu_CreateFromMsgs("Title.Person:","Menu.Person:",Graphics_PersonMenuClick,NULL);
 	mainmenu=AJWLib_Menu_CreateFromMsgs("Title.Main:","Menu.Main:",Graphics_MainMenuClick,NULL);
