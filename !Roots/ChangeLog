@@ -1,4 +1,5 @@
 v1.20
+Improved warning messages in consistency check, allows loading to continue
 Doesn't barf if fontfix is loaded
 lua graphics styles
 auto sized marriages
