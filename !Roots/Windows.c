@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.23  1999/10/30 20:08:56  AJW
+	Added Graphics_ChangedLayout
+
 	Revision 1.22  1999/10/27 16:53:23  AJW
 	Shade menu items when deleting of unlinking so you cannot delete a deleted person
 
@@ -114,6 +117,7 @@
 
 #include "Database.h"
 #include "Graphics.h"
+#include "Modules.h"
 #include "GConfig.h"
 #include "Config.h"
 #include "Layout.h"
@@ -476,6 +480,7 @@ void Graphics_AddSelected(layout *layout,int amount)
 	for (i=0;i<layout->nummarriages;i++) {
 		if (layout->marriage[i].selected) layout->marriage[i].x+=amount;
 	}
+	Modules_ChangedLayout();
 }
 
 void Graphics_ResizeWindow(windowdata *windowdata)
@@ -483,6 +488,18 @@ void Graphics_ResizeWindow(windowdata *windowdata)
 	Desk_wimp_rect box;
 	box=Layout_FindExtent(windowdata->layout,Desk_FALSE);
 	Desk_Window_SetExtent(windowdata->handle,box.min.x-Graphics_WindowBorder(),box.min.y-Graphics_WindowBorder(),box.max.x+Graphics_WindowBorder(),box.max.y+Graphics_WindowBorder());
+}
+
+void Graphics_ChangedLayout(void)
+{
+	int i;
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle) {
+			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Graphics_ResizeWindow(&(windows[i]));
+			/*Make this more efficient*/
+		}
+	}
 }
 
 void Graphics_PlotDragBox(dragdata *dragdata)
