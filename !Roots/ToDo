@@ -40,3 +40,5 @@ non zero line widths to keep fontfix happy
 
 third marriages go under the second spouse and the third marriage child can be coming from the middle of the marriage which is in the wrong place
 marriages should have lower prioity than people when being selected
+
+dragging a selectbox when the pointer is over the title does not work

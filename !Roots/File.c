@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.38 2000/11/12 13:53:12 AJW Exp $
+	$Id: File.c,v 1.39 2000/11/12 16:13:23 AJW Exp $
 
 */
 
@@ -401,6 +401,23 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		temp1=atoi(data);
 		temp2=(flags *)&temp1;
 		Layout_GEDCOMNewPersonFlags(*temp2);
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE")) {
+		elementptr person;
+
+		if (prescan) return;
+		if (Config_SeparateMarriages()) {
+			person=File_GetElementFromID(data,element_MARRIAGE);
+			Layout_GEDCOMNewPerson(person);
+		}
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._X")) {
+		if (prescan) return;
+		if (Config_SeparateMarriages()) Layout_GEDCOMNewPersonX(atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_LAYOUT._MARRIAGE._Y")) {
+		if (prescan) return;
+		if (Config_SeparateMarriages()) Layout_GEDCOMNewPersonY(atoi(data));
 
 	} else if (!Desk_stricmp(tag,"")) {
 	} else {

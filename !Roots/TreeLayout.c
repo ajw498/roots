@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.48 2000/11/06 23:46:02 AJW Exp $
+	$Id: TreeLayout.c,v 1.49 2000/11/12 16:13:30 AJW Exp $
 
 */
 
@@ -142,29 +142,61 @@ static void Layout_PlotPerson(layout *layout,elementptr person,int generation)
 
 static void Layout_PlotMarriage(layout *layout,elementptr marriage)
 {
-	elementptr person;
+	elementptr leftperson,rightperson;
 	flags flags;
 	int leftx,rightx;
 
 	AJWLib_Assert(layout!=NULL);
 	AJWLib_Assert(marriage!=none);
 	
-	person=Database_GetSpouseFromMarriage(marriage);
-	leftx=Layout_FindXCoord(layout,person);
-	person=Database_GetPrincipalFromMarriage(marriage);
-	rightx=Layout_FindXCoord(layout,person);
+	leftperson=Database_GetSpouseFromMarriage(marriage);
+	leftx=Layout_FindXCoord(layout,leftperson);
+	rightperson=Database_GetPrincipalFromMarriage(marriage);
+	rightx=Layout_FindXCoord(layout,rightperson);
 	if (leftx>rightx) {
-		int temp=leftx;
+		int temp1=leftx;
+		elementptr temp2=leftperson;
 		leftx=rightx;
-		rightx=temp;
+		leftperson=rightperson;
+		rightx=temp1;
+		rightperson=temp2;
 	}
-	leftx+=Graphics_PersonWidth();
+	leftx+=Layout_FindWidth(layout,leftperson);
 	flags.editable=1;
 	flags.moveable=0;
 	flags.linkable=1;
 	flags.snaptogrid=1;
 	flags.selectable=1;
-	Layout_AddTransient(layout,marriage,leftx,Layout_FindYCoord(layout,person),rightx-leftx,Graphics_PersonHeight(),0,0,flags);
+	Layout_AddTransient(layout,marriage,leftx,Layout_FindYCoord(layout,leftperson),rightx-leftx,Layout_FindHeight(layout,leftperson),0,0,flags);
+}
+
+void TreeLayout_AddMarriage(layout *layout,elementptr marriage)
+{
+	elementptr leftperson,rightperson;
+	flags flags;
+	int leftx,rightx;
+
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(marriage!=none);
+	
+	leftperson=Database_GetSpouseFromMarriage(marriage);
+	leftx=Layout_FindXCoord(layout,leftperson);
+	rightperson=Database_GetPrincipalFromMarriage(marriage);
+	rightx=Layout_FindXCoord(layout,rightperson);
+	if (leftx>rightx) {
+		int temp1=leftx;
+		elementptr temp2=leftperson;
+		leftx=rightx;
+		leftperson=rightperson;
+		rightx=temp1;
+		rightperson=temp2;
+	}
+	flags.editable=1;
+	flags.moveable=1;
+	flags.linkable=1;
+	flags.snaptogrid=1;
+	flags.selectable=1;
+	Layout_AddElement(layout,marriage,rightx-Graphics_MarriageWidth(),Layout_FindYCoord(layout,rightperson),Graphics_MarriageWidth(),Graphics_PersonHeight(),0,0,flags);
 }
 
 static int Layout_FindChildCoords(layout *layout,elementptr marriage)
@@ -294,13 +326,15 @@ void Layout_LayoutLines(layout *layout)
 	int i=0;
 	AJWLib_Assert(layout!=NULL);
 	Layout_RemoveTransients(layout);
-	do {
-		int FIXME; /*FIXME: assumes everyone is on the layout*/
-		elementptr marriage=Database_GetLinkedMarriages(&i);
-
-		if (marriage) Layout_PlotMarriage(layout,marriage);
-		
-	} while (i);
+	if (!Config_SeparateMarriages()) {
+		do {
+			int FIXME; /*FIXME: assumes everyone is on the layout*/
+			elementptr marriage=Database_GetLinkedMarriages(&i);
+	
+			if (marriage) Layout_PlotMarriage(layout,marriage);
+			
+		} while (i);
+	}
 	for (i=0;i<layout->numpeople;i++) Layout_PlotChildLine(layout,layout->person[i].element,layout->person[i].y);
 }
 
