@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.7  2000/01/14 13:45:57  AJW
+	Renamed Graphics.h to Windows.h
+
 	Revision 1.6  2000/01/14 13:02:49  AJW
 	Changed Graphics_ to Windows_
 
@@ -57,7 +60,7 @@
 #include <stdio.h>
 
 #include "Modules.h"
-#include "Graphics.h"
+#include "Windows.h"
 #include "Layout.h"
 
 /*	Macros  */
