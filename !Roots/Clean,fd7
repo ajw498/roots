@@ -1,3 +1,2 @@
 Dir <Obey$Dir>
-remove !RunImage
-wipe  o.* ~C~V
+make clean
