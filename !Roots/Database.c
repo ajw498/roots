@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.29 2000/06/22 21:33:57 AJW Exp $
+	$Id: Database.c,v 1.30 2000/06/26 19:43:56 AJW Exp $
 
 */
 
@@ -39,7 +39,6 @@
 #define editpersonicon_SURNAME 1
 #define editpersonicon_FORENAME 7
 #define editpersonicon_MIDDLENAMES 8
-/*#define editpersonicon_TITLE 11*/
 #define editpersonicon_SEX 9
 #define editpersonicon_DOB 10
 #define editpersonicon_DOD 11
@@ -52,8 +51,6 @@
 #define editpersonicon_USERDESC3 17
 #define editpersonicon_OK 3
 #define editpersonicon_CANCEL 2
-/*#define editpersonicon_SURNAMEMENU 2*/
-/*#define editpersonicon_TITLEMENU 13*/
 #define editpersonicon_SEXMENU 22
 
 #define edittitleicon_TEXT 0
@@ -73,16 +70,10 @@
 #define sexmenu_F 1
 #define sexmenu_U 2
 
-#define titlemenu_Mr 0
-#define titlemenu_Mrs 1
-#define titlemenu_Miss 2
-#define titlemenu_Ms 3
-#define titlemenu_Dr 4
-
 static databaseelement *database=NULL;
 static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin,edittitlewin;
-static Desk_menu_ptr sexmenu/*,titlemenu*/;
+static Desk_menu_ptr sexmenu;
 
 static void Database_FreeElement(elementptr element)
 {
@@ -124,16 +115,46 @@ Desk_bool Database_GetSelect(elementptr person)
 	return database[person].selected;
 }
 
+void Database_RemoveMarriage(elementptr marriage)
+{
+	elementptr child;
+	/*Remove marriage from chain*/
+	if (database[marriage].element.marriage.previous==none) {
+		database[database[marriage].element.marriage.principal].element.person.marriage=database[marriage].element.marriage.next;
+		if (database[marriage].element.marriage.next) {
+			database[database[marriage].element.marriage.next].element.marriage.previous=none;
+		}
+	} else {
+		database[database[marriage].element.marriage.previous].element.marriage.next=database[marriage].element.marriage.next;
+		if (database[marriage].element.marriage.next) {
+			database[database[marriage].element.marriage.next].element.marriage.previous=database[marriage].element.marriage.previous;
+		}
+	}
+	/*Remove marriage from spouse*/
+	database[database[marriage].element.marriage.spouse].element.person.marriage=none;
+	/*Unlink any children from this marriage and their siblings*/
+	child=database[marriage].element.marriage.leftchild;
+	while (child) {
+		int temp;
+		database[child].element.person.parentsmarriage=none;
+		database[child].element.person.siblingsrtol=none;
+		temp=database[child].element.person.siblingsltor;
+		database[child].element.person.siblingsltor=none;
+		child=temp;
+	}
+	Database_FreeElement(marriage);
+}
+
 void Database_UnlinkSelected(layout *layout)
 {
 	int i;
-	elementptr marriage,child;
+	elementptr marriage;
 	AJWLib_Assert(database!=NULL);
 	for (i=1;i<database[0].element.file.numberofelements;i++) {
 		switch (database[i].type) {
 			case element_PERSON:
 				/*Get parents marriage*/
-				if ((marriage=Database_GetMarriage(Database_GetMother(i)))!=none) {
+				if ((marriage=Database_GetParentsMarriage(i))!=none) {
 					/*If selection differs from parents marriage then unlink from siblings and from parents*/
 					if (database[marriage].selected!=database[i].selected) {
 						/*Remove from siblings chain*/
@@ -143,58 +164,20 @@ void Database_UnlinkSelected(layout *layout)
 						if (database[marriage].element.marriage.leftchild==i) database[marriage].element.marriage.leftchild=database[i].element.person.siblingsltor;
 						if (database[marriage].element.marriage.rightchild==i) database[marriage].element.marriage.rightchild=database[i].element.person.siblingsrtol;
 						/*Remove parents*/
-						database[i].element.person.mother=none;
-						database[i].element.person.father=none;
+						database[i].element.person.parentsmarriage=none;
 					}
 				}
 				break;
 			case element_MARRIAGE:
 				/*Remove marriage if both spouses and the marriage are not the same selection*/
 				if (database[database[i].element.marriage.principal].selected!=database[i].selected || database[database[i].element.marriage.spouse].selected!=database[i].selected) {
-					/*Remove marriage from chain*/
-					if (database[i].element.marriage.previous==none) {
-						database[database[i].element.marriage.principal].element.person.marriage=database[i].element.marriage.next;
-						if (database[i].element.marriage.next) {
-							database[database[i].element.marriage.next].element.marriage.previous=none;
-						}
-					} else {
-						database[database[i].element.marriage.previous].element.marriage.next=database[i].element.marriage.next;
-						if (database[i].element.marriage.next) {
-							database[database[i].element.marriage.next].element.marriage.previous=database[i].element.marriage.previous;
-						}
-					}
-					/*Remove marriage from spouse*/
-					database[database[i].element.marriage.spouse].element.person.marriage=none;
-					/*Unlink any children from this marriage and their siblings*/
-					child=database[i].element.marriage.leftchild;
-					while (child) {
-						int temp;
-						database[child].element.person.mother=none;
-						database[child].element.person.father=none;
-						database[child].element.person.siblingsrtol=none;
-						temp=database[child].element.person.siblingsltor;
-						database[child].element.person.siblingsltor=none;
-						child=temp;
-					}
-					Database_FreeElement(i);
 					Layout_RemoveMarriage(layout,i);
+					Database_RemoveMarriage(i);
 					Modules_ChangedStructure();
 					break;
 			}
 		}
 	}
-}
-
-Desk_bool Database_IsUnlinked(elementptr person)
-{
-	AJWLib_Assert(database!=NULL);
-	AJWLib_Assert(person!=none);
-	if (database[person].element.person.mother) return Desk_FALSE;
-	if (database[person].element.person.father) return Desk_FALSE;
-	if (database[person].element.person.marriage) return Desk_FALSE;
-	if (database[person].element.person.siblingsltor) return Desk_FALSE;
-	if (database[person].element.person.siblingsrtol) return Desk_FALSE;
-	return Desk_TRUE;
 }
 
 persondata *Database_GetPersonData(elementptr person)
@@ -204,31 +187,27 @@ persondata *Database_GetPersonData(elementptr person)
 	return &(database[person].element.person.data);
 }
 
-/*elementptr Database_GetUnlinked(elementptr person)
+elementptr Database_GetParentsMarriage(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
-	if (person==none) return database[0].element.file.unlinkedpeople;
-	return database[person].element.person.nextunlinked;
-} */
-
-/*elementptr Database_GetLinked(void)
-{
-	AJWLib_Assert(database!=NULL);
-	return database[0].element.file.linkedpeople;
-} */
+	if (person==none) return none;
+	return database[person].element.person.parentsmarriage;
+}
 
 elementptr Database_GetMother(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
-	return database[person].element.person.mother;
+	if (database[person].element.person.parentsmarriage==none) return none;
+	return database[database[person].element.person.parentsmarriage].element.marriage.spouse;
 }
 
 elementptr Database_GetFather(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	if (person==none) return none;
-	return database[person].element.person.father;
+	if (database[person].element.person.parentsmarriage==none) return none;
+	return database[database[person].element.person.parentsmarriage].element.marriage.principal;
 }
 
 elementptr Database_GetSiblingRtoL(elementptr person)
@@ -354,48 +333,6 @@ char *Database_GetFullName(elementptr person)
 	return result;
 }
 
-char *Database_GetTitledName(elementptr person)
-{
-	static char result[256];
-	AJWLib_Assert(database!=NULL);
-	strcpy(result,"");
-	if (strlen(database[person].element.person.data.title)) {
-		strcat(result,database[person].element.person.data.title);
-		strcat(result," ");
-	}
-	if (strlen(database[person].element.person.data.forename)) {
-		strcat(result,database[person].element.person.data.forename);
-		strcat(result," ");
-	}
-	if (strlen(database[person].element.person.data.surname)) {
-		strcat(result,database[person].element.person.data.surname);
-	}
-	return result;
-}
-
-char *Database_GetTitledFullName(elementptr person)
-{
-	static char result[256];
-	AJWLib_Assert(database!=NULL);
-	strcpy(result,"");
-	if (strlen(database[person].element.person.data.title)) {
-		strcat(result,database[person].element.person.data.title);
-		strcat(result," ");
-	}
-	if (strlen(database[person].element.person.data.forename)) {
-		strcat(result,database[person].element.person.data.forename);
-		strcat(result," ");
-	}
-	if (strlen(database[person].element.person.data.middlenames)) {
-		strcat(result,database[person].element.person.data.middlenames);
-		strcat(result," ");
-	}
-	if (strlen(database[person].element.person.data.surname)) {
-		strcat(result,database[person].element.person.data.surname);
-	}
-	return result;
-}
-
 static elementptr Database_GetFreeElement(void)
 {
 	elementptr newelement=none;
@@ -409,127 +346,60 @@ static elementptr Database_GetFreeElement(void)
 	return newelement;
 }
 
-static void Database_UnlinkPerson(elementptr person)
+elementptr Database_Marry(elementptr linked,elementptr unlinked)
 {
-	int wooble;
+	elementptr marriage,marriage2,marriage3;
 	AJWLib_Assert(database!=NULL);
-	database[person].element.person.father=none;
-	database[person].element.person.mother=none;
-	database[person].element.person.marriage=none;
-	database[person].element.person.siblingsltor=none;
-	database[person].element.person.siblingsrtol=none;
-}
-
-void Database_RemoveSpouse(elementptr person)
-{
-	elementptr principal,marriage,spouse;
-	AJWLib_Assert(database!=NULL);
-	marriage=Database_GetMarriage(person);
-	if (marriage==none) return;
-	if (Database_GetLeftChild(marriage)!=none) return;
-	if (Database_GetMother(person)!=none) return;
-	principal=Database_GetPrincipalFromMarriage(marriage);
-	spouse=Database_GetSpouseFromMarriage(marriage);
-	if (database[marriage].element.marriage.previous) database[database[marriage].element.marriage.previous].element.marriage.next=database[marriage].element.marriage.next;
-	if (database[marriage].element.marriage.next) database[database[marriage].element.marriage.next].element.marriage.previous=database[marriage].element.marriage.previous;
-	if (database[marriage].element.marriage.previous==none && database[marriage].element.marriage.next==none) database[principal].element.person.marriage=none;
-	database[spouse].element.person.marriage=none;
-	Database_FreeElement(marriage);
-	database[person].element.person.marriage=none;
-	Database_UnlinkPerson(person);
-	Modules_ChangedStructure();
-}
-
-void Database_RemoveParents(elementptr person)
-{
-	elementptr spouse,principal,marriage,child;
-	AJWLib_Assert(database!=NULL);
-	marriage=Database_GetMarriage(person);
-	if (marriage==none) return;
-	if (database[marriage].element.marriage.next!=none) return;
-	if (database[marriage].element.marriage.previous!=none) return;
-	spouse=Database_GetSpouseFromMarriage(marriage);
-	principal=Database_GetPrincipalFromMarriage(marriage);
-	child=Database_GetLeftChild(marriage);
-	if (child==none) return;
-	if (Database_GetMother(principal)!=none) return;
-	if (Database_GetMother(spouse)!=none) return;
-	if (Database_GetSiblingLtoR(child)!=none) return;
-    Database_FreeElement(marriage);
-	database[child].element.person.father=none;
-	database[child].element.person.mother=none;
-	Database_UnlinkPerson(principal);
-	Database_UnlinkPerson(spouse);
-	Modules_ChangedStructure();
-}
-
-void Database_RemoveChild(elementptr child)
-{
-	elementptr leftsibling,rightsibling,marriage;
-	AJWLib_Assert(database!=NULL);
-	if (child==none) return;
-	if (Database_GetMarriage(child)) return;
-	leftsibling=Database_GetSiblingRtoL(child);
-	rightsibling=Database_GetSiblingLtoR(child);
-	marriage=Database_GetMarriage(Database_GetMother(child));
-	if (marriage) {
-		if (rightsibling==none) database[marriage].element.marriage.rightchild=leftsibling; else database[rightsibling].element.person.siblingsrtol=leftsibling;
-		if (leftsibling==none) database[marriage].element.marriage.leftchild=rightsibling; else database[leftsibling].element.person.siblingsltor=rightsibling;
-	}
-	Database_UnlinkPerson(child);
-	Modules_ChangedStructure();
-}
-
-/*static void Database_UnlinkUnlinkedPerson(elementptr person)
-{
-	int i;
-	AJWLib_Assert(database!=NULL);
-	i=database[0].element.file.unlinkedpeople;
-	database[person].element.person.father=none;
-	database[person].element.person.mother=none;
-	database[person].element.person.siblingsrtol=none;
-	database[person].element.person.siblingsltor=none;
-	database[person].element.person.marriage=none;
-	if (i==person) {
-		database[0].element.file.unlinkedpeople=database[person].element.person.nextunlinked;
-	} else {
-		while (i!=none && database[i].element.person.nextunlinked!=person) i=database[i].element.person.nextunlinked;
-		if (i==none) return;
-		database[i].element.person.nextunlinked=database[person].element.person.nextunlinked;
-	}
-}*/
-
-void Database_Marry(elementptr linked,elementptr unlinked)
-{
-	elementptr marriage;
-	AJWLib_Assert(database!=NULL);
-/*	if (Database_IsUnlinked(linked)) return;*/
-/*	if (!Database_IsUnlinked(unlinked)) return;*/
-	{
-		int fixme;
-	}
-	if ((marriage=Database_GetMarriage(linked))!=none && Database_GetPrincipalFromMarriage(Database_GetMarriage(linked))!=linked) {
-		if (database[marriage].element.marriage.next==none && database[marriage].element.marriage.previous==none) {
-			/*This is the only marriage, so swap principal and spouse*/
-			elementptr temp=database[marriage].element.marriage.principal;
-			database[marriage].element.marriage.principal=database[marriage].element.marriage.spouse;
-			database[marriage].element.marriage.spouse=temp;
-		} else {
-			AJWLib_Error2_HandleMsgs("Error.Prncpl:You are not marrying the principal person.");
+	/*Check that these two people are not already married together*/
+	if ((marriage=Database_GetMarriage(linked))==none) marriage=Database_GetMarriage(unlinked);
+	marriage2=marriage;
+	while (marriage2) {
+		if ((database[marriage2].element.marriage.spouse==linked && database[marriage2].element.marriage.principal==unlinked) || (database[marriage2].element.marriage.spouse==unlinked && database[marriage2].element.marriage.principal==linked)) {
+			AJWLib_Error2_HandleMsgs("Error.Married:These two people are already married to each other.");
 		}
+		marriage2=database[marriage2].element.marriage.previous;
+	}
+	marriage2=marriage;
+	while (marriage2) {
+		if ((database[marriage2].element.marriage.spouse==linked && database[marriage2].element.marriage.principal==unlinked) || (database[marriage2].element.marriage.spouse==unlinked && database[marriage2].element.marriage.principal==linked)) {
+			AJWLib_Error2_HandleMsgs("Error.Married:These two people are already married to each other.");
+		}
+		marriage2=database[marriage2].element.marriage.next;
 	}
 	marriage=Database_GetFreeElement(); /*An error is ok, as we haven't altered the structure yet*/
 	database[marriage].type=element_MARRIAGE;
-	if (Database_GetMarriage(linked)==none) {
-		database[linked].element.person.marriage=marriage;
-		database[marriage].element.marriage.previous=none;
+	database[marriage].selected=Desk_FALSE;
+	/*Link new marriage into marriage chain*/
+	if ((marriage2=Database_GetMarriage(linked))==none) {
+		if ((marriage3=Database_GetMarriage(unlinked))==none) {
+			/*Neither people are married already*/
+			database[marriage].element.marriage.previous=none;
+			database[marriage].element.marriage.next=none;
+		} else {
+			/*unlinked is married already*/
+			database[marriage].element.marriage.next=marriage3;
+			database[marriage].element.marriage.previous=database[marriage3].element.marriage.previous;
+			database[marriage3].element.marriage.previous=marriage;
+			if (database[marriage].element.marriage.previous) database[database[marriage].element.marriage.previous].element.marriage.next=marriage;
+		}
 	} else {
-		elementptr next;
-		next=Database_GetMarriage(linked);
-		while (database[next].element.marriage.next!=none) next=database[next].element.marriage.next;
-		database[next].element.marriage.next=marriage;
-		database[marriage].element.marriage.previous=next;
+		if ((marriage3=Database_GetMarriage(unlinked))==none) {
+			/*linked is married already*/
+			database[marriage].element.marriage.next=marriage2;
+			database[marriage].element.marriage.previous=database[marriage2].element.marriage.previous;
+			database[marriage2].element.marriage.previous=marriage;
+			if (database[marriage].element.marriage.previous) database[database[marriage].element.marriage.previous].element.marriage.next=marriage;
+		} else {
+			/*Both are married already*/
+			while (database[marriage2].element.marriage.next!=none) marriage2=database[marriage2].element.marriage.next;
+			while (database[marriage3].element.marriage.previous!=none) marriage3=database[marriage3].element.marriage.previous;
+			database[marriage2].element.marriage.next=marriage;
+			database[marriage].element.marriage.previous=marriage2;
+			database[marriage3].element.marriage.previous=marriage;
+			database[marriage].element.marriage.next=marriage3;
+		}
 	}
+	database[linked].element.person.marriage=marriage;
 	database[unlinked].element.person.marriage=marriage;
 	database[marriage].element.marriage.principal=linked;
 	database[marriage].element.marriage.spouse=unlinked;
@@ -538,21 +408,8 @@ void Database_Marry(elementptr linked,elementptr unlinked)
 	strcpy(database[marriage].element.marriage.data.place,"");
 	strcpy(database[marriage].element.marriage.data.date,"");
 	strcpy(database[marriage].element.marriage.data.divorce,"");
-	database[marriage].element.marriage.next=none;
 	Modules_ChangedStructure();
-}
-
-void Database_AddParents(elementptr child,elementptr mother,elementptr father)
-{
-	elementptr marriage;
-	AJWLib_Assert(database!=NULL);
-	Desk_Error2_TryCatch(Database_Marry(mother,father);,Database_UnlinkPerson(mother); Desk_Error2_ReThrow();)
-	marriage=Database_GetMarriage(mother);
-	database[marriage].element.marriage.leftchild=child;
-	database[marriage].element.marriage.rightchild=child;
-	database[child].element.person.mother=Database_GetSpouseFromMarriage(marriage);
-	database[child].element.person.father=Database_GetPrincipalFromMarriage(marriage);
-	Modules_ChangedStructure();
+	return marriage;
 }
 
 void Database_AddChild(elementptr marriage,elementptr child)
@@ -563,19 +420,9 @@ void Database_AddChild(elementptr marriage,elementptr child)
 	database[marriage].element.marriage.rightchild=child;
 	if (database[marriage].element.marriage.leftchild==none) database[marriage].element.marriage.leftchild=child;
 	if (database[child].element.person.siblingsrtol!=none) database[database[child].element.person.siblingsrtol].element.person.siblingsltor=child;
-	database[child].element.person.mother=database[marriage].element.marriage.spouse;
-	database[child].element.person.father=database[marriage].element.marriage.principal;
+	database[child].element.person.parentsmarriage=marriage;
 	Modules_ChangedStructure();
 }
-
-/*void Database_LinkPerson(elementptr person)
-{
-	AJWLib_Assert(database!=NULL);
-	if (database[0].element.file.linkedpeople!=none) return;
-	Database_UnlinkUnlinkedPerson(person);
-	database[0].element.file.linkedpeople=person;
-	Modules_ChangedStructure();
-} */
 
 void Database_EditPerson(elementptr person)
 {
@@ -607,6 +454,12 @@ void Database_EditPerson(elementptr person)
 	Desk_Window_Show(editpersonwin,editingperson ? Desk_open_WHEREVER : Desk_open_CENTERED);
 	Desk_Icon_SetCaret(editpersonwin,editpersonicon_SURNAME);
 	editingperson=person;
+}
+
+char *Database_GetTitle(void)
+{
+	AJWLib_Assert(database!=NULL);
+	return database[0].element.file.filetitle;
 }
 
 void Database_EditTitle(void)
@@ -725,8 +578,7 @@ elementptr Database_Add(void)
 	AJWLib_Assert(database!=NULL);
 	newperson=Database_GetFreeElement(); /*Ok if an error is thrown*/
 	database[newperson].type=element_PERSON;
-	database[newperson].element.person.mother=none;
-	database[newperson].element.person.father=none;
+	database[newperson].element.person.parentsmarriage=none;
 	database[newperson].element.person.siblingsrtol=none;
 	database[newperson].element.person.siblingsltor=none;
 	database[newperson].element.person.marriage=none;
@@ -752,12 +604,6 @@ static void Database_SexMenuClick(int entry,void *ref)
 	Desk_Icon_SetText(editpersonwin,editpersonicon_SEX,Desk_Menu_GetText(sexmenu,entry));
 }
 
-/*static void Database_TitleMenuClick(int entry,void *ref)
-{
-	AJWLib_Assert(database!=NULL);
-	Desk_Icon_SetText(editpersonwin,editpersonicon_TITLE,Desk_Menu_GetText(titlemenu,entry));
-} */
-
 int Database_GetNumPeople(void)
 {
 	int numpeople=0,i;
@@ -766,12 +612,6 @@ int Database_GetNumPeople(void)
 		if (database[i].type==element_PERSON) numpeople++;
 	}
 	return numpeople;
-}
-
-char *Database_GetTitle(void)
-{
-	AJWLib_Assert(database!=NULL);
-	return database[0].element.file.filetitle;
 }
 
 int Database_GetSize(void)
@@ -870,6 +710,4 @@ void Database_Init(void)
 	AJWLib_Window_KeyHandler(editmarriagewin,editmarriageicon_OK,Database_OkEditMarriageWindow,editmarriageicon_CANCEL,Database_CancelEditMarriageWindow,NULL);
 	sexmenu=AJWLib_Menu_CreateFromMsgs("Title.Sex:","Menu.Sex:M,F,U",Database_SexMenuClick,NULL);
 	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_SEXMENU,editpersonicon_SEX,sexmenu,Desk_button_MENU | Desk_button_SELECT);
-/*	titlemenu=AJWLib_Menu_CreateFromMsgs("Title.Title:","Menu.Title:",Database_TitleMenuClick,NULL);
-	AJWLib_Menu_AttachPopup(editpersonwin,editpersonicon_TITLEMENU,editpersonicon_TITLE,titlemenu,Desk_button_MENU | Desk_button_SELECT);*/
 }

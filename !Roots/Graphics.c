@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.33 2000/06/22 21:33:59 AJW Exp $
+	$Id: Graphics.c,v 1.34 2000/06/26 19:43:59 AJW Exp $
 
 */
 
@@ -86,9 +86,6 @@
 #define NAME           "name"
 #define MIDDLENAMES    "middlenames"
 #define FULLNAME       "fullname"
-#define TITLE          "title"
-#define TITLEDNAME     "titledname"
-#define TITLEDFULLNAME "titledfullname"
 #define SEX            "sex"
 #define DOB            "dob"
 #define DOD            "dod"
@@ -334,9 +331,6 @@ static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum
 				else if (!strcmp(values[7],NAME)) field=personfieldtype_NAME;
 				else if (!strcmp(values[7],MIDDLENAMES)) field=personfieldtype_MIDDLENAMES;
 				else if (!strcmp(values[7],FULLNAME)) field=personfieldtype_FULLNAME;
-				else if (!strcmp(values[7],TITLE)) field=personfieldtype_TITLE;
-				else if (!strcmp(values[7],TITLEDNAME)) field=personfieldtype_TITLEDNAME;
-				else if (!strcmp(values[7],TITLEDFULLNAME)) field=personfieldtype_TITLEDFULLNAME;
 				else if (!strcmp(values[7],SEX)) field=personfieldtype_SEX;
 				else if (!strcmp(values[7],DOB)) field=personfieldtype_DOB;
 				else if (!strcmp(values[7],DOD)) field=personfieldtype_DOD;
@@ -565,35 +559,6 @@ int Graphics_GetSize(void)
 		size+=5; /*String terminators*/
 	}
 	return size;
-}
-
-void Graphics_DeclareFonts(void)
-{
-	int i;
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.title.font));
-	for (i=0;i<graphicsdata.numpersonobjects;i++) {
-		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.person[i].details.textlabel.properties.font));
-		}
-	}
-	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
-		if (graphicsdata.personfields[i].plot) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.personfields[i].textproperties.font));
-		}
-	}
-	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
-		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.marriage[i].details.textlabel.properties.font));
-		}
-	}
-	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
-		if (graphicsdata.marriagefields[i].plot) {
-			Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,graphicsdata.marriagefields[i].textproperties.font));
-		}
-	}
-	Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_PDriver_DeclareFont,0,0,0));
 }
 
 static void Graphics_ClaimFonts(void)
@@ -873,20 +838,11 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 				case personfieldtype_MIDDLENAMES:
 					strcpy(fieldtext,Database_GetPersonData(person)->middlenames);
 					break;
-				case personfieldtype_TITLEDNAME:
-					strcpy(fieldtext,Database_GetTitledName(person));
-					break;
 				case personfieldtype_NAME:
 					strcpy(fieldtext,Database_GetName(person));
 					break;
-				case personfieldtype_TITLEDFULLNAME:
-					strcpy(fieldtext,Database_GetTitledFullName(person));
-					break;
 				case personfieldtype_FULLNAME:
 					strcpy(fieldtext,Database_GetFullName(person));
-					break;
-				case personfieldtype_TITLE:
-					strcpy(fieldtext,Database_GetPersonData(person)->title);
 					break;
 				case personfieldtype_SEX:
 					sprintf(fieldtext,"%c",Database_GetPersonData(person)->sex);

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.70 2000/06/22 21:34:03 AJW Exp $
+	$Id: Windows.c,v 1.71 2000/06/26 19:44:03 AJW Exp $
 
 */
 
@@ -476,14 +476,26 @@ static void Windows_LinkDragEnd(void *ref)
 				if (dragdata->person==dragdata->windowdata->layout->person[i].person) return;
 				/*Check that both people are in the same generation*/
 				if (dragdata->origmousey!=Layout_NearestGeneration(mousey)) return;
-				Database_Marry(dragdata->windowdata->layout->person[i].person,dragdata->person);
-				{
-					int Errors;
-				}
-				/*put marriage next to spouse rather than principal?*/
-				Layout_AddMarriage(dragdata->windowdata->layout,Database_GetMarriage(dragdata->person),dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth(),dragdata->origmousey);
-				Windows_UnselectAll(dragdata->windowdata);
-				break;
+				Desk_Error2_Try {
+					volatile elementptr marriage;
+					marriage=Database_Marry(dragdata->windowdata->layout->person[i].person,dragdata->person);
+					Desk_Error2_Try {
+						int startx,finishx,marriagex;
+						/*Marriage is put next to the person that the drag was started on*/
+						/*Find out if we need to put it to the left or right of the person*/
+						startx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->person);
+						finishx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->windowdata->layout->person[i].person);
+						if (startx<finishx) marriagex=startx+Graphics_PersonWidth(); else marriagex=startx-Graphics_MarriageWidth();
+						Layout_AddMarriage(dragdata->windowdata->layout,marriage,marriagex,dragdata->origmousey);
+						Windows_UnselectAll(dragdata->windowdata);
+					} Desk_Error2_Catch {
+						Database_RemoveMarriage(marriage);
+						Desk_Error2_ReThrow();
+					} Desk_Error2_EndCatch
+				} Desk_Error2_Catch {
+					AJWLib_Error2_Report("%s");
+				} Desk_Error2_EndCatch
+				return;
 			}
 		}
 	}
@@ -493,7 +505,7 @@ static void Windows_LinkDragEnd(void *ref)
 				/*Check that the person does not have parents already*/
 				if (Database_GetMother(dragdata->person)) return;
 				/*Check that the person is in the right generation*/
-				if (dragdata->origmousey+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow()!=Layout_NearestGeneration(mousey)) return;
+				if (Layout_NearestGeneration((dragdata->origmousey)+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())!=Layout_NearestGeneration(mousey)) return;
 				Database_AddChild(dragdata->windowdata->layout->marriage[i].marriage,dragdata->person);
 				Windows_UnselectAll(dragdata->windowdata);
 				break;
@@ -901,8 +913,8 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 						case element_PERSON:
 							Windows_SetUpPersonMenu();
 							/*No break;*/
-						case element_MARRIAGE:
-							AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);
+/*						case element_MARRIAGE:
+							AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);*/ /*Temporary, until selected descendents etc. works again*/
 					}
 					Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 					break;
@@ -1093,14 +1105,14 @@ static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *win
 	Desk_UNUSED(block);
 	for (i=0;i<MAXWINDOWS;i++)
 		if (windows[i].handle!=0)
-			if (windows[i].type==wintype_NORMAL || windows[i].type==wintype_CLOSERELATIVES) found++;
+			if (windows[i].type==wintype_NORMAL) found++;
 	AJWLib_Assert(found>0);
 	switch (windowdata->type) {
 		case wintype_NORMAL:
 			if (found<=1) {
 				/*Warn if unsaved data*/
 				if (File_GetModified()) {
-					AJWLib_Window_OpenDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
+					AJWLib_Window_OpenTransient(unsavedwin);
 				} else {
 					Windows_CloseAllWindows();
 				}
@@ -1108,9 +1120,6 @@ static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *win
 				Desk_Window_Delete(windowdata->handle);
 				windowdata->handle=0;
 			}
-			break;
-		case wintype_CLOSERELATIVES:
-			/*d*/
 			break;
 		default:
 			Layout_Free(windowdata->layout);
@@ -1591,5 +1600,6 @@ void Windows_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_CANCEL,Windows_Cancel,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fileconfigwin,fileconfig_REREAD,Windows_FileConfigReRead,NULL);
 	AJWLib_Window_KeyHandler(fileconfigwin,fileconfig_OK,Windows_FileConfigOk,fileconfig_CANCEL,Windows_Cancel,NULL);
+	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
 }
 

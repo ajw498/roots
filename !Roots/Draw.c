@@ -2,7 +2,7 @@
 	FT - Draw
 	© Alex Waugh 1999
 
-	$Id: Draw.c,v 1.9 2000/06/17 22:17:50 AJW Exp $
+	$Id: Draw.c,v 1.10 2000/06/26 19:43:58 AJW Exp $
 
 */
 
@@ -27,7 +27,7 @@ static os_trfm matrix;
 static void Draw_SetMatrix(int scale,int originx,int originy)
 {
 	int factor;
-	factor=(scale<<24)/100;
+	factor=scale*((1<<24)/100);
 	matrix.entries[0][0]=factor;
 	matrix.entries[0][1]=0;
 	matrix.entries[1][0]=0;

@@ -8,25 +8,16 @@ Sex.M:Male
 Sex.F:Female
 Sex.U:Unknown
 
-Title.Mr:Mr
-Title.Mrs:Mrs
-Title.Miss:Miss
-Title.Ms:Ms
-Title.Dr:Dr
-
 Title.IconBar:<Task.Name>
 Menu.IconBar:Info,Choices...,Quit
 
 Title.Sex:Sex
 Menu.Sex:<Sex.M>,<Sex.F>,<Sex.U>
 
-Title.Title:Title
-Menu.Title:<Title.Mr>,<Title.Mrs>,<Title.Miss>,<Title.Ms>,<Title.Dr>
-
 Title.Surname:Surnames
 
 Title.Main:<Task.Name>
-Menu.Main:File,Person,Select,New view...,Scale view...
+Menu.Main:File,Person,Select,~New view...,Scale view...
 
 Title.Select:Select
 Menu.Select:Descendents,Ancestors,Siblings,Spouses
@@ -66,7 +57,7 @@ User.Desc2:Status
 User.Desc3:Other
 
 Error.NoMem:Not enough free memory.
-Error.Prncpl:You are not marrying the principal person.
+Error.Married:These two people are already married to each other.
 Error.ConfigL:Error loading the choices file (%s)
 Error.ConfigS:Error saving the choices file (%s)
 Error.Choices:Error creating choices directory (%s)
