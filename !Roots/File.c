@@ -2,40 +2,19 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.14 2000/02/26 00:05:45 uid1 Exp $
+	$Id: File.c,v 1.15 2000/02/26 17:47:24 uid1 Exp $
 
 */
 
-#include "Desk.Window.h"
 #include "Desk.Error.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
 #include "Desk.Msgs.h"
-#include "Desk.Drag.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
 #include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.GFX.h"
-#include "Desk.Font2.h"
-#include "Desk.ColourTran.h"
+#include "Desk.Icon.h"
+#include "Desk.KernelSWIs.h"
 
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
 #include "AJWLib.Msgs.h"
-#include "AJWLib.Icon.h"
 #include "AJWLib.File.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.Str.h"
 #include "AJWLib.Assert.h"
-#include "AJWLib.Draw.h"
-#include "AJWLib.DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -51,8 +30,18 @@
 #define FILEID "Root"
 #define FILEVERSION 100
 
+#define SWI_Territory_ConvertStandardDateAndTime 0x4304C
+
 static char currentfilename[256],oldfilename[256],filedate[256];
 static Desk_bool modified=Desk_FALSE,oldmodified;
+
+void File_GetCurrentTime(void)
+{
+	char *buffer[5];
+	*((int *)buffer)=3;
+	Desk_OS_Word(Desk_osword_READCMOSCLOCK,buffer);
+	Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Territory_ConvertStandardDateAndTime,-1,buffer,filedate,sizeof(filedate)));
+}
 
 Desk_bool File_SaveFile(char *filename,void *ref)
 {
@@ -77,7 +66,7 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	oldmodified=modified;
 	modified=Desk_FALSE; /*This is assumed to have been ok unless File_Result told otherwise, as File_result does not get called if all ok when save button is clicked on */
 	Windows_FilenameChanged(currentfilename);
-	/*update date*/
+	File_GetCurrentTime();
     return Desk_TRUE;
 }
 
@@ -85,6 +74,7 @@ void File_LoadFile(char *filename)
 {
 	FILE *file=NULL;
 	char fileid[5];
+	char fivebytedate[5];
 	layout *layout=NULL;
 	Desk_bool graphicsloaded=Desk_FALSE;
 	int fileversion;
@@ -141,7 +131,8 @@ void File_LoadFile(char *filename)
 	strcpy(currentfilename,filename);
 	modified=Desk_FALSE;
 	Windows_FilenameChanged(currentfilename);
-	/*update date*/
+	Desk_File_Date(filename,fivebytedate);
+	Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Territory_ConvertStandardDateAndTime,-1,fivebytedate,filedate,sizeof(filedate)));
 	/*Error handling*/
 }
 
@@ -149,13 +140,13 @@ void File_New(void)
 {
 	modified=Desk_FALSE;
 	strcpy(currentfilename,"Untitled");
-	strcpy(filedate,"Tomorrow"); /**/
 	Windows_FilenameChanged(currentfilename);
 	Database_New();
 	Graphics_LoadStyle(Config_GraphicsStyle());
 	Windows_OpenWindow(wintype_UNLINKED,none,0,100,NULL);
 	Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
 	Windows_LayoutNormal(NULL);
+	File_GetCurrentTime();
 }
 
 void File_Remove(void)
@@ -181,7 +172,6 @@ int File_GetSize(void)
 	size+=Database_GetSize();
 	size+=Graphics_GetSize();
 	size+=Windows_GetSize();
-	/*Do sizes include tags?*/
 	return size;
 }
 
