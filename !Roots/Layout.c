@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.68 2001/02/03 20:50:35 AJW Exp $
+	$Id: Layout.c,v 1.69 2001/02/04 13:32:47 AJW Exp $
 
 */
 
@@ -357,7 +357,7 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 	for (i=0;i<layout->numtransients;i++) {
 		if ((originx+((layout->transients[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
 			if ((originx+((layout->transients[i].x+layout->transients[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
-				if ((originy+((layout->transients[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
+				if ((originy+((layout->transients[i].y-Graphics_GapWidth()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->transients[i].y+layout->transients[i].height+Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
 						Graphics_PlotElement(layout,layout->transients[i].element,scale,originx,originy,layout->transients[i].x,layout->transients[i].y,layout->transients[i].width,layout->transients[i].height,plotselection);
 					}
@@ -368,7 +368,7 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 	for (i=0;i<layout->numpeople;i++) {
 		if ((originx+((layout->person[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
 			if ((originx+((layout->person[i].x+layout->person[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
-				if ((originy+((layout->person[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
+				if ((originy+((layout->person[i].y-Graphics_GapWidth()-Graphics_GapHeightAbove()-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->person[i].y+layout->person[i].height+Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
 						Graphics_PlotElement(layout,layout->person[i].element,scale,originx,originy,layout->person[i].x,layout->person[i].y,layout->person[i].width,layout->person[i].height,plotselection);
 					}
@@ -405,7 +405,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.68 2001/02/03 20:50:35 AJW Exp $
+	$Id: Layout.c,v 1.69 2001/02/04 13:32:47 AJW Exp $
 
 */
 
