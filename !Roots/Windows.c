@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.96 2000/11/12 13:53:20 AJW Exp $
+	$Id: Windows.c,v 1.97 2000/11/13 20:26:19 AJW Exp $
 
 */
 
@@ -751,7 +751,7 @@ static void Windows_PersonMenuClick(int entry,void *ref)
 			Database_Edit(mousedata.element);
 			break;
 		case personmenu_DELETE:
-			Database_DeleteSelected(mousedata.window->layout);
+			Layout_DeleteSelected(mousedata.window->layout);
 			AJWLib_Menu_Shade(personmenu,entry);
 			break;
 	}

@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.50 2000/11/13 00:07:18 AJW Exp $
+	$Id: TreeLayout.c,v 1.51 2000/11/13 20:26:18 AJW Exp $
 
 */
 
@@ -57,21 +57,18 @@ void TreeLayout_CheckForUnlink(layout *layout,elementptr i)
 			if ((marriage=Database_GetMarriage(i))!=none) {
 				/*If spouses are on different generations then remove the marriage*/
 				if (Layout_FindYCoord(layout,Database_GetPrincipalFromMarriage(marriage))!=Layout_FindYCoord(layout,Database_GetSpouseFromMarriage(marriage))) {
-					Layout_RemoveElement(layout,marriage);
-					Database_RemoveMarriage(marriage);
+					Database_RemoveElement(layout,marriage);
 				} else if (Config_SeparateMarriages()) {
 					/*If person is not on same generation as their marriage then remove the marriage*/
 					if (y!=Layout_FindYCoord(layout,marriage)) {
-						Layout_RemoveElement(layout,marriage);
-						Database_RemoveMarriage(marriage);
+						Database_RemoveElement(layout,marriage);
 					}
 				}
 			}
 			break;
 		case element_MARRIAGE:
 			if (Layout_FindYCoord(layout,Database_GetPrincipalFromMarriage(i))!=y || Layout_FindYCoord(layout,Database_GetSpouseFromMarriage(i))!=y) {
-				Layout_RemoveElement(layout,i); /*Ignored if element is not in layout*/
-				Database_RemoveMarriage(i);
+				Database_RemoveElement(layout,i);
 			}
 			break;
 		default:
