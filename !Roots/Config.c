@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Config.c,v $
+	Revision 1.3  1999/10/12 14:24:28  AJW
+	Added Config_ScrollDistance
+
 	Revision 1.2  1999/10/12 14:11:39  AJW
 	Added Config_GraphicsStyle, Config_Snap, Config_SnapDistance, Config_ScrollSpeed
 
@@ -18,6 +21,7 @@ static char graphicsstyle[256]="Default";
 static Desk_bool snap=Desk_TRUE;
 static int snapdistance=30;
 static int scrollspeed=1;
+static int scrolldistance=40;
 
 char *Config_GraphicsStyle(void)
 {
@@ -37,4 +41,9 @@ int Config_SnapDistance(void)
 int Config_ScrollSpeed(void)
 {
 	return scrollspeed;
+}
+
+int Config_ScrollDistance(void)
+{
+	return scrolldistance;
 }
