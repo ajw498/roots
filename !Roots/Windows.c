@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.100 2000/11/21 20:04:28 AJW Exp $
+	$Id: Windows.c,v 1.101 2000/11/21 20:33:41 AJW Exp $
 
 */
 
@@ -665,6 +665,7 @@ static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
 		Database_SetMarriageUserDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i));
 		Database_SetMarriageGEDCOMDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i));
 	}
+	Config_SetJoinMarriages(Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_JOINMARRIAGES));
 	if (Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_OK),AJWLib_Msgs_TempLookup("Icon.Set:"))) {
 		Config_SetSeparateMarriages(NULL,Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES));
 		File_LoadGEDCOM(NULL,Desk_TRUE);
@@ -685,7 +686,15 @@ static Desk_bool Windows_FileConfigSaveAsDefault(Desk_event_pollblock *block,voi
 	return Desk_TRUE;
 }
 
-static void Windows_OpenFileConfig(void)
+static Desk_bool Windows_FileConfigSeperateClick(Desk_event_pollblock *block,void *ref)
+{
+	Desk_UNUSED(ref);
+	if (block) if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	Desk_Icon_SetShade(fieldconfigwin,fieldconfig_JOINMARRIAGES,Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES));
+	return Desk_TRUE;
+}
+
+void Windows_OpenFileConfig(void)
 {
 	int i;
 
@@ -698,6 +707,8 @@ static void Windows_OpenFileConfig(void)
 		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,Database_GetMarriageGEDCOMDesc(i));
 	}
 	Desk_Icon_SetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES,Config_SeparateMarriages());
+	Desk_Icon_SetSelect(fieldconfigwin,fieldconfig_JOINMARRIAGES,Config_JoinMarriages());
+	Windows_FileConfigSeperateClick(NULL,NULL);
 	Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Set:"));
 	Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
 	Desk_Icon_SetCaret(fieldconfigwin,fieldconfig_USERPERSONBASE);
@@ -922,6 +933,7 @@ void Windows_Init(void)
 	fieldconfigwin=Desk_Window_Create("FieldConfig",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_SAVEASDEFAULT,Windows_FileConfigSaveAsDefault,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_SEPARATEMARRIAGES,Windows_FileConfigSeperateClick,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_KeyHandler(fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);

@@ -12,6 +12,8 @@ char *Config_GraphicsStyle(void);
 
 void Config_SaveFileConfig(void);
 void Config_LoadFileConfig(void);
+void Config_SetJoinMarriages(Desk_bool join);
+Desk_bool Config_JoinMarriages(void);
 Desk_bool Config_SeparateMarriages(void);
 void Config_SetSeparateMarriages(layout *layout,Desk_bool separate);
 Desk_bool Config_ImportGraphicsStyle(void);
