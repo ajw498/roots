@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Drawfile.c,v $
+	Revision 1.4  2000/01/08 16:09:05  AJW
+	Changed to Drawfile
+
 	Revision 1.3  2000/01/07 17:52:27  AJW
 	Got Lines and boxes outputting to a drawfile correctly
 
@@ -59,17 +62,29 @@
 #include "GConfig.h"
 #include "Config.h"
 #include "Layout.h"
+#include "Drawfile.h"
 
 extern graphics graphicsdata;
-int xoffset=0,yoffset=0; /*Euch!*/
+drawfile_diagram *drawfile=NULL;
+int xoffset=0,yoffset=0;
 
-void Draw_PlotRectangle(drawfile_diagram **drawfile,int x,int y,int width,int height,int linethickness,unsigned int colour,Desk_bool filled)
+void Drawfile_PlotRectangle(int x,int y,int width,int height,int linethickness,unsigned int colour)
+{
+	Drawfile_PlotRectangle2(x,y,width,height,linethickness,colour,Desk_FALSE);
+}
+
+void Drawfile_PlotRectangleFilled(int x,int y,int width,int height,int linethickness,unsigned int colour)
+{
+	Drawfile_PlotRectangle2(x,y,width,height,linethickness,colour,Desk_TRUE);
+}
+
+void Drawfile_PlotRectangle2(int x,int y,int width,int height,int linethickness,unsigned int colour,Desk_bool filled)
 {
 	int *object;
 	const int sizeofpath=96;
-	int currentsize=AJWLib_Flex_Size((flex_ptr)drawfile);
-	AJWLib_Flex_Extend((flex_ptr)drawfile,currentsize+sizeofpath);
-	object=(int *)((char*)(*drawfile)+currentsize);
+	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
+	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=2; /*Path object*/
 	object[1]=sizeofpath;
 	object[2]=(x+xoffset)<<8; /*Boundingbox*/
@@ -97,13 +112,13 @@ void Draw_PlotRectangle(drawfile_diagram **drawfile,int x,int y,int width,int he
 }
 
 
-void Draw_PlotLine(drawfile_diagram **drawfile,int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour)
+void Drawfile_PlotLine(int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour)
 {
 	int *object;
 	const int sizeofpath=68;
-	int currentsize=AJWLib_Flex_Size((flex_ptr)drawfile);
-	AJWLib_Flex_Extend((flex_ptr)drawfile,currentsize+sizeofpath);
-	object=(int *)((char*)(*drawfile)+currentsize);
+	int currentsize=AJWLib_Flex_Size((flex_ptr)&drawfile);
+	AJWLib_Flex_Extend((flex_ptr)&drawfile,currentsize+sizeofpath);
+	object=(int *)(((char*)drawfile)+currentsize); /*Casting to get addition correct*/
 	object[0]=2; /*Path object*/
 	object[1]=sizeofpath;
 	object[2]=(minx+xoffset)<<8; /*Boundingbox*/
@@ -123,22 +138,22 @@ void Draw_PlotLine(drawfile_diagram **drawfile,int minx,int miny,int maxx,int ma
 	object[16]=0; /*End path*/
 }
 
-void Draw_PlotPerson(drawfile_diagram **drawfile,int x,int y,Desk_bool child)
+void Drawfile_PlotPerson(int x,int y,Desk_bool child)
 {
 	int i;
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		switch (graphicsdata.person[i].type) {
 			case graphictype_RECTANGLE:
-				Draw_PlotRectangle(drawfile,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour,Desk_FALSE);
+				Drawfile_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour,Desk_FALSE);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Draw_PlotRectangle(drawfile,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour,Desk_TRUE);
+				Drawfile_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour,Desk_TRUE);
 				break;
 			case graphictype_CHILDLINE:
 				if (!child) break;
 				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
 			case graphictype_LINE:
-				Draw_PlotLine(drawfile,x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				Drawfile_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 /*			case graphictype_TEXTLABEL:
 				Desk_Font_SetFont(graphicsdata.person[i].details.textlabel.properties.font->handle);
@@ -185,26 +200,26 @@ void Draw_PlotPerson(drawfile_diagram **drawfile,int x,int y,Desk_bool child)
 }
 
 /*char fontarraythingy
-void Draw_PlotText(drawfile_diagram **drawfile,int x,int y,char *font,char *text,unsigned int bgcolour, unsigned int fgcolour)
+void Drawfile_PlotText(drawfile_diagram **drawfile,int x,int y,char *font,char *text,unsigned int bgcolour, unsigned int fgcolour)
 {
 	d
 }
 */
-void Draw_PlotMarriage(drawfile_diagram **drawfile,int x,int y,elementptr marriage,Desk_bool childline)
+void Drawfile_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline)
 {
 	int i;
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		switch (graphicsdata.marriage[i].type) {
 			case graphictype_RECTANGLE:
-				Draw_PlotRectangle(drawfile,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour,Desk_FALSE);
+				Drawfile_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour,Desk_FALSE);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Draw_PlotRectangle(drawfile,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour,Desk_TRUE);
+				Drawfile_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour,Desk_TRUE);
 				break;
 			case graphictype_CHILDLINE:
 				if (!childline) break;
 			case graphictype_LINE:
-				Draw_PlotLine(drawfile,x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				Drawfile_PlotLine(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 /*			case graphictype_TEXTLABEL:
 				Desk_Font_SetFont(graphicsdata.marriage[i].details.textlabel.properties.font->handle);
@@ -228,37 +243,36 @@ void Draw_PlotMarriage(drawfile_diagram **drawfile,int x,int y,elementptr marria
 	}*/
 }
 
-void Draw_PlotChildren(drawfile_diagram **drawfile,int leftx,int rightx,int y)
+void Drawfile_PlotChildren(int leftx,int rightx,int y)
 {
-	Draw_PlotLine(drawfile,leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
+	Drawfile_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
 }
 
-void Draw_Save(char *filename,layout *layout)
+void Drawfile_Save(char *filename,layout *layout)
 {
 	int i=0;
-	drawfile_diagram *drawfile;
 	Desk_wimp_rect box;
 	AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
 	strcpy(drawfile->tag,"Draw");
 	drawfile->major_version=201;
 	drawfile->minor_version=0;
-	strcpy(drawfile->source,"FT          "); /*Padded with spaces*/
+	strcpy(drawfile->source,"Roots       "); /*Padded with spaces*/
 	box=Layout_FindExtent(layout,Desk_FALSE);
-	xoffset=-box.min.x; /*Not global? add a bit more to give a gap?*/
+	xoffset=-box.min.x;
 	yoffset=-box.min.y;
 	drawfile->bbox.min.x=0;
 	drawfile->bbox.min.y=0;
 	drawfile->bbox.max.x=(box.max.x+xoffset)<<8;
 	drawfile->bbox.max.y=(box.max.y+yoffset)<<8;
 	for (i=0;i<layout->numchildren;i++) {
-		Draw_PlotChildren(&drawfile,layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
+		Drawfile_PlotChildren(layout->children[i].leftx,layout->children[i].rightx,layout->children[i].y);
 	}
-		for (i=layout->nummarriages-1;i>=0;i--) {
-			Draw_PlotMarriage(&drawfile,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline);
-		}
-		for (i=layout->numpeople-1;i>=0;i--) {
-			Draw_PlotPerson(&drawfile,layout->person[i].x,layout->person[i].y,layout->person[i].child);
-		}
+	for (i=layout->nummarriages-1;i>=0;i--) {
+		Drawfile_PlotMarriage(layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline);
+	}
+	for (i=layout->numpeople-1;i>=0;i--) {
+		Drawfile_PlotPerson(layout->person[i].x,layout->person[i].y,layout->person[i].child);
+	}
 	Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
 	AJWLib_Flex_Free((flex_ptr)&drawfile);
 }
