@@ -2,7 +2,7 @@
 	FT - Draw
 	© Alex Waugh 1999
 
-	$Id: Draw.c,v 1.11 2000/07/22 19:04:49 AJW Exp $
+	$Id: Draw.c,v 1.12 2001/02/04 13:32:46 AJW Exp $
 
 */
 
@@ -39,23 +39,23 @@ static void Draw_SetMatrix(int scale,int originx,int originy)
 void Draw_PlotRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
 {
 	Desk_ColourTrans_SetGCOL(colour,ECF,0);
-	Draw_SetMatrix(scale,originx,originy);
-	AJWLib_Draw_PlotRectangle(x,y,width,height,linethickness,&matrix);
+	Draw_SetMatrix(scale,originx+(x*scale)/100,originy+(y*scale)/100);
+	AJWLib_Draw_PlotRectangle(0,0,width,height,linethickness,&matrix);
 }
 
 void Draw_PlotRectangleFilled(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
 {
 	Desk_UNUSED(linethickness);
 	Desk_ColourTrans_SetGCOL(colour,ECF,0);
-	Draw_SetMatrix(scale,originx,originy);
-	AJWLib_Draw_PlotRectangleFilled(x,y,width,height,&matrix);
+	Draw_SetMatrix(scale,originx+(x*scale)/100,originy+(y*scale)/100);
+	AJWLib_Draw_PlotRectangleFilled(0,0,width,height,&matrix);
 }
 
 void Draw_PlotLine(int scale,int originx,int originy,int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour)
 {
 	Desk_ColourTrans_SetGCOL(colour,ECF,0);
-	Draw_SetMatrix(scale,originx,originy);
-	AJWLib_Draw_PlotLine(minx,miny,maxx,maxy,linethickness,&matrix);
+	Draw_SetMatrix(scale,originx+(minx*scale)/100,originy+(miny*scale)/100);
+	AJWLib_Draw_PlotLine(0,0,maxx-minx,maxy-miny,linethickness,&matrix);
 }
 
 void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
@@ -82,14 +82,14 @@ void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char
 void Draw_EORRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
 {
 	Desk_ColourTrans_SetGCOL(colour,0,3);
-	Draw_SetMatrix(scale,originx,originy);
-	AJWLib_Draw_PlotRectangle(x,y,width,height,linethickness,&matrix);
+	Draw_SetMatrix(scale,originx+(x*scale)/100,originy+(y*scale)/100);
+	AJWLib_Draw_PlotRectangle(0,0,width,height,linethickness,&matrix);
 }
 
 void Draw_EORRectangleFilled(int scale,int originx,int originy,int x,int y,int width,int height,unsigned int colour)
 {
 	Desk_ColourTrans_SetGCOL(colour,0,3);
-	Draw_SetMatrix(scale,originx,originy);
-	AJWLib_Draw_PlotRectangleFilled(x,y,width,height,&matrix);
+	Draw_SetMatrix(scale,originx+(x*scale)/100,originy+(y*scale)/100);
+	AJWLib_Draw_PlotRectangleFilled(0,0,width,height,&matrix);
 }
 
