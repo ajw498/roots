@@ -1,0 +1,55 @@
+
+handle=ClaimFont("Trinity.Medium",12);
+titlehandle=ClaimFont("Homerton.Bold.Oblique",24);
+
+red=Colour(255,0,0);
+green=Colour(0,255,0);
+blue=Colour(0,0,255);
+black=Colour(0,0,0);
+grey=Colour(245,245,245);
+white=Colour(255,255,255);
+
+gapheightabove=50;
+gapheightbelow=50;
+personwidth=280;
+personheight=105;
+gapwidth=105;
+marriagewidth=84;
+windowborder=28;
+titleheight=105;
+
+--wibble=0/0;
+
+function RedrawMarriage(marriage,x,y,width,height)
+PlotLine(x,y+30,x+width,y+30,0,black);
+PlotLine(x,y+70,x+width,y+70,0,black);
+if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,0,black) end
+end
+
+function RedrawPerson(person,x,y,width,height)
+PlotRectangleFilled(x,y,width,height,grey);
+PlotRectangle(x,y,width,height,0,black);
+name="";
+text=GetField(person,"forename");
+if strlen(text)>0 then name=name..text.." " end
+text=GetField(person,"middlenames");
+if strlen(text)>0 then name=name..text.." " end
+name=name..GetField(person,"surname");
+tx,ty=GetTextDimensions(handle,name);
+colour=green;
+sex=GetField(person,"sex");
+if sex=="M" then colour=blue end
+if sex=="F" then colour=red end
+PlotText(x+(width-tx)/2,y+(height-ty)/2,handle,grey,colour,name);
+if GetParentsMarriage(person) then PlotLine(x+width/2,y+height,x+width/2,y+height+50,0,black) end
+end
+
+function RedrawLine(x,y,width,height)
+PlotLine(x,y,x+width,y+height,0,black);
+end
+
+function RedrawTitle(title,x,y,width,height)
+tx,ty=GetTextDimensions(titlehandle,title);
+PlotText(x+(width-tx)/2,y+(height-ty)/2,titlehandle,white,black,title);
+end
+
