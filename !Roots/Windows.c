@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.17  1999/10/25 17:24:04  AJW
+	Moved Font_GetWidth to AJWLib
+
 	Revision 1.16  1999/10/25 16:50:36  AJW
 	Altered to use Database_GetName and related functions
 
@@ -105,7 +108,6 @@
 #define REDRAWOVERLAP 4
 
 #define SWI_ColourTrans_SetFontColours 0x4074F
-#define SWI_Font_ScanString 0x400A1
 
 #define EORCOLOUR 0xFFFFFF00
 #define EORCOLOURRED 0xFFFF0000
@@ -193,14 +195,6 @@ void Graphics_RedrawPerson(Desk_window_handle win,personlayout *person)
 void Graphics_RedrawMarriage(Desk_window_handle win,marriagelayout *marriage)
 {
 	Desk_Window_ForceRedraw(win,marriage->x-REDRAWOVERLAP,marriage->y-REDRAWOVERLAP,marriage->x+Graphics_MarriageWidth()+REDRAWOVERLAP,marriage->y+Graphics_PersonHeight()+REDRAWOVERLAP);
-}
-
-int AJWLib_Font_GetWidth(Desk_font_handle handle,const char *str)
-{
-	int width,height;
-	Desk_Error2_CheckOS(Desk_SWI(5,5,SWI_Font_ScanString,handle,str,1<<8,INFINITY,INFINITY,NULL,NULL,NULL,&width,&height));
-	Desk_Font_ConverttoOS(width,height,&width,&height);
-	return width;
 }
 
 void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
