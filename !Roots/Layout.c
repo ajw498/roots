@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.64 2000/11/28 21:30:36 AJW Exp $
+	$Id: Layout.c,v 1.65 2001/02/03 13:37:28 AJW Exp $
 
 */
 
@@ -124,6 +124,15 @@ void Layout_CalcAllPositionsFromGrid(layout *layout)
 	}
 }
 
+void Layout_ResizeAllWidths(layout *layout)
+{
+	int i;
+
+	for (i=0;i<layout->numpeople;i++) {
+		if (Database_GetElementType(layout->person[i].element) == element_PERSON) Graphics_PersonChanged(layout->person[i].element);
+	}
+}
+
 void Layout_AddElement(layout *layout,elementptr person,int x,int y,int width,int height,int xgrid,int ygrid,flags flags)
 {
 	AJWLib_Assert(layout!=NULL);
@@ -192,6 +201,23 @@ void Layout_UnlinkSelected(layout *layout)
 			}
 		}
 	}
+}
+
+void Layout_SetWidth(layout *layout,elementptr person,int width)
+{
+	int i;
+
+	AJWLib_Assert(layout!=NULL);
+
+	for (i=0;i<layout->numpeople;i++) {
+		if (layout->person[i].element==person) {
+			layout->person[i].width=width;
+			Modules_ChangedStructure(); /*Modules_Changedlayout?*/
+			return;
+		}
+	}
+	/* No point in setting the width of a transient, as it will get deleted straight after */
+	AJWLib_AssertWarning(0);
 }
 
 int Layout_FindXCoord(layout *layout,elementptr person)
@@ -325,7 +351,7 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 		if ((originx+((layout->transients[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
 			if ((originx+((layout->transients[i].x+layout->transients[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->transients[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
-					if ((originy+((layout->transients[i].y+layout->transients[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
+					if ((originy+((layout->transients[i].y+layout->transients[i].height+Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
 						Graphics_PlotElement(layout,layout->transients[i].element,scale,originx,originy,layout->transients[i].x,layout->transients[i].y,layout->transients[i].width,layout->transients[i].height,plotselection);
 					}
 				}
@@ -336,7 +362,7 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 		if ((originx+((layout->person[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
 			if ((originx+((layout->person[i].x+layout->person[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->person[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
-					if ((originy+((layout->person[i].y+layout->person[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
+					if ((originy+((layout->person[i].y+layout->person[i].height+Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
 						Graphics_PlotElement(layout,layout->person[i].element,scale,originx,originy,layout->person[i].x,layout->person[i].y,layout->person[i].width,layout->person[i].height,plotselection);
 					}
 				}
@@ -372,7 +398,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.64 2000/11/28 21:30:36 AJW Exp $
+	$Id: Layout.c,v 1.65 2001/02/03 13:37:28 AJW Exp $
 
 */
 

@@ -32,3 +32,5 @@ example graphics style that prints date of birth if avaliable else date of bapti
 BUG: if you select two people who are married, but not their marriage (in separate marriages mode) then delete them, if their mariage is earlier in the layout then it will get deleted but the loop in Layout_DeleteSelected will not take account of this and so might miss someone.
 
 Very large trees do not redraw properly, like the printing problem.
+Click menu over a marriage when not using separate marriages, the marriage menu is not accessable.
+Ctrl-X in writeable icon seems to mess things up - does it replace 0 terminator with CR?

@@ -1,3 +1,7 @@
+v1.11 ??-Jan-01
+Added ability to stretch people to fit their name length
+Increased maximum length of text that a field can contain to 255 chars (or more if you hack the template file) 
+
 v1.10 29-Nov-00
 Improved graphics styles - uses Lua as a scripting language
 A few keyboard shortcuts added

@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.104 2000/11/27 21:30:18 AJW Exp $
+	$Id: Windows.c,v 1.105 2001/02/03 13:37:36 AJW Exp $
 
 */
 
@@ -219,6 +219,7 @@ static void Windows_StyleMenuClick(int entry,void *ref)
 
 	/*This is inefficient*/
 	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle) Layout_CalcAllPositionsFromGrid(windows[i].layout);
+	for (i=0;i<MAXWINDOWS;i++) if (windows[i].handle) Layout_ResizeAllWidths(windows[i].layout);
 
 	Modules_ChangedStructure();
 }

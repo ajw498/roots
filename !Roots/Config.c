@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.22 2000/11/21 20:33:31 AJW Exp $
+	$Id: Config.c,v 1.23 2001/02/03 13:37:23 AJW Exp $
 
 */
 
@@ -70,9 +70,9 @@ static void Config_SetChoicesPath(void)
 {
 	/*Set up defaults*/
 	strcpy(choicesread,"<Roots$Dir>.Defaults");
-	strcpy(choiceswrite,"Null:Choices");
+	strcpy(choiceswrite,"Null:$");
 	Desk_Error2_Try {
-		if (strcmp(getenv("Choices$Write"),"")) {
+		if (getenv("Choices$Write")) {
 			/*We are running a new boot structure*/
 			if (Desk_File_IsDirectory("<Roots$Dir>.Choices")) {
 				/*We already have a directory inside !Roots*/

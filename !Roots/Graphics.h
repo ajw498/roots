@@ -12,6 +12,8 @@
 typedef void (*plotfn)(int scale,int originx,int originy,int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour);
 typedef void (*plottextfn)(int scale,int originx,int originy,int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text);
 
+void Graphics_PersonChanged(elementptr person);
+void Graphics_MarriageChanged(elementptr person);
 int Graphics_PersonHeight(void);
 int Graphics_PersonWidth(void);
 int Graphics_UnlinkedGapHeight(void);

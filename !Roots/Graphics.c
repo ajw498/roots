@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.60 2000/11/27 23:36:22 AJW Exp $
+	$Id: Graphics.c,v 1.61 2001/02/03 13:37:26 AJW Exp $
 
 */
 
@@ -1062,6 +1062,20 @@ static int Graphics_LuaGetCoords(lua_State *state)
 	return 2;
 }
 
+static int Graphics_LuaSetWidth(lua_State *state)
+{
+	elementptr element;
+	int width;
+
+	if (lua_gettop(state)!=2) Graphics_LuaThrowError(state,"Error.Lua5:Wrong args to %s","SetWidth");
+	if (!lua_isnumber(state,1)) Graphics_LuaThrowError(state,"Error.Lua6:Bad arg %d to %s",1,"SetWidth");
+	if (!lua_isnumber(state,2)) Graphics_LuaThrowError(state,"Error.Lua6:Bad arg %d to %s",2,"SetWidth");
+	element=(elementptr)lua_tonumber(state,1);
+	width=(int)lua_tonumber(state,2);
+	Layout_SetWidth(redrawlayout,element,width);
+	return 0;
+}
+
 static int Graphics_LuaGetChild(lua_State *state)
 {
 	elementptr element;
@@ -1193,6 +1207,7 @@ static void Graphics_LuaInit(void)
 	lua_register(luadetails.state,"GetParentsMarriage",Graphics_LuaGetParentsMarriage);
 	lua_register(luadetails.state,"GetTextDimensions",Graphics_LuaGetTextDimensions);
 	lua_register(luadetails.state,"Colour",Graphics_LuaColour);
+	lua_register(luadetails.state,"SetWidth",Graphics_LuaSetWidth);
 	/*Load the lua file, and run any bits of it that are not functions*/
 	luadetails.error=NULL;
 	Desk_Error2_Try {
@@ -1259,6 +1274,36 @@ void Graphics_LoadStyle(char *style)
 char *Graphics_GetCurrentStyle(void)
 {
 	return currentstyle;
+}
+
+void Graphics_PersonChanged(elementptr person)
+{
+	AJWLib_Assert(person>0);
+	if (uselua) {
+		luadetails.originx=0;
+		luadetails.originy=0;
+		luadetails.scale=0;
+		lua_getglobal(luadetails.state,"PersonChanged");
+		if (lua_isfunction(luadetails.state,-1)) {
+			lua_pushnumber(luadetails.state,person);
+			Graphics_LuaCheckError(lua_call(luadetails.state,1,0));
+		}
+	}
+}
+
+void Graphics_MarriageChanged(elementptr person)
+{
+	AJWLib_Assert(person>0);
+	if (uselua) {
+		luadetails.originx=0;
+		luadetails.originy=0;
+		luadetails.scale=0;
+		lua_getglobal(luadetails.state,"MarriageChanged");
+		if (lua_isfunction(luadetails.state,-1)) {
+			lua_pushnumber(luadetails.state,person);
+			Graphics_LuaCheckError(lua_call(luadetails.state,1,0));
+		}
+	}
 }
 
 static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int x,int y,int width,int height,Desk_bool selected)
