@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.60 2004/01/05 22:42:51 AJW Exp $
+	$Id: Database.c,v 1.61 2001/06/24 22:30:28 AJW Exp $
 
 */
 
@@ -262,18 +262,48 @@ void Database_SetMarriageUser(int num,elementptr marriage,char *str)
 char *Database_GetField(elementptr element,char *fieldname)
 {
 	static char sexstr[]="U";
+	static char name[1024];
 	int i;
 
 	AJWLib_Assert(database!=NULL);
 	if (element<=none) return "";
 	if (element>=database[0].element.file.numberofelements) return "";
+	name[0]='\0';
 	switch (database[element].type) {
 		case element_PERSON:
 			sexstr[0]=database[element].element.person.data.sex;
-			if (Desk_stricmp(fieldname,"forename")==0)    return database[element].element.person.data.forename;
-			if (Desk_stricmp(fieldname,"surname")==0)     return database[element].element.person.data.surname;
+			if (Desk_stricmp(fieldname,"forename")==0) return database[element].element.person.data.forename;
+			if (Desk_stricmp(fieldname,"surname")==0) return database[element].element.person.data.surname;
 			if (Desk_stricmp(fieldname,"middlenames")==0) return database[element].element.person.data.middlenames;
-			if (Desk_stricmp(fieldname,"sex")==0)         return sexstr;
+			if (Desk_stricmp(fieldname,"name")==0) {
+				strcpy(name,database[element].element.person.data.forename);
+				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
+				return name;
+			}
+			if (Desk_stricmp(fieldname,"fullname")==0) {
+				strcpy(name,database[element].element.person.data.forename);
+				if (database[element].element.person.data.middlenames[0]) strcat(name," "),strcat(name,database[element].element.person.data.middlenames);
+				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
+				return name;
+			}
+			if (Desk_stricmp(fieldname,"initialedmiddlename")==0) {
+				char temp[2]="z";
+				strcpy(name,database[element].element.person.data.forename);
+				temp[0]=database[element].element.person.data.middlenames[0];
+				if (temp[0]) strcat(name," "),strcat(name,temp);
+				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
+				return name;
+			}
+			if (Desk_stricmp(fieldname,"initialedname")==0) {
+				char temp[2]="z";
+				temp[0]=database[element].element.person.data.forename[0];
+				if (temp[0]) strcpy(name,temp);
+				temp[0]=database[element].element.person.data.middlenames[0];
+				if (temp[0]) strcat(name," "),strcat(name,temp);
+				if (database[element].element.person.data.surname[0]) strcat(name," "),strcat(name,database[element].element.person.data.surname);
+				return name;
+			}
+			if (Desk_stricmp(fieldname,"sex")==0) return sexstr;
 			for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
 				if (Desk_stricmp(fieldname,personuser[i])==0) return database[element].element.person.data.user[i];
 			}

@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.108 2001/02/03 20:50:40 AJW Exp $
+	$Id: Windows.c,v 1.109 2001/06/24 22:30:39 AJW Exp $
 
 */
 
@@ -224,7 +224,7 @@ static void Windows_StyleMenuClick(int entry,void *ref)
 	Modules_ChangedStructure();
 }
 
-static void Windows_GraphicsStylesMenu(char *dirname)
+void Windows_GraphicsStylesMenu(Desk_menu_ptr *menuptr,char *dirname)
 {
 	static int i=0;
 	Desk_filing_dirdata dir;
@@ -237,12 +237,12 @@ static void Windows_GraphicsStylesMenu(char *dirname)
 			if (name) {
 				Desk_bool found;
 
-				if (fileconfigmenu) {
+				if (*menuptr) {
 					/*Check that the style is not already in the menu*/
 					int j=-1;
 					Desk_menu_item *menu;
 
-					menu=Desk_Menu_FirstItem(fileconfigmenu);
+					menu=Desk_Menu_FirstItem(*menuptr);
 					found=Desk_FALSE;
 					do {
 						j++;
@@ -254,19 +254,19 @@ static void Windows_GraphicsStylesMenu(char *dirname)
 					}
 					while (!found && !menu[j].menuflags.data.last);
 					if (!found) {
-						fileconfigmenu=Desk_Menu_Extend(fileconfigmenu,name);
+						*menuptr=Desk_Menu_Extend(*menuptr,name);
 						i++;
 					}
 				} else {
-					fileconfigmenu=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
+					*menuptr=Desk_Menu_New(AJWLib_Msgs_TempLookup("Title.Config:"),name);
 					found=Desk_FALSE;
 					i=0;
 				}
 				if (!found) {
 					if (Desk_stricmp(name,Graphics_GetCurrentStyle())) {
-						Desk_Menu_SetFlags(fileconfigmenu,i,0,0);
+						Desk_Menu_SetFlags(*menuptr,i,0,0);
 					} else {
-						Desk_Menu_SetFlags(fileconfigmenu,i,1,0);
+						Desk_Menu_SetFlags(*menuptr,i,1,0);
 					}
 				}
 			}
@@ -332,9 +332,9 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 		fileconfigmenu=NULL;
 	}
 	sprintf(dirname,"%s.%s",choicesread,GRAPHICSDIR);
-	Windows_GraphicsStylesMenu(dirname);
+	Windows_GraphicsStylesMenu(&fileconfigmenu,dirname);
 	sprintf(dirname,"%s.%s",DEFAULTS,GRAPHICSDIR);
-	Windows_GraphicsStylesMenu(dirname);
+	Windows_GraphicsStylesMenu(&fileconfigmenu,dirname);
 	AJWLib_Menu_Register(fileconfigmenu,Windows_StyleMenuClick,NULL);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_GRAPHICSSTYLE,fileconfigmenu);
 
