@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.20 2000/09/27 13:31:37 AJW Exp $
+	$Id: Drawfile.c,v 1.21 2000/10/03 13:53:21 AJW Exp $
 
 */
 
@@ -83,7 +83,7 @@ static void Drawfile_PlotRectangle2(int x,int y,int width,int height,int linethi
 	object[5]=(y+height)<<8;
 	object[6]=filled ? colour : -1; /*Fill colour*/
 	object[7]=filled ? -1 : colour; /*Line colour*/
-	object[8]=linethickness;
+	object[8]=linethickness<<8;
 	object[9]=0; /*? Path style*/
 	object[10]=2; /*Move*/
 	object[11]=x<<8;
@@ -129,7 +129,7 @@ void Drawfile_PlotLine(int scale,int originx,int originy,int minx,int miny,int m
 	object[5]=(originy+maxy)<<8;
 	object[6]=-1; /*Fill colour*/
 	object[7]=colour;
-	object[8]=linethickness;
+	object[8]=linethickness<<8;
 	object[9]=0; /*? Path style*/
 	object[10]=2; /*Move*/
 	object[11]=(originx+minx)<<8;
@@ -251,7 +251,7 @@ static void Drawfile_PlotText(int scale,int originx,int originy,int x,int y,int 
 	strcpy(((char *)object)+52,text);
 }
 
-static void Drawfile_Create(layout *layout,Desk_bool printing)
+void Drawfile_Create(layout *layout,Desk_wimp_rect *printcliprect)
 {
 	Desk_wimp_rect box,cliprect;
 	int paperwidth=21*70,paperheight=30*70; /*Get correct values*/
@@ -259,6 +259,8 @@ static void Drawfile_Create(layout *layout,Desk_bool printing)
 	int width,height;
 	int xoffset=0,yoffset=0;
 	Desk_bool landscape=Desk_FALSE;
+	Desk_bool printing=Desk_FALSE;
+
 	AJWLib_Assert(drawfile==NULL);
 	Drawfile_FreeFontArray();
 	AJWLib_Flex_Alloc((flex_ptr)&drawfile,40);
@@ -266,13 +268,10 @@ static void Drawfile_Create(layout *layout,Desk_bool printing)
 	drawfile->major_version=201;
 	drawfile->minor_version=0;
 	strcpy(drawfile->source,"Roots       "); /*Padded with spaces*/
+	if (printcliprect) printing=Desk_TRUE;
 	box=Layout_FindExtent(layout,Desk_FALSE);
 	width=box.max.x-box.min.x;
 	height=box.max.y-box.min.y;
-	cliprect.min.x=-INFINITY;
-	cliprect.min.y=-INFINITY;
-	cliprect.max.x=INFINITY;
-	cliprect.max.y=INFINITY;
 	if (!printing) {
 		if (width>height) {
 			SWAP(width,height);
@@ -286,11 +285,27 @@ static void Drawfile_Create(layout *layout,Desk_bool printing)
 		xoffset=(paperwidth-width)/2;
 		yoffset=(paperheight-height)/2;
 		if (landscape) SWAP(xoffset,yoffset);
+		printcliprect=&cliprect;
+		drawfile->bbox.min.x=xoffset<<8;
+		drawfile->bbox.min.y=yoffset<<8;
+		drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
+		drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
+		cliprect.min.x=-INFINITY;
+		cliprect.min.y=-INFINITY;
+		cliprect.max.x=INFINITY;
+		cliprect.max.y=INFINITY;
+	} else {
+		drawfile->bbox.min.x=0;
+		drawfile->bbox.min.y=0;
+		drawfile->bbox.max.x=(printcliprect->max.x-printcliprect->min.x)<<8;
+		drawfile->bbox.max.y=(printcliprect->max.y-printcliprect->min.y)<<8;
+		xoffset=-printcliprect->min.x;
+		yoffset=-printcliprect->min.y;
+		cliprect.min.x=0;
+		cliprect.min.y=0;
+		cliprect.max.x=printcliprect->max.x-printcliprect->min.x;
+		cliprect.max.y=printcliprect->max.y-printcliprect->min.y;
 	}
-	drawfile->bbox.min.x=xoffset;
-	drawfile->bbox.min.y=yoffset;
-	drawfile->bbox.max.x=(xoffset+box.max.x-box.min.x)<<8;
-	drawfile->bbox.max.y=(yoffset+box.max.y-box.min.y)<<8;
 	Graphics_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&cliprect,Desk_FALSE,Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
 	if (!printing) Drawfile_CreateOptions(papersize,landscape);
 	Drawfile_CreateTable();
@@ -307,9 +322,10 @@ void Drawfile_Print(layout *layout)
 	Desk_printer_info infoblk;
 	AJWLib_Assert(layout!=NULL);
 	Desk_Error2_Try {
-		Drawfile_Create(layout,Desk_TRUE);
+		Drawfile_Create(layout,NULL);
 		Desk_PDriver_Info(&infoblk);
 		if (infoblk.features.data.declarefont) Desk_Error2_CheckOS(Desk_SWI(3,0,SWI_Drawfile_DeclareFonts,0,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile)));
+		Drawfile_Free();
 	} Desk_Error2_Catch {
 		Drawfile_Free();
 		Desk_Error2_ReThrow();
@@ -332,7 +348,7 @@ void Drawfile_Redraw(int scale,int originx,int originy,Desk_wimp_rect *cliprect)
 void Drawfile_Save(char *filename,layout *layout)
 {
 	Desk_Error2_Try {
-		Drawfile_Create(layout,Desk_FALSE);
+		Drawfile_Create(layout,NULL);
 		Desk_File_SaveMemory2(filename,drawfile,AJWLib_Flex_Size((flex_ptr)&drawfile),Desk_filetype_DRAWFILE);
 	} Desk_Error2_Catch {
 		Drawfile_Free();
