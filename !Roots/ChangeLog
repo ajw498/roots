@@ -5,6 +5,7 @@ Doesn't barf if fontfix is loaded
 lua graphics styles
 auto sized marriages
 fixed to person marraiges
+people more than one generation below their parents
 
 ##v1.02 11-Oct-00
 Changing the file choices now marks the file as modified
