@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.45 2000/02/25 16:59:26 uid1 Exp $
+	$Id: Windows.c,v 1.46 2000/02/25 19:37:51 uid1 Exp $
 
 */
 
@@ -63,6 +63,7 @@
 #define mainmenu_SEARCH 4
 #define mainmenu_REPORTS 5
 #define mainmenu_SELECT 2
+#define mainmenu_SCALE 6
 
 #define filemenu_INFO 0
 #define filemenu_SAVE 1
@@ -97,6 +98,17 @@
 #define newview_DOWN 10
 #define newview_OK 7
 #define newview_CANCEL 6
+
+#define scale_TEXT 1
+#define scale_UP 4
+#define scale_DOWN 3
+#define scale_SIZE1 6
+#define scale_SIZE2 7
+#define scale_SIZE3 8
+#define scale_SIZE4 9
+#define scale_FIT 5
+#define scale_CANCEL 10
+#define scale_OK 11
 
 #define addparents_SECONDMARRIAGE 1
 
@@ -145,7 +157,7 @@ extern layout *debuglayout;
 
 static windowdata windows[MAXWINDOWS];
 static int numwindows;
-static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin;
+static Desk_window_handle addparentswin,newviewwin,fileinfowin,savewin,savedrawwin,scalewin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
@@ -350,7 +362,7 @@ void Windows_ChangedLayout(void)
 	int i;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
-			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Desk_Window_ForceWholeRedraw(windows[i].handle);
 			Windows_ResizeWindow(&(windows[i]));
 			/*Make this more efficient*/
 		}
@@ -1136,13 +1148,17 @@ void Windows_MainMenuClick(int entry,void *ref)
 			Desk_Icon_SetRadios(newviewwin,newview_NORMAL,newview_CLOSERELATIVES,newview_NORMAL);
 			newviewperson=menuoverperson;
 			break;
+		case mainmenu_SCALE:
+			Desk_Window_Show(scalewin,Desk_open_CENTERED);
+			Desk_Icon_SetCaret(scalewin,scale_TEXT);
+			break;
 	}
 }
 
-Desk_bool Windows_NewViewCancel(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 {
 	if (block->data.mouse.button.data.select) {
-		Desk_Window_Hide(newviewwin);
+		Desk_Window_Hide(block->data.mouse.window);
 		return Desk_TRUE;
 	}
 	return Desk_FALSE;
@@ -1269,6 +1285,52 @@ Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
+Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
+{
+	int i,scale;
+	if (block->data.mouse.button.data.menu) return Desk_FALSE;
+	switch (block->data.mouse.icon) {
+		case scale_SIZE1:
+			AJWLib_Msgs_SetText(scalewin,scale_TEXT,"Scale.1:100");
+			Desk_Icon_SetCaret(scalewin,scale_TEXT);
+			return Desk_TRUE;
+			break;
+		case scale_SIZE2:
+			AJWLib_Msgs_SetText(scalewin,scale_TEXT,"Scale.2:100");
+			Desk_Icon_SetCaret(scalewin,scale_TEXT);
+			return Desk_TRUE;;
+			break;
+		case scale_SIZE3:
+			AJWLib_Msgs_SetText(scalewin,scale_TEXT,"Scale.3:100");
+			Desk_Icon_SetCaret(scalewin,scale_TEXT);
+			return Desk_TRUE;
+			break;
+		case scale_SIZE4:
+			AJWLib_Msgs_SetText(scalewin,scale_TEXT,"Scale.4:100");
+			Desk_Icon_SetCaret(scalewin,scale_TEXT);
+			return Desk_TRUE;
+			break;
+		case scale_FIT:
+			/*Layout_FindExtent(layout,);*/
+			/*AJWLib_Msgs_SetText(scalewin,block->data.mouse.icon,"");*/
+			return Desk_TRUE;
+			break;
+		case scale_OK:
+			scale=Desk_Icon_GetInteger(scalewin,scale_TEXT);
+			if (scale<1) scale=100;
+			Draw_SetScaleFactor(scale);
+			if (block->data.mouse.button.data.select) Desk_Window_Hide(scalewin);
+				for (i=0;i<MAXWINDOWS;i++) {
+					if (windows[i].handle) {
+						Desk_Window_ForceWholeRedraw(windows[i].handle);
+						Windows_ResizeWindow(&(windows[i]));
+					}
+				}
+			break;
+	}
+	return Desk_FALSE;
+}
+
 void Windows_Init(void)
 {
 	int i;
@@ -1284,7 +1346,7 @@ void Windows_Init(void)
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_DESCENDENT);
 	Desk_Event_Claim(Desk_event_CLICK,newviewwin,Desk_event_ANY,Windows_NewViewClick,NULL);
 	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_OK,Windows_NewViewOk,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_CANCEL,Windows_NewViewCancel,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,newviewwin,newview_CANCEL,Windows_Cancel,NULL);
 	addparentswin=Desk_Window_Create("AddParents",Desk_template_TITLEMIN);
 	fileinfowin=Desk_Window_Create("FileInfo",Desk_template_TITLEMIN);
 	Desk_Event_Claim(Desk_event_REDRAW,addparentswin,Desk_event_ANY,Windows_RedrawAddParents,NULL);
@@ -1305,6 +1367,10 @@ void Windows_Init(void)
 	Desk_Icon_Shade(newviewwin,newview_DESCENDENTPERSON);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
+	scalewin=Desk_Window_Create("Scale",Desk_template_TITLEMIN);
+	Desk_Icon_InitIncDecHandler(scalewin,scale_TEXT,scale_UP,scale_DOWN,Desk_FALSE,1,1,999,100);
+	Desk_Event_Claim(Desk_event_CLICK,scalewin,Desk_event_ANY,Windows_ScaleClick,NULL);
+	Desk_Event_Claim(Desk_event_CLICK,scalewin,scale_CANCEL,Windows_Cancel,NULL);
 	savewin=Desk_Window_Create("Save",Desk_template_TITLEMIN);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
 	Desk_Save_InitSaveWindowHandler(savewin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveFile,NULL,File_Result,1024*10/*Filesize estimate?*/,0x090/*Filetype*/,NULL);
