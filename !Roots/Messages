@@ -54,6 +54,15 @@ Menu.Move:Don't move,Move by half,Move
 Edit.Person:Edit person
 Edit.Marr:Edit marriage
 
+Box.Person:If person's width increases
+Box.Marr:If marriages' width increases
+
+Child.Person:Only draw if person has parents
+Child.Marr:Only draw if marriage has children
+
+Exp.Person:Increase width of person to fit field
+Exp.Marr:Increase width
+
 Style.Default:Default
 Style.New:NewStyle
 

@@ -2,7 +2,7 @@
 	Roots - EditGraphics, Graphically Edit graphics styles
 	© Alex Waugh 2001
 
-	$Id: EditGraphics.c,v 1.4 2001/06/24 22:30:31 AJW Exp $
+	$Id: EditGraphics.c,v 1.5 2001/06/26 22:16:21 AJW Exp $
 
 */
 
@@ -88,7 +88,7 @@
 #define editshape_HEIGHT 12
 #define editshape_HEIGHTUP 15
 #define editshape_HEIGHTDOWN 14
-#define editshape_EXPAND 26
+#define editshape_EXPAND 33
 #define editshape_BACK 27
 #define editshape_DELETE 28
 #define editshape_CHILD 29
@@ -98,6 +98,7 @@
 #define editshape_YLABEL 9
 #define editshape_WIDTHLABEL 4
 #define editshape_HEIGHTLABEL 13
+#define editshape_BOXLABEL 34
 
 #define editmisc_ABOVE 29
 #define editmisc_BELOW 4
@@ -167,6 +168,7 @@
 #define edittext_COLOURSEX 29
 #define edittext_MOVE 31
 #define edittext_MOVEMENU 30
+#define edittext_BOXLABEL 33
 
 #define mainwin_PERSON 0
 #define mainwin_MARRIAGE 1
@@ -381,6 +383,7 @@ static void EditGraphics_UpdateTextWindow(void)
 	Desk_Icon_SetText(textwin,edittext_LABEL,editingtext->label);
 	Desk_Icon_SetText(textwin,edittext_FONT,editingtext->font);
 	Desk_Icon_SetSelect(textwin,edittext_EXPAND,editingtext->expand);
+	Desk_Icon_SetShade(textwin,edittext_EXPAND,item==&(style.marriage) || editingtext->type==text_LABEL);
 	Desk_Icon_SetSelect(textwin,edittext_COLOURSEX,editingtext->coloursex);
 }
 
@@ -455,6 +458,7 @@ static void EditGraphics_TextMenuClick(int entry,void *ref)
 			editingtext->type=text_FIELD;
 			break;
 	}
+	Desk_Icon_SetShade(textwin,edittext_EXPAND,item==&(style.marriage) || editingtext->type==text_LABEL);
 	EditGraphics_UpdateWindow();
 }
 
@@ -692,6 +696,7 @@ static Desk_bool EditGraphics_UpdateWidthAndHeight(Desk_event_pollblock *block,v
 		Desk_Icon_GetText(textwin,edittext_LABEL,editingtext->label);
 		Desk_Icon_GetText(textwin,edittext_FONT,editingtext->font);
 		editingtext->expand=Desk_Icon_GetSelect(textwin,edittext_EXPAND);
+		Desk_Icon_SetShade(textwin,edittext_EXPAND,editingtext->type==text_LABEL);
 		editingtext->coloursex=Desk_Icon_GetSelect(textwin,edittext_COLOURSEX);
 		if (editingtext->label[0]) editingtext->bbox=*AJWLib_Font_GetBBoxGiven(editingtext->font,editingtext->size*16,editingtext->label); else editingtext->bbox.min.x=editingtext->bbox.min.y=editingtext->bbox.max.x=editingtext->bbox.max.y=0;
 	}
@@ -771,6 +776,10 @@ static Desk_bool EditGraphics_EditPerson(Desk_event_pollblock *block,void *ref)
 	EditGraphics_CloseMiscWindow(NULL,NULL);
 	item=&(style.person);
 	Desk_Window_SetTitle(editwin,AJWLib_Msgs_TempLookup("Edit.Person:"));
+	Desk_Icon_SetText(shapewin,editshape_BOXLABEL,AJWLib_Msgs_TempLookup("Box.Person:inc"));
+	Desk_Icon_SetText(shapewin,editshape_CHILD,AJWLib_Msgs_TempLookup("Child.Person:parents"));
+	Desk_Icon_SetText(textwin,edittext_BOXLABEL,AJWLib_Msgs_TempLookup("Box.Person:inc"));
+	Desk_Icon_SetText(textwin,edittext_EXPAND,AJWLib_Msgs_TempLookup("Exp.Person:expand"));
 
 	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
 	EditGraphics_UpdateWindow();
@@ -786,6 +795,10 @@ static Desk_bool EditGraphics_EditMarriage(Desk_event_pollblock *block,void *ref
 	EditGraphics_CloseMiscWindow(NULL,NULL);
 	item=&(style.marriage);
 	Desk_Window_SetTitle(editwin,AJWLib_Msgs_TempLookup("Edit.Marr:"));
+	Desk_Icon_SetText(shapewin,editshape_BOXLABEL,AJWLib_Msgs_TempLookup("Box.Marr:inc"));
+	Desk_Icon_SetText(shapewin,editshape_CHILD,AJWLib_Msgs_TempLookup("Child.Marr:parents"));
+	Desk_Icon_SetText(textwin,edittext_BOXLABEL,AJWLib_Msgs_TempLookup("Box.Marr:inc"));
+	Desk_Icon_SetText(textwin,edittext_EXPAND,AJWLib_Msgs_TempLookup("Exp.Marr:expand"));
 
 	Desk_Pane2_Show(editwin,Desk_open_CENTERED);
 	EditGraphics_UpdateWindow();
@@ -1354,6 +1367,19 @@ static Desk_bool EditGraphics_SaveStyle(Desk_event_pollblock *block,void *ref)
 	objectnum=0;
 	objectletter='m';
 	CLAIMFONTS
+
+	fprintf(file,"\nfunction PersonChanged(person)\nw=personwidth;\n");
+	object=style.person.objects;
+	objectnum=0;
+	while (object) {
+		if (object->type==object_TEXT && object->object.text.type==text_FIELD && object->object.text.expand) {
+			fprintf(file,"tx=GetTextDimensions(fontp%d,GetField(person,\"%s\"));\n",objectnum,object->object.text.label);
+			fprintf(file,"if tx+12>w then w=tx+12 end\n");
+		}
+		objectnum++;
+		object=object->next;
+	}
+	fprintf(file,"SetWidth(person,w);\nend\n");
 
 	fprintf(file,"\nfunction RedrawLine(x,y,width,height)\n");
 	fprintf(file,"PlotLine(x,y,x+width,y+height,%d,%u);\n",style.misc.thickness,style.misc.colour);
