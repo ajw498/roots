@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.11  1999/10/24 13:16:32  AJW
+	Disabled dragging on all but normal windows
+
 	Revision 1.10  1999/10/12 16:30:08  AJW
 	Added Debug code for Ancestor layout
 
@@ -860,16 +863,18 @@ Desk_bool Graphics_MouseClick(Desk_event_pollblock *block,void *ref)
 			}
 		}
 	}
-	if (block->data.mouse.button.data.clickselect) {
-		Graphics_UnselectAll(windowdata);
-		return Desk_TRUE;
-	} else if (block->data.mouse.button.data.dragselect) {
-		Graphics_UnselectAll(windowdata);
-		Graphics_StartDragSelect(windowdata);
-		return Desk_TRUE;
-	} else if (block->data.mouse.button.data.dragadjust) {
-		Graphics_StartDragSelect(windowdata);
-		return Desk_TRUE;
+	if (windowdata->type==wintype_NORMAL) {
+		if (block->data.mouse.button.data.clickselect) {
+			Graphics_UnselectAll(windowdata);
+			return Desk_TRUE;
+		} else if (block->data.mouse.button.data.dragselect) {
+			Graphics_UnselectAll(windowdata);
+			Graphics_StartDragSelect(windowdata);
+			return Desk_TRUE;
+		} else if (block->data.mouse.button.data.dragadjust) {
+			Graphics_StartDragSelect(windowdata);
+			return Desk_TRUE;
+		}
 	}
 	return Desk_FALSE;
 }
@@ -964,13 +969,13 @@ void Graphics_MainMenuClick(int entry,void *ref)
 				Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
 				Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
 			} else {
-				Desk_Icon_Unshade(newviewwin,newview_ANCESTOR);
+/*				Desk_Icon_Unshade(newviewwin,newview_ANCESTOR);
 				Desk_Icon_Unshade(newviewwin,newview_ANCESTORPERSON);
-				Desk_Icon_Unshade(newviewwin,newview_DESCENDENT);
+*/				Desk_Icon_Unshade(newviewwin,newview_DESCENDENT);
 				Desk_Icon_Unshade(newviewwin,newview_DESCENDENTPERSON);
-				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVES);
+/*				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVES);
 				Desk_Icon_Unshade(newviewwin,newview_CLOSERELATIVESPERSON);
-				strcpy(buffer,Database_GetPersonData(menuoverperson)->forename);
+*/				strcpy(buffer,Database_GetPersonData(menuoverperson)->forename);
 				strcat(buffer," ");
 				strcat(buffer,Database_GetPersonData(menuoverperson)->surname);
 			}
@@ -1153,6 +1158,12 @@ void Graphics_Init(void)
 	Desk_Menu_AddSubMenu(filemenu,filemenu_EXPORT,exportmenu);
 	Desk_Menu_AddSubMenu(filemenu,filemenu_INFO,(Desk_menu_ptr)fileinfowin);
 	Desk_Menu_AddSubMenu(mainmenu,mainmenu_SELECT,selectmenu);
+	Desk_Icon_Shade(newviewwin,newview_ANCESTOR);
+	Desk_Icon_Shade(newviewwin,newview_ANCESTORPERSON);
+	Desk_Icon_Shade(newviewwin,newview_DESCENDENT);
+	Desk_Icon_Shade(newviewwin,newview_DESCENDENTPERSON);
+	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
+	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
 /*	Desk_Menu_Warn(filemenu,filemenu_INFO,Desk_TRUE,Database_GetInfo,...);
 */	{
 /*		Desk_window_handle savewin=Save_CreateWindow(0xFFF,Desk_FALSE,1024,Desk_TRUE,SaveHandler,NULL,NULL);
