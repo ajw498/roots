@@ -3,6 +3,10 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.4  1999/09/28 15:43:07  AJW
+	Added Graphics_RedrawPerson and Graphics_RedrawMarriage
+	Added dragging a box to select people
+
 	Revision 1.3  1999/09/28 14:16:10  AJW
 	Added centering marriage over children when dragging
 
@@ -63,6 +67,7 @@
 /*	Macros  */
 
 #define MAXWINDOWS 10
+#define REDRAWOVERLAP 4
 
 #define SWI_ColourTrans_SetFontColours 0x4074F
 
@@ -151,6 +156,16 @@ static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
 static os_trfm matrix;
 extern graphics graphicsdata;
+
+void Graphics_RedrawPerson(window_handle win,personlayout *person)
+{
+	Window_ForceRedraw(win,person->x-REDRAWOVERLAP,person->y-REDRAWOVERLAP,person->x+Graphics_PersonWidth()+REDRAWOVERLAP,person->y+Graphics_PersonHeight()+REDRAWOVERLAP);
+}
+
+void Graphics_RedrawMarriage(window_handle win,marriagelayout *marriage)
+{
+	Window_ForceRedraw(win,marriage->x-REDRAWOVERLAP,marriage->y-REDRAWOVERLAP,marriage->x+Graphics_MarriageWidth()+REDRAWOVERLAP,marriage->y+Graphics_PersonHeight()+REDRAWOVERLAP);
+}
 
 void Graphics_PlotPerson(elementptr person,int x,int y,BOOL child,BOOL selected)
 {
@@ -336,13 +351,13 @@ void Graphics_UnselectAll(windowdata *windowdata)
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (windowdata->layout->person[i].selected) {
 			windowdata->layout->person[i].selected=FALSE;
-			Window_ForceRedraw(windowdata->handle,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata->layout->person[i].x+Graphics_PersonWidth(),windowdata->layout->person[i].y+Graphics_PersonHeight());
+			Graphics_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
 		}
 	}
 	for (i=0;i<windowdata->layout->nummarriages;i++) {
 		if (windowdata->layout->marriage[i].selected) {
 			windowdata->layout->marriage[i].selected=FALSE;
-			Window_ForceRedraw(windowdata->handle,windowdata->layout->marriage[i].x,windowdata->layout->marriage[i].y,windowdata->layout->marriage[i].x+Graphics_MarriageWidth(),windowdata->layout->marriage[i].y+Graphics_PersonHeight());
+			Graphics_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
 		}
 	}
 }
@@ -447,6 +462,34 @@ void Graphics_DragEnd(void *ref)
 						return;
 					}
 				}
+			}
+		}
+	}
+}
+
+void Graphics_SelectDragEnd(void *ref)
+{
+	mouse_block mouseblk;
+	convert_block blk;
+	dragdata *dragdata=ref;
+	int mousex,mousey,i;
+	Wimp_GetPointerInfo(&mouseblk); /*errors*/
+	Window_GetCoords(dragdata->windowdata->handle,&blk);
+	mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
+	mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
+		if (mousex>dragdata->windowdata->layout->person[i].x && dragdata->oldmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() || mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->oldmousex>dragdata->windowdata->layout->person[i].x) {
+			if (mousey>dragdata->windowdata->layout->person[i].y && dragdata->oldmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->person[i].y) {
+				dragdata->windowdata->layout->person[i].selected=!dragdata->windowdata->layout->person[i].selected;
+				Graphics_RedrawPerson(dragdata->windowdata->handle,dragdata->windowdata->layout->person+i);
+			}
+		}
+	}
+	for (i=0;i<dragdata->windowdata->layout->nummarriages;i++) {
+		if (mousex>dragdata->windowdata->layout->marriage[i].x && dragdata->oldmousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() || mousex<dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth() && dragdata->oldmousex>dragdata->windowdata->layout->marriage[i].x) {
+			if (mousey>dragdata->windowdata->layout->marriage[i].y && dragdata->oldmousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->marriage[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->marriage[i].y) {
+				dragdata->windowdata->layout->marriage[i].selected=!dragdata->windowdata->layout->marriage[i].selected;
+				Graphics_RedrawMarriage(dragdata->windowdata->handle,dragdata->windowdata->layout->marriage+i);
 			}
 		}
 	}
@@ -641,6 +684,34 @@ void Graphics_StartDragUnlinked(elementptr person,int x,int y,windowdata *window
 	Drag_SetHandlers(NULL,Graphics_DragEnd,&dragdata);
 }
 
+void Graphics_StartDragSelect(windowdata *windowdata)
+{
+	static dragdata dragdata;
+	drag_block dragblk;
+	convert_block blk;
+	mouse_block mouseblk;
+	int mousex,mousey;
+	Window_GetCoords(windowdata->handle,&blk);
+	Wimp_GetPointerInfo(&mouseblk);
+	mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
+	mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	dragblk.type=drag_RUBBERBOX;
+	dragblk.screenrect.min.x=mouseblk.pos.x;
+	dragblk.screenrect.max.x=mouseblk.pos.x;
+	dragblk.screenrect.min.y=mouseblk.pos.y;
+	dragblk.screenrect.max.y=mouseblk.pos.y;
+	if (blk.screenrect.min.x<0) dragblk.parent.min.x=0; else dragblk.parent.min.x=blk.screenrect.min.x;
+	if (blk.screenrect.max.x>screen_size.x) dragblk.parent.max.x=screen_size.x; else dragblk.parent.max.x=blk.screenrect.max.x;
+	if (blk.screenrect.min.y<0) dragblk.parent.min.y=0; else dragblk.parent.min.y=blk.screenrect.min.y;
+	if (blk.screenrect.max.y>screen_size.y) dragblk.parent.max.y=screen_size.y; else dragblk.parent.max.y=blk.screenrect.max.y;
+	dragdata.windowdata=windowdata;
+	dragdata.origmousex=mousex;
+	dragdata.oldmousex=mousex;
+	dragdata.oldmousey=mousey;
+	Wimp_DragBox(&dragblk);
+	Drag_SetHandlers(NULL,Graphics_SelectDragEnd,&dragdata);
+}
+
 BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
@@ -666,14 +737,14 @@ BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 						if (!windowdata->layout->person[i].selected) {
 							Graphics_UnselectAll(windowdata);
 							windowdata->layout->person[i].selected=TRUE;
-							Window_ForceRedraw(windowdata->handle,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata->layout->person[i].x+Graphics_PersonWidth(),windowdata->layout->person[i].y+Graphics_PersonHeight());
+							Graphics_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
 						}
 						return TRUE;
 					}
 				} else if (block->data.mouse.button.data.clickadjust) {
 					if (windowdata->type==wintype_NORMAL) {
 						windowdata->layout->person[i].selected=!windowdata->layout->person[i].selected;
-						Window_ForceRedraw(windowdata->handle,windowdata->layout->person[i].x,windowdata->layout->person[i].y,windowdata->layout->person[i].x+Graphics_PersonWidth(),windowdata->layout->person[i].y+Graphics_PersonHeight());
+						Graphics_RedrawPerson(windowdata->handle,windowdata->layout->person+i);
 						return TRUE;
 					}
 				} else if (block->data.mouse.button.data.menu) {
@@ -728,14 +799,14 @@ BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 						if (!windowdata->layout->marriage[i].selected) {
 							Graphics_UnselectAll(windowdata);
 							windowdata->layout->marriage[i].selected=TRUE;
-							Window_ForceRedraw(windowdata->handle,windowdata->layout->marriage[i].x,windowdata->layout->marriage[i].y,windowdata->layout->marriage[i].x+Graphics_MarriageWidth(),windowdata->layout->marriage[i].y+Graphics_PersonHeight());
+							Graphics_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
 						}
 						return TRUE;
 					}
 				} else if (block->data.mouse.button.data.clickadjust) {
 					if (windowdata->type==wintype_NORMAL) {
 						windowdata->layout->marriage[i].selected=!windowdata->layout->marriage[i].selected;
-						Window_ForceRedraw(windowdata->handle,windowdata->layout->marriage[i].x,windowdata->layout->marriage[i].y,windowdata->layout->marriage[i].x+Graphics_MarriageWidth(),windowdata->layout->marriage[i].y+Graphics_PersonHeight());
+						Graphics_RedrawMarriage(windowdata->handle,windowdata->layout->marriage+i);
 						return TRUE;
 					}
 				} else if (block->data.mouse.button.data.dragselect) {
@@ -749,6 +820,13 @@ BOOL Graphics_MouseClick(event_pollblock *block,void *ref)
 	}
 	if (block->data.mouse.button.data.clickselect) {
 		Graphics_UnselectAll(windowdata);
+		return TRUE;
+	} else if (block->data.mouse.button.data.dragselect) {
+		Graphics_UnselectAll(windowdata);
+		Graphics_StartDragSelect(windowdata);
+		return TRUE;
+	} else if (block->data.mouse.button.data.dragadjust) {
+		Graphics_StartDragSelect(windowdata);
 		return TRUE;
 	}
 	return FALSE;
