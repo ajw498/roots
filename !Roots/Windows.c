@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.86 2000/09/26 12:13:14 AJW Exp $
+	$Id: Windows.c,v 1.87 2000/10/11 16:18:35 AJW Exp $
 
 */
 
@@ -1265,7 +1265,7 @@ layout *Windows_SaveGEDCOM(FILE *file,int *index)
 	if (windows[i].handle) {
 		Desk_Window_GetCoords(windows[i].handle,&(coords));
 		fprintf(file,"1 _COORDS\n2 _SCREENRECT\n3 _MIN\n4 _X %d\n4 _Y %d\n3 _MAX\n4 _X %d\n4 _Y %d\n2 _SCROLL\n3 _X %d\n3 _Y %d\n",coords.screenrect.min.x,coords.screenrect.min.y,coords.screenrect.max.x,coords.screenrect.max.y,coords.scroll.x,coords.scroll.y);
-		fprintf(file,"1 _PERSON @%d@\n",windows[i].person);
+		if (windows[i].person) fprintf(file,"1 _PERSON @%d@\n",windows[i].person);
 		fprintf(file,"1 _GENERATIONS %d\n",windows[i].generations);
 		fprintf(file,"1 _SCALE %d\n",windows[i].scale);
 		fprintf(file,"1 _TYPE %d\n",windows[i].type);
@@ -1542,6 +1542,7 @@ static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
 		File_LoadGEDCOM(NULL,Desk_TRUE);
 		Desk_Window_Hide(block->data.mouse.window);
 	} else {
+		File_Modified();
 		if (block->data.mouse.button.data.select) Desk_Window_Hide(block->data.mouse.window);
 	}
 	return Desk_TRUE;
