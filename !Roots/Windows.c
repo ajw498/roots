@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.18  1999/10/25 19:06:58  AJW
+	Modified DEBUG handling
+
 	Revision 1.17  1999/10/25 17:24:04  AJW
 	Moved Font_GetWidth to AJWLib
 
@@ -88,6 +91,7 @@
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Icon.h"
 #include "AJWLib.Flex.h"
+#include "AJWLib.Font.h"
 #include "AJWLib.Str.h"
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
@@ -174,7 +178,7 @@ typedef struct dragdata {
 } dragdata;
 
 #if DEBUG
-extern layout *layouts;
+extern layout *debuglayout;
 #endif
 
 static windowdata windows[MAXWINDOWS];
@@ -359,17 +363,17 @@ static Desk_bool Graphics_Redraw(Desk_event_pollblock *block,windowdata *windowd
 	while (more) {
 		int i=0;
 #if DEBUG
-Desk_ColourTrans_SetGCOL(0x00000000,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Desk_ColourTrans_SetGCOL(0xFF000000,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Desk_ColourTrans_SetGCOL(0x00FF0000,0,0);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_ColourTrans_SetGCOL(0x00000000,0,0);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_ColourTrans_SetGCOL(0xFF000000,0,0);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_ColourTrans_SetGCOL(0x00FF0000,0,0);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 #endif
 		for (i=0;i<windowdata->layout->numchildren;i++) {
 			Graphics_PlotChildren(blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].leftx,blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].rightx,blk.rect.max.y-blk.scroll.y+windowdata->layout->children[i].y);
@@ -1004,6 +1008,21 @@ void Graphics_Relayout(void)
 	}
 }
 
+Desk_bool Graphics_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
+{
+	switch (windowdata->type) {
+		case wintype_NORMAL:
+		case wintype_CLOSERELATIVES:
+			/*d*/
+			break;
+		default:
+			Layout_Free(windowdata->layout);
+			Desk_Window_Delete(windowdata->handle);
+			windowdata->handle=0;
+	}
+	return Desk_TRUE;
+}
+
 void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 {
 	int newwindow;
@@ -1025,13 +1044,10 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,Database_GetFilename());
 #if DEBUG
-Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
-Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
-windows[newwindow].layout=layouts;
-Layout_LayoutNormal();
-#else
-			windows[newwindow].layout=Layout_LayoutNormal();
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+			windows[newwindow].layout=debuglayout;
 #endif
+			windows[newwindow].layout=Layout_LayoutNormal();
 		break;
 		case wintype_DESCENDENTS:
 			Desk_Msgs_Lookup("Win.Desc:",str,255);
@@ -1046,13 +1062,10 @@ Layout_LayoutNormal();
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 #if DEBUG
-Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
-Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
-windows[newwindow].layout=layouts;
-Layout_LayoutAncestors(person,generations);
-#else
-			windows[newwindow].layout=Layout_LayoutAncestors(person,generations);
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+			windows[newwindow].layout=debuglayout;
 #endif
+			windows[newwindow].layout=Layout_LayoutAncestors(person,generations);
 		break;
 		case wintype_UNLINKED:
 			Desk_Msgs_Lookup("Win.Unlkd:Unlinked",str,255);
@@ -1064,6 +1077,7 @@ Layout_LayoutAncestors(person,generations);
 	/*Register handlers for this window*/
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_CloseWindow,&windows[newwindow]);
 }
 
 void Graphics_MainMenuClick(int entry,void *ref)
