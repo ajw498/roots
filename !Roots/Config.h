@@ -7,6 +7,7 @@ extern char choicesread[256],choiceswrite[256];
 
 #define GRAPHICSDIR "Graphics"
 #define CONFIGFILE "Config"
+#define DEFAULTS "<Roots$Dir>.Defaults"
 
 char *Config_GraphicsStyle(void);
 

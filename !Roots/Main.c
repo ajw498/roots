@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.32 2000/11/06 23:45:58 AJW Exp $
+	$Id: Main.c,v 1.33 2001/02/03 15:55:51 AJW Exp $
 	
 */
 
@@ -121,8 +121,10 @@ static void IconBarMenuClick(int entry, void *ref)
 			Config_Open();
 			break;
 		case iconbarmenu_GRAPHICSSTYLES:
+			sprintf(cmd,"Filer_OpenDir %s.%s",DEFAULTS,GRAPHICSDIR);
+			Desk_Wimp_StartTask(cmd);
 			sprintf(cmd,"Filer_OpenDir %s.%s",choiceswrite,GRAPHICSDIR);
-			system(cmd);
+			Desk_Wimp_StartTask(cmd);
 			break;
 		case iconbarmenu_QUIT:
 			if (File_GetModified()) AJWLib_Window_OpenTransient(quitwin); else Desk_Event_CloseDown();

@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.61 2001/02/03 13:37:26 AJW Exp $
+	$Id: Graphics.c,v 1.62 2001/02/03 15:55:49 AJW Exp $
 
 */
 
@@ -1242,7 +1242,20 @@ void Graphics_LoadStyle(char *style)
 	Graphics_DefaultStyle();
 
 	sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,style);
-	if (Desk_File_IsDirectory(filename)) uselua=Desk_FALSE; else uselua=Desk_TRUE;
+	if (Desk_File_IsDirectory(filename)) {
+		uselua=Desk_FALSE;
+	} else if (Desk_File_Exists(filename)) {
+		uselua=Desk_TRUE;
+	} else {
+		sprintf(filename,"%s.%s.%s",DEFAULTS,GRAPHICSDIR,style);
+		if (Desk_File_IsDirectory(filename)) {
+			uselua=Desk_FALSE;
+		} else if (Desk_File_Exists(filename)) {
+			uselua=Desk_TRUE;
+		} else {
+			AJWLib_Error2_HandleMsgs("Error.NoSty:Cannot find graphics style");
+		}
+	}
 
 	Desk_Error2_Try {
 		strcpy(currentstyle,style);
