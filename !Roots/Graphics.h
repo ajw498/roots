@@ -5,6 +5,9 @@
 
 #include "Layout.h"
 
+#define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7))
+#define Graphics_ConvertFromOS(x) ((int)(x/7))
+
 typedef void (*plotfn)(const int scale,const int originx,const int originy,const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour);
 typedef void (*plottextfn)(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text);
 

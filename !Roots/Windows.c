@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.65 2000/05/16 22:23:03 AJW Exp $
+	$Id: Windows.c,v 1.66 2000/06/17 18:45:38 AJW Exp $
 
 */
 
@@ -1344,7 +1344,7 @@ static void Windows_MainMenuClick(int entry,void *ref)
 	}
 }
 
-static Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
+Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 {
 	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.select) {
