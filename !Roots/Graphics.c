@@ -2,45 +2,45 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.65 2002/07/27 19:21:52 ajw Exp $
+	$Id: Graphics.c,v 1.66 2002/08/01 14:56:58 ajw Exp $
 
 */
 
-#include "Desk.Window.h"
-#include "Desk.Error.h"
-#include "Desk.DeskMem.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.Drag.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.GFX.h"
-#include "Desk.Font2.h"
-#include "Desk.ColourTran.h"
-#include "Desk.Str.h"
+#include "Desk/Window.h"
+#include "Desk/Error.h"
+#include "Desk/DeskMem.h"
+#include "Desk/Event.h"
+#include "Desk/EventMsg.h"
+#include "Desk/Handler.h"
+#include "Desk/Hourglass.h"
+#include "Desk/Icon.h"
+#include "Desk/Menu.h"
+#include "Desk/Msgs.h"
+#include "Desk/Drag.h"
+#include "Desk/Resource.h"
+#include "Desk/Screen.h"
+#include "Desk/Template.h"
+#include "Desk/File.h"
+#include "Desk/Filing.h"
+#include "Desk/Sprite.h"
+#include "Desk/GFX.h"
+#include "Desk/Font2.h"
+#include "Desk/ColourTran.h"
+#include "Desk/Str.h"
 
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Icon.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.Str.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Font.h"
-#include "AJWLib.Draw.h"
-#include "AJWLib.DrawFile.h"
-#include "AJWLib.Assert.h"
-#include "AJWLib.Error2.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Icon.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/Str.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Font.h"
+#include "AJWLib/Draw.h"
+#include "AJWLib/DrawFile.h"
+#include "AJWLib/Assert.h"
+#include "AJWLib/Error2.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -48,8 +48,8 @@
 #include <ctype.h>
 
 #define LUA_REENTRANT
-#include "Lua.Lua.h"
-#include "Lua.LuaLib.h"
+#include "Lua/Lua.h"
+#include "Lua/LuaLib.h"
 
 #include "Database.h"
 #include "Graphics.h"
@@ -218,6 +218,8 @@ static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRe
 static plottextfn Graphics_PlotText=NULL;
 static layout *redrawlayout=NULL;
 static Desk_bool uselua=Desk_FALSE;
+
+plotdrawfilefn Graphics_PlotDrawfile=NULL;
 
 static void (*Graphics_SetWidth)(layout *redrawlayout,elementptr element,int width);
 static int newpersonwidth;
@@ -1528,12 +1530,13 @@ static void Graphics_PlotTitle(int scale,int originx,int originy,int x,int y,int
 	}
 }
 
-void Graphics_SetFunctions(plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
+void Graphics_SetFunctions(plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext,plotdrawfilefn plotdrawfile)
 {
 	Graphics_PlotLine=plotline;
 	Graphics_PlotRectangle=plotrect;
 	Graphics_PlotRectangleFilled=plotrectfilled;
 	Graphics_PlotText=plottext;
+	Graphics_PlotDrawfile=plotdrawfile;
 }
 
 void Graphics_PlotElement(layout *layout,elementptr element,int scale,int originx,int originy,int x,int y,int width,int height,Desk_bool plotselection)

@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.112 2002/07/27 14:45:20 ajw Exp $
+	$Id: Windows.c,v 1.113 2002/08/01 14:56:58 ajw Exp $
 
 */
 
@@ -370,44 +370,54 @@ void Windows_Relayout(void)
 	}
 }
 
-void Windows_CreateWindow(wintype type) {
+void Windows_CreateWindow(wintype type)
+{
 	/* Create the window using details stored in nextloadwindowdata*/
 	Windows_OpenWindow(type,nextloadwindowdata.person,nextloadwindowdata.generations,nextloadwindowdata.scale,&(nextloadwindowdata.coords));
 }
 
-void Windows_SetMinX(int val) {
+void Windows_SetMinX(int val)
+{
 	nextloadwindowdata.coords.screenrect.min.x=val;
 }
 
-void Windows_SetMinY(int val) {
+void Windows_SetMinY(int val)
+{
 	nextloadwindowdata.coords.screenrect.min.y=val;
 }
 
-void Windows_SetMaxX(int val) {
+void Windows_SetMaxX(int val)
+{
 	nextloadwindowdata.coords.screenrect.max.x=val;
 }
 
-void Windows_SetMaxY(int val) {
+void Windows_SetMaxY(int val)
+{
 	nextloadwindowdata.coords.screenrect.max.y=val;
 }
 
-void Windows_SetScrollX(int val) {
+void Windows_SetScrollX(int val)
+{
 	nextloadwindowdata.coords.scroll.x=val;
 }
 
-void Windows_SetScrollY(int val) {
+void Windows_SetScrollY(int val)
+{
 	nextloadwindowdata.coords.scroll.y=val;
 }
 
-void Windows_SetPerson(elementptr person) {
+void Windows_SetPerson(elementptr person)
+{
 	nextloadwindowdata.person=person;
 }
 
-void Windows_SetGenerations(int val) {
+void Windows_SetGenerations(int val)
+{
 	nextloadwindowdata.generations=val;
 }
 
-void Windows_SetScale(int val) {
+void Windows_SetScale(int val)
+{
 	nextloadwindowdata.scale=val;
 }
 
@@ -571,6 +581,35 @@ void Windows_LayoutNormal(layout *layout,Desk_bool opencentred)
 			if (opencentred) Windows_OpenWindowCentered(&windows[i],NULL);
 		}
 	}
+}
+
+void Windows_AddDrawfile(Desk_window_handle window, Desk_wimp_point *pos, char *filename)
+{
+	int i;
+
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle == window) {
+			int x,y;
+			layout *layout;
+			Desk_convert_block blk;
+			drawfileholder *picture;
+			flags flags;
+
+			layout = windows[i].layout;
+
+			/*Find mouse position relative to window origin and independant of current scale*/
+			Desk_Window_GetCoords(windows[i].handle,&blk);
+			x=((pos->x-(blk.screenrect.min.x-blk.scroll.x))*100)/windows[i].scale;
+			y=((pos->y-(blk.screenrect.max.y-blk.scroll.y))*100)/windows[i].scale;
+
+			Layout_AddDrawfile(windows[i].layout, x, y, filename);
+
+			Layout_ResizeWindow(&windows[i]);
+			Desk_Window_ForceWholeRedraw(windows[i].handle);
+			break;
+		}
+	}
+
 }
 
 void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale,Desk_convert_block *coords)

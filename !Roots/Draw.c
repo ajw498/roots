@@ -1,18 +1,18 @@
 /*
-	FT - Draw
+	Roots - Draw routines to plot to screen
 	© Alex Waugh 1999
 
-	$Id: Draw.c,v 1.13 2001/06/11 23:09:37 AJW Exp $
+	$Id: Draw.c,v 1.14 2002/08/01 14:56:58 ajw Exp $
 
 */
 
-#include "Desk.Error2.h"
-#include "Desk.Font2.h"
-#include "Desk.ColourTran.h"
-#include "Desk.SWI.h"
+#include "Desk/Error2.h"
+#include "Desk/Font2.h"
+#include "Desk/ColourTran.h"
+#include "Desk/SWI.h"
 
-#include "AJWLib.Draw.h"
-#include "AJWLib.Assert.h"
+#include "AJWLib/Draw.h"
+#include "AJWLib/Assert.h"
 
 #include "Config.h"
 #include "Draw.h"
@@ -82,6 +82,24 @@ void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char
 	if (Config_FontBlend()) backgroundblend=1<<11;
 	Desk_Font_Paint3(handle,text,Desk_font_plot_TRANSMATRIX | Desk_font_plot_CURRENTHANDLE | backgroundblend,(millix*scale)/100+originmillix,(milliy*scale)/100+originmilliy,NULL,&fontmatrix,0);
 	if (lose) Desk_Font_LoseFont(handle);
+}
+
+static void Draw_SetDrawfileMatrix(int scale,int originx,int originy)
+{
+	int factor;
+	factor=scale*((1<<16)/100);
+	matrix.entries[0][0]=factor;
+	matrix.entries[0][1]=0;
+	matrix.entries[1][0]=0;
+	matrix.entries[1][1]=factor;
+	matrix.entries[2][0]=originx<<8;
+	matrix.entries[2][1]=originy<<8;
+}
+
+void Draw_PlotDrawfile(int scale,int originx,int originy,int x,int y,drawfile_diagram *drawfile,int size,Desk_wimp_box *cliprect)
+{
+	Draw_SetDrawfileMatrix(scale,originx+(x*scale)/100,originy+(y*scale)/100);
+	DrawFile_Render(0,drawfile,size,&matrix,cliprect,0);
 }
 
 void Draw_EORRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)

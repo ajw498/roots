@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.23 2000/11/21 23:52:27 AJW Exp $
+	$Id: Drawfile.c,v 1.24 2002/08/01 14:56:58 ajw Exp $
 
 */
 
@@ -326,7 +326,7 @@ void Drawfile_Create(layout *layout,Desk_wimp_rect *printcliprect)
 		cliprect.max.x=printcliprect->max.x-printcliprect->min.x;
 		cliprect.max.y=printcliprect->max.y-printcliprect->min.y;
 	}
-	Graphics_SetFunctions(Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText);
+	Graphics_SetFunctions(Drawfile_PlotLine,Drawfile_PlotRectangle,Drawfile_PlotRectangleFilled,Drawfile_PlotText,NULL);
 	Layout_Redraw(layout,100,xoffset-box.min.x,yoffset-box.min.y,&cliprect,Desk_FALSE);
 	if (!printing) Drawfile_CreateOptions(papersize,landscape);
 	Drawfile_CreateTable();
