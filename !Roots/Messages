@@ -108,12 +108,14 @@ Error.TooLong:A line in the file is too long
 Error.TooNew:This file was created in a later version of Roots and is not compatible with this version.
 Error.New:Warning: This file was created in a later version of Roots, but I will try to load it anyway.
 Error.TwoData:Warning: This file has more than one database. Using the first one encountered.
-Error.Dizzy:A person/marriage is linked to itself
+Error.Dizzy:A person (%s) is linked to itself
+Error.DizzyM:A marriage is linked to itself
 Error.Share:You cannot create any more people or marriages in the unregistered version. See the help file for details of how to register.
 Error.TwoLay:Warning: This file has more than one layout. Using the first one encountered.
 Error.TwoGra:Warning: This file has more than one graphics style. Using the first one encountered.
 Error.BadTag:Warning: This file contains an unknown object (type %d). Ignoring it.
-Error.Elvis:A person/marriage is linked to a person/marriage that does not exist.
+Error.Elvis:A person (%s) is linked to a person/marriage that does not exist.
+Error.ElvisM:A marriage is linked to a person/marriage that does not exist.
 Error.Corrupt:This file is corrupt.
 Error.BadDrag:Data transfer failed, reciever died
 Error.SynD:Syntax error in dimensions file, line %d
@@ -122,7 +124,8 @@ Error.SynM:Syntax error in marriage file, line %d
 Error.SynT:Syntax error in title file, line %d
 Error.SChoice:Error while saving file choices (%s)
 Error.LChoice:Error while loading file choices (%s)
-Error.Alien:A person/marriage is linked to an element that is not a person/marriage
+Error.Alien:A person (%s) is linked to an element that is not a person/marriage
+Error.AlienM:A marriage is linked to an element that is not a person/marriage
 Error.NoDir:Cannot find graphics style %s
 Error.NoFile:Cannot find %s file in graphics style %s
 Error.NufWin:You cannot have more than %d windows open at once

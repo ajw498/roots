@@ -22,7 +22,6 @@ b Evolutionary charts
 choice of graphics style before importing gedcom?
 
 display of page boundaries
-non zero line widths to keep fontfix happy
 
 third marriages go under the second spouse and the third marriage child can be coming from the middle of the marriage which is in the wrong place
 
@@ -30,7 +29,5 @@ third marriages go under the second spouse and the third marriage child can be c
 
 not copying default styles on RO 3.7
 Emphasize in manual how layout is up to the user and is not controlled by roots, and mention how sibling lines can overlap etc
-when a person is linked to themselves, give details of person then continue loading
 example graphics style that prints date of birth if avaliable else date of baptism? (Derrick porter)
-
 

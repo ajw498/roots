@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.55 2000/11/19 20:53:01 AJW Exp $
+	$Id: Database.c,v 1.56 2000/11/27 19:04:15 AJW Exp $
 
 */
 
@@ -13,6 +13,7 @@
 #include "Desk.Template.h"
 #include "Desk.File.h"
 #include "Desk.Menu.h"
+#include "Desk.Msgs.h"
 #include "Desk.DeskMem.h"
 #include "Desk.Filing.h"
 #include "Desk.Str.h"
@@ -313,12 +314,36 @@ void Database_SetSpouse(elementptr marriage,elementptr person)
 	database[marriage].element.marriage.spouse=person;
 }
 
-static void Database_CheckElement(elementptr person,elementptr not,elementtype type)
-/* Check that the given elementptr is a valid person, and is not the same as not*/
-{
-	if (person==not) AJWLib_Error2_HandleMsgs("Error.Dizzy:");
-	if (person<0 || person>=database[0].element.file.numberofelements) AJWLib_Error2_HandleMsgs("Error.Elvis:");
-	if (person) if (database[person].type!=type) AJWLib_Error2_HandleMsgs("Error.Alien:");
+#define Database_CheckConsistencyPerson(person,i,typem) \
+{\
+	if (person==i) {\
+		person=none;\
+		Desk_Msgs_Report(1,"Error.Dizzy:%s",Database_GetFullName(i));\
+	}\
+	if (person<0 || person>=database[0].element.file.numberofelements) {\
+		person=none;\
+		Desk_Msgs_Report(1,"Error.Elvis:%s",Database_GetFullName(i));\
+	}\
+	if (person) if (database[person].type!=typem) {\
+		person=none;\
+		Desk_Msgs_Report(1,"Error.Alien:%s",Database_GetFullName(i));\
+	}\
+}
+
+#define Database_CheckConsistencyMarriage(person,i,typem) \
+{\
+	if (person==i) {\
+		person=none;\
+		Desk_Msgs_Report(1,"Error.DizzyM:");\
+	}\
+	if (person<0 || person>=database[0].element.file.numberofelements) {\
+		person=none;\
+		Desk_Msgs_Report(1,"Error.ElvisM:");\
+	}\
+	if (person) if (database[person].type!=typem) {\
+		person=none;\
+		Desk_Msgs_Report(1,"Error.AlienM:");\
+	}\
 }
 
 void Database_CheckConsistency(void)
@@ -330,24 +355,25 @@ void Database_CheckConsistency(void)
 	for (i=1;i<database[0].element.file.numberofelements;i++) {
 		switch (database[i].type) {
 			case element_PERSON:
-				Database_CheckElement(database[i].element.person.marriage,i,element_MARRIAGE);
-				Database_CheckElement(database[i].element.person.parentsmarriage,i,element_MARRIAGE);
-				Database_CheckElement(database[i].element.person.siblingsltor,i,element_PERSON);
-				Database_CheckElement(database[i].element.person.siblingsltor,i,element_PERSON);
+				Database_CheckConsistencyPerson(database[i].element.person.marriage,i,element_MARRIAGE);
+				Database_CheckConsistencyPerson(database[i].element.person.parentsmarriage,i,element_MARRIAGE);
+				Database_CheckConsistencyPerson(database[i].element.person.siblingsltor,i,element_PERSON);
+				Database_CheckConsistencyPerson(database[i].element.person.siblingsltor,i,element_PERSON);
 				break;
 			case element_MARRIAGE:
-				Database_CheckElement(database[i].element.marriage.next,i,element_MARRIAGE);
-				Database_CheckElement(database[i].element.marriage.previous,i,element_MARRIAGE);
-				Database_CheckElement(database[i].element.marriage.principal,i,element_PERSON);
-				Database_CheckElement(database[i].element.marriage.spouse,i,element_PERSON);
-				Database_CheckElement(database[i].element.marriage.leftchild,i,element_PERSON);
-				Database_CheckElement(database[i].element.marriage.rightchild,i,element_PERSON);
+				Database_CheckConsistencyMarriage(database[i].element.marriage.next,i,element_MARRIAGE);
+				Database_CheckConsistencyMarriage(database[i].element.marriage.previous,i,element_MARRIAGE);
+				Database_CheckConsistencyMarriage(database[i].element.marriage.principal,i,element_PERSON);
+				Database_CheckConsistencyMarriage(database[i].element.marriage.spouse,i,element_PERSON);
+				Database_CheckConsistencyMarriage(database[i].element.marriage.leftchild,i,element_PERSON);
+				Database_CheckConsistencyMarriage(database[i].element.marriage.rightchild,i,element_PERSON);
 				break;
 			case element_FREE:
-				Database_CheckElement(database[i].element.freeelement.next,i,element_FREE);
+				if (database[i].element.freeelement.next==i) database[i].element.freeelement.next=none;
+				if (database[i].element.freeelement.next<0 || database[i].element.freeelement.next>=database[0].element.file.numberofelements) database[i].element.freeelement.next=none;
+				if (database[i].element.freeelement.next) if (database[database[i].element.freeelement.next].type!=element_FREE) database[i].element.freeelement.next=none;
 				break;
 			case element_FILE:
-				Database_CheckElement(database[i].element.file.freeelement,-1,element_FREE);
 				break;
 			default:
 				AJWLib_Assert(0);
