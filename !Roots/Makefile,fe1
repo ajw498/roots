@@ -12,6 +12,7 @@ HEADERS	=	\
 
 LIBS	=	\
 		L:Stubs.o.asstubs\
+		MemCheck:o.MC\
 		L:AJWLib.o.AJWLib\
 		L:Desk.o.Desk
 
@@ -36,7 +37,7 @@ TARGET		=	!RunImage
 CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2 -fah
 LINKFLAGS	=	$(LINKEXTRA) -d
 
-CC		=	cc -c $(CCFLAGS)
+CC		=	MemCheck.cc cc -c $(CCFLAGS)
 LINK		=	DrLink $(LINKFLAGS)
 
 
