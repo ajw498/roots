@@ -1,87 +1,65 @@
+-- Roots style file
+-- Saved by the Roots style editor
 
--- Let Roots know what fonts will want to use
-font=ClaimFont("Trinity.Medium",12);
-titlefont=ClaimFont("Homerton.Bold.Oblique",24);
-
--- Define the colours we will use
--- Colour() takes the red, green and blue components (range 0-255) of the colour
-red=Colour(255,0,0);
-green=Colour(0,255,0);
-blue=Colour(0,0,255);
-black=Colour(0,0,0);
-grey=Colour(245,245,245);
-white=Colour(255,255,255);
-
--- Define the default distances and sizes
--- Roots will use these for newly created objects
-gapheightabove=50; -- Gap between the top of a person and the line joining their siblings
-gapheightbelow=50; -- Gap between the bottom of a person and the line joining their children
-personwidth=280;   -- Width of a person
-personheight=100;  -- Height of a person
-gapwidth=100;      -- Horizontal gap between two unmarried people
-marriagewidth=84;  -- Width of a marriage
-windowborder=30;   -- Gap between outermost person and the window edge
-titleheight=100;   -- Height of the title
+--*MA50B50H100T0C0W30I100S24O0FHomerton.Bold.Oblique
+--*PW280H100
+--*TIMX140Y50S12C0ExV1FTrinity.Medium:Tfullname
+--*SLX140Y100W140H150T0O0eCM1
+--*RW84H100
+--*SLX0Y30W84H30T0O0EcM0
+--*SLX0Y70W84H70T0O0EcM0
+--*SLX42Y30W42H-50T0O0eCM1
+--*TIMX42Y80S12C0exV1FTrinity.Medium:Tdate
 
 
--- Constants (Roots does not place any meaning on these)
-linewidth=0;
+gapheightabove=50;
+gapheightbelow=50;
+personwidth=280;
+personheight=100;
+gapwidth=100;
+marriagewidth=84;
+windowborder=30;
+titleheight=100;
 
+fontt0=ClaimFont("Homerton.Bold.Oblique",24);
+fontp0=ClaimFont("Trinity.Medium",12);
+fontm3=ClaimFont("Trinity.Medium",12);
 
--- This function gets called by Roots whenever it needs to redraw a marriage
-function RedrawMarriage(marriage,x,y,width,height)
--- Draw the two horizontal lines
-PlotLine(x,y+30,x+width,y+30,0,black);
-PlotLine(x,y+70,x+width,y+70,0,black);
--- Draw the date of marriage
-text=GetField(marriage,"date");
-tx=GetTextDimensions(font,text);
-PlotText(x+(width-tx)/2,y+80,font,white,black,text);
--- Draw the vertical line if there are any children of the marriage
-if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
-end
-
-function CalcNameAndLength(person)
--- Work out what the full name of the person is
-name="";
-text=GetField(person,"forename");
-if strlen(text)>0 then name=name..text.." " end
-text=GetField(person,"middlenames");
-if strlen(text)>0 then name=name..text.." " end
-name=name..GetField(person,"surname");
-tx=GetTextDimensions(font,name);
-return name,tx;
-end
-
--- This function gets called by Roots whenever any details about the person change
 function PersonChanged(person)
-name,tx=CalcNameAndLength(person);
-tx=tx+12;
-if personwidth>tx then tx=personwidth end
-SetWidth(person,tx);
+w=personwidth;
+tx=GetTextDimensions(fontp0,GetField(person,"fullname"));
+if tx+12>w then w=tx+12 end
+SetWidth(person,w);
 end
 
--- This function gets called by Roots whenever it needs to redraw a person
-function RedrawPerson(person,x,y,width,height)
--- Work out what the full name of the person is
-name,tx=CalcNameAndLength(person);
--- Draw the name, centred horizontally
-PlotText(x+(width-tx)/2,y+50,font,white,black,name);
--- Draw the vertical line to connect to the sibling line if the person has parents
-if GetParentsMarriage(person) then PlotLine(x+width/2,y+80,x+width/2,y+height+50,linewidth,black) end
-end
-
--- This function gets called by Roots whenever it needs to redraw a line joining siblings together
--- The line could be horizontal or vertical
 function RedrawLine(x,y,width,height)
-PlotLine(x,y,x+width,y+height,linewidth,black);
+PlotLine(x,y,x+width,y+height,0,0);
 end
 
--- This function gets called by Roots whenever it needs to redraw the title
+function RedrawPerson(person,x,y,width,height)
+m=width-personwidth;
+mh=m/2;
+colour=0;
+text=GetField(person,"fullname");
+tx=GetTextDimensions(fontp0,text);
+PlotText(x+140+mh-tx/2,y+50,fontp0,4294967040,colour,text)
+if GetParentsMarriage(person) then PlotLine(x+140+mh,y+100,x+140+mh,y+150,0,0); end
+end
+
+function RedrawMarriage(marriage,x,y,width,height)
+m=width-marriagewidth;
+mh=m/2;
+PlotLine(x+0,y+30,x+84+m,y+30,0,0);
+PlotLine(x+0,y+70,x+84+m,y+70,0,0);
+if GetChild(marriage) then PlotLine(x+42+mh,y+30,x+42+mh,y+-50,0,0); end
+colour=0;
+text=GetField(marriage,"date");
+tx=GetTextDimensions(fontm3,text);
+PlotText(x+42+mh-tx/2,y+80,fontm3,4294967040,colour,text)
+end
+
 function RedrawTitle(title,x,y,width,height)
--- Find the width of the text
-tx=GetTextDimensions(titlefont,title);
--- Draw the text, centred horizontally
-PlotText(x+(width-tx)/2,y+50,titlefont,white,black,title);
+tx=GetTextDimensions(fontt0,title);
+PlotText(x+(width-tx)/2,y+height/2,fontt0,4294967040,0,title);
 end
 
