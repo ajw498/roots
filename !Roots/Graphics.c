@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.5  1999/10/24 18:01:43  AJW
+	Added extra field types
+
 	Revision 1.4  1999/10/12 14:32:05  AJW
 	Modified to use Config
 
@@ -172,7 +175,17 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				else if (!strcmp(values[7],"middlenames")) field=personfieldtype_MIDDLENAMES;
 				else if (!strcmp(values[7],"fullname")) field=personfieldtype_FULLNAME;
 				else if (!strcmp(values[7],"title")) field=personfieldtype_TITLE;
-				else Desk_Error_Report(1,"Syntax error in person file, line %d",linenum); /*what is field?*/
+				else if (!strcmp(values[7],"titledname")) field=personfieldtype_TITLEDNAME;
+				else if (!strcmp(values[7],"titledname")) field=personfieldtype_TITLEDFULLNAME;
+				else if (!strcmp(values[7],"sex")) field=personfieldtype_SEX;
+				else if (!strcmp(values[7],"dob")) field=personfieldtype_DOB;
+				else if (!strcmp(values[7],"dod")) field=personfieldtype_DOD;
+				else if (!strcmp(values[7],"birthplace")) field=personfieldtype_BIRTHPLACE;
+				else if (!strcmp(values[7],"user1")) field=personfieldtype_USER1;
+				else if (!strcmp(values[7],"user2")) field=personfieldtype_USER2;
+				else if (!strcmp(values[7],"user3")) field=personfieldtype_USER;
+				else Desk_Error_Report(1,"Syntax error in person file, line %d (unknown field type)",linenum); /*what is field?*/
+				/*Error2 error?*/
 				graphicsdata.personfields[field].plot=Desk_TRUE;
 				graphicsdata.personfields[field].textproperties.x=(int)strtol(values[1],NULL,10);
 				graphicsdata.personfields[field].textproperties.y=(int)strtol(values[2],NULL,10);
