@@ -3,6 +3,10 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.10  2000/01/14 13:14:55  AJW
+	Changed to Graphics_
+	Added Graphics_Redraw etc.
+
 	Revision 1.9  2000/01/11 17:12:15  AJW
 	Uses newer version of AJWLib_File_*
 
@@ -62,6 +66,8 @@
 #include "AJWLib.File.h"
 #include "AJWLib.Flex.h"
 #include "AJWLib.Str.h"
+#include "AJWLib.File.h"
+#include "AJWLib.Font.h"
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
 
@@ -74,10 +80,14 @@
 #include "GConfig.h"
 #include "Config.h"
 #include "Layout.h"
+#include "Draw.h"
+
 
 #define GRAPHICSDIR "<Roots$Dir>.Graphics"
 
-graphics graphicsdata;
+static graphics graphicsdata;
+static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
+static plottextfn Graphics_PlotText=NULL;
 
 static unsigned int Graphics_RGBToPalette(char *str)
 {
@@ -408,7 +418,7 @@ int Graphics_WindowBorder(void)
 	return graphicsdata.windowborder;
 }
 
-void Graphics_Init2(void)
+void Graphics_Init(void)
 {
 	int i;
 	graphicsdata.personwidth=200;
@@ -432,4 +442,153 @@ void Graphics_Init2(void)
 	Graphics_ReadFile("Marriage",Graphics_StoreMarriageDetails);
 }
 
+
+void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
+{
+	int i;
+	for (i=0;i<graphicsdata.numpersonobjects;i++) {
+		int xcoord=0;
+		switch (graphicsdata.person[i].type) {
+			case graphictype_RECTANGLE:
+				Graphics_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				break;
+			case graphictype_FILLEDRECTANGLE:
+				Graphics_PlotRectangleFilled(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				break;
+			case graphictype_CHILDLINE:
+				if (!child) break;
+				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
+			case graphictype_LINE:
+				Graphics_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
+				break;
+			case graphictype_CENTREDTEXTLABEL:
+/*Won't work for drawfile*/				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
+			case graphictype_TEXTLABEL:
+				Graphics_PlotText(x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.properties.fontname,graphicsdata.person[i].details.textlabel.properties.size,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
+				break;
+		}
+	}
+	for (i=0;i<NUMPERSONFIELDS;i++) {
+		if (graphicsdata.personfields[i].plot) {
+			char fieldtext[256]=""; /*what is max field length?*/
+			int xcoord=0;
+			switch (i) {
+				case personfieldtype_SURNAME:
+					strcat(fieldtext,Database_GetPersonData(person)->surname);
+					break;
+				case personfieldtype_FORENAME:
+					strcat(fieldtext,Database_GetPersonData(person)->forename);
+					break;
+				case personfieldtype_MIDDLENAMES:
+					strcat(fieldtext,Database_GetPersonData(person)->middlenames);
+					break;
+				case personfieldtype_TITLEDNAME:
+					strcat(fieldtext,Database_GetTitledName(person));
+					break;
+				case personfieldtype_NAME:
+					strcat(fieldtext,Database_GetName(person));
+					break;
+				case personfieldtype_TITLEDFULLNAME:
+					strcat(fieldtext,Database_GetTitledFullName(person));
+					break;
+				case personfieldtype_FULLNAME:
+					strcat(fieldtext,Database_GetFullName(person));
+					break;
+				case personfieldtype_TITLE:
+					strcat(fieldtext,Database_GetPersonData(person)->title);
+					break;
+/*				case personfieldtype_SEX:
+					strcat(fieldtext,Database_GetPersonData(person)->sex);
+					break;
+				case personfieldtype_DOB:
+					strcat(fieldtext,Database_GetPersonData(person)->dob);
+					break;
+				case personfieldtype_DOD:
+					strcat(fieldtext,Database_GetPersonData(person)->dod);
+					break;
+*/				case personfieldtype_BIRTHPLACE:
+					strcat(fieldtext,Database_GetPersonData(person)->placeofbirth);
+					break;
+				case personfieldtype_USER1:
+					strcat(fieldtext,Database_GetPersonData(person)->userdata[0]);
+					break;
+				case personfieldtype_USER2:
+					strcat(fieldtext,Database_GetPersonData(person)->userdata[1]);
+					break;
+				case personfieldtype_USER3:
+					strcat(fieldtext,Database_GetPersonData(person)->userdata[2]);
+					break;
+				default:
+					strcat(fieldtext,"Unimplemented");
+			}
+/*Doesn't work for drawfile*/			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
+			Graphics_PlotText(x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,graphicsdata.personfields[i].textproperties.fontname,graphicsdata.personfields[i].textproperties.size,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
+		}
+	}
+	if (selected) Draw_EORRectangleFilled(x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
+}
+
+void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
+{
+	int i;
+	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
+		switch (graphicsdata.marriage[i].type) {
+			case graphictype_RECTANGLE:
+				Graphics_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				break;
+			case graphictype_FILLEDRECTANGLE:
+				Graphics_PlotRectangleFilled(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				break;
+			case graphictype_CHILDLINE:
+				if (!childline) break;
+			case graphictype_LINE:
+				Graphics_PlotLine(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
+				break;
+			case graphictype_TEXTLABEL:
+				Graphics_PlotText(x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,graphicsdata.marriage[i].details.textlabel.properties.fontname,graphicsdata.marriage[i].details.textlabel.properties.size,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
+				break;
+		}
+	}
+	for (i=0;i<NUMMARRIAGEFIELDS;i++) {
+		if (graphicsdata.marriagefields[i].plot) {
+			char fieldtext[256]=""; /*what is max field length?*/
+			switch (i) {
+				case marriagefieldtype_PLACE:
+					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
+					break;
+/*				case marriagefieldtype_DATE:
+					strcat(fieldtext,Database_GetMarriageData(marriage)->place);
+					break;
+*/				default:
+					strcat(fieldtext,"Unimplemented");
+			}
+			Graphics_PlotText(x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,graphicsdata.marriagefields[i].textproperties.fontname,graphicsdata.marriagefields[i].textproperties.size,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
+		}
+	}
+	if (selected) Draw_EORRectangleFilled(x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
+}
+
+void Graphics_PlotChildren(int leftx,int rightx,int y)
+{
+	Graphics_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
+}
+
+void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
+{
+	int i;
+	/*use the clip rect*/
+	Graphics_PlotLine=plotline;
+	Graphics_PlotRectangle=plotrect;
+	Graphics_PlotRectangleFilled=plotrectfilled;
+	Graphics_PlotText=plottext;
+	for (i=0;i<layout->numchildren;i++) {
+		Graphics_PlotChildren(originx+layout->children[i].leftx,originx+layout->children[i].rightx,originy+layout->children[i].y);
+	}
+	for (i=layout->nummarriages-1;i>=0;i--) {
+		Graphics_PlotMarriage(originx+layout->marriage[i].x,originy+layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
+	}
+	for (i=layout->numpeople-1;i>=0;i--) {
+		Graphics_PlotPerson(layout->person[i].person,originx+layout->person[i].x,originy+layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
+	}
+}
 
