@@ -1,6 +1,6 @@
 #ifndef FILE_H
 #define FILE_H
 
-void File_SaveFile(const char *filename);
+Desk_bool File_SaveFile(char *filename,void *ref);
 
 #endif
