@@ -32,7 +32,7 @@ typedef struct persondata {
 	date dod;
     char placeofbirth[20];
     char userdata[3][20];
-    char notes[200];
+/*    char notes[200];*/
 } persondata;
 
 typedef struct person {
@@ -103,9 +103,11 @@ elementptr Database_GetSpouseFromMarriage(elementptr marriage);
 elementptr Database_GetPrincipalFromMarriage(elementptr marriage);
 Desk_bool Database_IsFirstMarriage(elementptr marriage);
 Desk_bool Database_IsUnlinked(elementptr person);
+void Database_New(void);
 void Database_Init(void);
 void Database_Save(char *filename);
 void Database_Load(char *filename);
+char *Database_GetFilename(void);
 void Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
 void Database_AddParents(elementptr child,elementptr mother,elementptr father);
