@@ -75,3 +75,7 @@ tx=GetTextDimensions(titlefont,title);
 PlotText(x+(width-tx)/2,y+50,titlefont,white,black,title);
 end
 
+function PersonChanged(person)
+SetWidth(person,personwidth);
+end
+

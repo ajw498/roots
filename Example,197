@@ -1,6 +1,6 @@
 0 HEAD
 1 SOUR Roots
-2 VERS 1.10 (29-Nov-00)
+2 VERS 1.11 (4-Feb-01)
 2 CORP Alex Waugh
 3 ADDR http://www.ecs.soton.ac.uk/~ajw498/
 0 _MARRTYPE
@@ -8,7 +8,7 @@
 1 _JOIN 0
 0 @F1@ _FILEINFO
 1 _TITLE Bloggs Family Tree
-1 _NEXTNEWPERSON 47
+1 _NEXTNEWPERSON 56
 1 _PERSONUSER 0
 2 _DESC Date of birth
 2 _GEDCOM INDI.BIRT.DATE
@@ -162,12 +162,7 @@
 2 _LINE if GetChild(marriage) then PlotLine(x+width/2,y+30,x+width/2,y-50,linewidth,black) end
 2 _LINE end
 2 _LINE 
-2 _LINE -- This function gets called by Roots whenever it needs to redraw a person
-2 _LINE function RedrawPerson(person,x,y,width,height)
-2 _LINE -- Draw the background (this must be done first otherwise it will overwrite what has already been drawn)
-2 _LINE PlotRectangleFilled(x,y,width,height,grey);
-2 _LINE -- Draw the border
-2 _LINE PlotRectangle(x,y,width,height,linewidth,black);
+2 _LINE function CalcNameAndLength(person)
 2 _LINE -- Work out what the full name of the person is
 2 _LINE name="";
 2 _LINE text=GetField(person,"forename");
@@ -176,6 +171,25 @@
 2 _LINE if strlen(text)>0 then name=name..text.." " end
 2 _LINE name=name..GetField(person,"surname");
 2 _LINE tx=GetTextDimensions(font,name);
+2 _LINE return name,tx;
+2 _LINE end
+2 _LINE 
+2 _LINE -- This function gets called by Roots whenever any details about the person change
+2 _LINE function PersonChanged(person)
+2 _LINE name,tx=CalcNameAndLength(person);
+2 _LINE tx=tx+12;
+2 _LINE if personwidth>tx then tx=personwidth end
+2 _LINE SetWidth(person,tx);
+2 _LINE end
+2 _LINE 
+2 _LINE -- This function gets called by Roots whenever it needs to redraw a person
+2 _LINE function RedrawPerson(person,x,y,width,height)
+2 _LINE -- Draw the background (this must be done first otherwise it will overwrite what has already been drawn)
+2 _LINE PlotRectangleFilled(x,y,width,height,grey);
+2 _LINE -- Draw the border
+2 _LINE PlotRectangle(x,y,width,height,linewidth,black);
+2 _LINE -- Work out what the full name of the person is
+2 _LINE name,tx=CalcNameAndLength(person);
 2 _LINE -- Work out what colour to use, depending on the sex of the person
 2 _LINE colour=green;
 2 _LINE sex=GetField(person,"sex");
@@ -203,9 +217,6 @@
 2 _LINE -- Draw the text, centred horizontally
 2 _LINE PlotText(x+(width-tx)/2,y+50,titlefont,white,black,title);
 2 _LINE end
-2 _LINE 
-2 _LINE 
-2 _LINE 
 2 _LINE 
 2 _LINE 
 1 _CURRENTSTYLE WithDOB

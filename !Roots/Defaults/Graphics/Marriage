@@ -42,10 +42,7 @@ PlotText(x+(width-tx)/2,y-20,font,white,black,text);
 if GetChild(marriage) then PlotLine(x+width/2,y-25,x+width/2,y-50,linewidth,black) end
 end
 
--- This function gets called by Roots whenever it needs to redraw a person
-function RedrawPerson(person,x,y,width,height)
--- Draw the border
-PlotRectangle(x,y,width,height,linewidth,black);
+function CalcNameAndLength(person)
 -- Work out what the full name of the person is
 name="";
 text=GetField(person,"forename");
@@ -54,6 +51,23 @@ text=GetField(person,"middlenames");
 if strlen(text)>0 then name=name..text.." " end
 name=name..GetField(person,"surname");
 tx=GetTextDimensions(font,name);
+return name,tx;
+end
+
+-- This function gets called by Roots whenever any details about the person change
+function PersonChanged(person)
+name,tx=CalcNameAndLength(person);
+tx=tx+12;
+if personwidth>tx then tx=personwidth end
+SetWidth(person,tx);
+end
+
+-- This function gets called by Roots whenever it needs to redraw a person
+function RedrawPerson(person,x,y,width,height)
+-- Draw the border
+PlotRectangle(x,y,width,height,linewidth,black);
+-- Work out what the full name of the person is
+name,tx=CalcNameAndLength(person);
 -- Work out what colour to use, depending on the sex of the person
 colour=green;
 sex=GetField(person,"sex");
