@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.17 2000/02/28 20:20:48 uid1 Exp $
+	$Id: Main.c,v 1.18 2000/03/01 00:03:26 uid1 Exp $
 	
 */
 
@@ -43,7 +43,7 @@
 #include "config.h"
 
 
-#define VERSION "0.60 (28-Feb-00)"
+#define VERSION "0.70 (29-Feb-00)"
 #define DIRPREFIX "Roots"
 #define TREEFILE 0x090
 
