@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.40 2000/09/14 13:50:10 AJW Exp $
+	$Id: Graphics.c,v 1.41 2000/09/18 15:58:10 AJW Exp $
 
 */
 
@@ -563,22 +563,6 @@ int Graphics_TitleHeight(void)
 	return 0;
 }
 
-int Graphics_GetSize(void)
-{
-	int size=0;
-	if (graphicsdata.person!=NULL && graphicsdata.marriage!=NULL) {
-		size+=sizeof(tag)+sizeof(int);
-		size+=strlen(personfile);
-		size+=strlen(marriagefile);
-		size+=strlen(dimensionsfile);
-		size+=strlen(titlefile);
-		size+=strlen(currentstyle);
-		size+=5*sizeof(int);
-		size+=5; /*String terminators*/
-	}
-	return size;
-}
-
 static void Graphics_ClaimFonts(void)
 {
 	int i;
@@ -778,86 +762,6 @@ void Graphics_SetGraphicsStyle(char *style)
 	} Desk_Error2_EndCatch
 }
 
-void Graphics_Load(FILE *file)
-{
-	int size;
-	char filename[256];
-	AJWLib_Assert(file!=NULL);
-	AJWLib_Assert(graphicsdata.person==NULL);
-	AJWLib_Assert(graphicsdata.marriage==NULL);
-	AJWLib_Assert(personfile==NULL);
-	AJWLib_Assert(marriagefile==NULL);
-	AJWLib_Assert(dimensionsfile==NULL);
-	AJWLib_Assert(titlefile==NULL);
-	AJWLib_File_fread(&size,sizeof(int),1,file);
-	AJWLib_Flex_Alloc((flex_ptr)&personfile,size);
-	AJWLib_File_fread(personfile,sizeof(char),size,file);
-	AJWLib_File_fread(&size,sizeof(int),1,file);
-	AJWLib_Flex_Alloc((flex_ptr)&marriagefile,size);
-	AJWLib_File_fread(marriagefile,sizeof(char),size,file);
-	AJWLib_File_fread(&size,sizeof(int),1,file);
-	AJWLib_Flex_Alloc((flex_ptr)&titlefile,size);
-	AJWLib_File_fread(titlefile,sizeof(char),size,file);
-	AJWLib_File_fread(&size,sizeof(int),1,file);
-	AJWLib_Flex_Alloc((flex_ptr)&dimensionsfile,size);
-	AJWLib_File_fread(dimensionsfile,sizeof(char),size,file);
-	AJWLib_File_fread(&size,sizeof(int),1,file);
-	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
-
-	Graphics_ParseStyle();
-
-	Desk_Error2_Try {
-		if (Config_ImportGraphicsStyle()) {
-			sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,currentstyle);
-			if (!Desk_File_IsDirectory(filename)) {
-				sprintf(filename,"%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle);
-				if (!Desk_File_IsDirectory(filename)) Desk_File_EnsureDirectory(filename);
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Person");
-				Desk_File_SaveMemory(filename,personfile,strlen(personfile));
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Marriage");
-				Desk_File_SaveMemory(filename,marriagefile,strlen(marriagefile));
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Dimensions");
-				Desk_File_SaveMemory(filename,dimensionsfile,strlen(dimensionsfile));
-				sprintf(filename,"%s.%s.%s.%s",choiceswrite,GRAPHICSDIR,currentstyle,"Title");
-				Desk_File_SaveMemory(filename,titlefile,strlen(titlefile));
-			}
-		}
-	} Desk_Error2_Catch {
-		AJWLib_Error2_ReportMsgs("Error.GraphS:%s");
-	} Desk_Error2_EndCatch
-}
-
-void Graphics_Save(FILE *file)
-{
-	tag tag=tag_GRAPHICS;
-	int size;
-	AJWLib_Assert(file!=NULL);
-	AJWLib_Assert(graphicsdata.person!=NULL);
-	AJWLib_Assert(graphicsdata.marriage!=NULL);
-	AJWLib_Assert(personfile!=NULL);
-	AJWLib_Assert(marriagefile!=NULL);
-	AJWLib_Assert(dimensionsfile!=NULL);
-	AJWLib_Assert(titlefile!=NULL);
-	size=Graphics_GetSize();
-	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	size=strlen(personfile)+1;
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(personfile,sizeof(char),size,file);
-	size=strlen(marriagefile)+1;
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(marriagefile,sizeof(char),size,file);
-	size=strlen(titlefile)+1;
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(titlefile,sizeof(char),size,file);
-	size=strlen(dimensionsfile)+1;
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(dimensionsfile,sizeof(char),size,file);
-	size=strlen(currentstyle)+1;
-	AJWLib_File_fwrite(&size,sizeof(int),1,file);
-	AJWLib_File_fwrite(&currentstyle,sizeof(char),size,file);
-}
-
 void Graphics_SaveGEDCOM(FILE *file)
 {
 	int i;
@@ -1014,13 +918,13 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 		if (graphicsdata.personfields[i].sex==sex_ANY || graphicsdata.personfields[i].sex==Database_GetSex(person)) {
 			switch (graphicsdata.personfields[i].personfieldtype) {
 				case personfieldtype_SURNAME:
-					strcpy(fieldtext,Database_GetPersonData(person)->surname);
+					strcpy(fieldtext,Database_GetSurname(person));
 					break;
 				case personfieldtype_FORENAME:
-					strcpy(fieldtext,Database_GetPersonData(person)->forename);
+					strcpy(fieldtext,Database_GetForename(person));
 					break;
 				case personfieldtype_MIDDLENAMES:
-					strcpy(fieldtext,Database_GetPersonData(person)->middlenames);
+					strcpy(fieldtext,Database_GetMiddleNames(person));
 					break;
 				case personfieldtype_NAME:
 					strcpy(fieldtext,Database_GetName(person));
@@ -1029,18 +933,9 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 					strcpy(fieldtext,Database_GetFullName(person));
 					break;
 				case personfieldtype_SEX:
-					sprintf(fieldtext,"%c",Database_GetPersonData(person)->sex);
+					sprintf(fieldtext,"%c",Database_GetSex(person));
 					break;
-				case personfieldtype_DOB:
-					strcpy(fieldtext,Database_GetPersonData(person)->dob);
-					break;
-				case personfieldtype_DOD:
-					strcpy(fieldtext,Database_GetPersonData(person)->dod);
-					break;
-				case personfieldtype_BIRTHPLACE:
-					strcpy(fieldtext,Database_GetPersonData(person)->placeofbirth);
-					break;
-				case personfieldtype_USER1:
+/*				case personfieldtype_USER1:
 					strcpy(fieldtext,Database_GetPersonData(person)->userdata[0]);
 					break;
 				case personfieldtype_USER2:
@@ -1048,7 +943,7 @@ static void Graphics_PlotPerson(int scale,int originx,int originy,elementptr per
 					break;
 				case personfieldtype_USER3:
 					strcpy(fieldtext,Database_GetPersonData(person)->userdata[2]);
-					break;
+					break;*/
 				default:
 					strcpy(fieldtext,"Unimplemented");
 			}
@@ -1088,7 +983,7 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 	for (i=0;i<graphicsdata.nummarriagefields;i++) {
 		char fieldtext[256]=""; /*what is max field length?*/
 		switch (graphicsdata.marriagefields[i].marriagefieldtype) {
-			case marriagefieldtype_PLACE:
+/*			case marriagefieldtype_PLACE:
 				strcpy(fieldtext,Database_GetMarriageData(marriage)->place);
 				break;
 			case marriagefieldtype_DATE:
@@ -1096,7 +991,7 @@ static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,
 				break;
 			case marriagefieldtype_DIVORCE:
 				strcpy(fieldtext,Database_GetMarriageData(marriage)->divorce);
-				break;
+				break;*/
 			default:
 				strcpy(fieldtext,"Unimplemented");
 		}

@@ -5,7 +5,9 @@
 #include "Layout.h"
 
 #define none 0
-
+#define FIELDSIZE 20
+#define NUMBERPERSONUSERFIELDS 10
+#define NUMBERMARRIAGEUSERFIELDS 5
 
 #ifndef ELEMENTPTR
 #define ELEMENTPTR
@@ -13,7 +15,6 @@
 typedef int elementptr;
 
 #endif
-
 
 typedef enum elementtype {
 	element_NONE,
@@ -32,71 +33,7 @@ typedef enum sextype {
 	sex_ANY='A'
 } sextype;
 
-typedef char date[20];
-
-typedef struct persondata {
-	char surname[20];
-	char forename[20];
-	char middlenames[20];
-	char title[10];
-	sextype sex;
-	date dob;
-	date dod;
-    char placeofbirth[20];
-    char userdata[3][20];
-} persondata;
-
-typedef struct person {
-	elementptr parentsmarriage;
-	elementptr siblingsrtol;
-	elementptr siblingsltor;
-	elementptr marriage;
-	persondata data;
-} person;
-
-typedef struct freeelement {
-	elementptr next;
-} freeelement;
-
-typedef struct marriagedata {
-	char place[20];
-	date date;
-	date divorce;
-} marriagedata;
-
-typedef struct marriage {
-	elementptr principal;
-	elementptr spouse;
-	elementptr leftchild;
-	elementptr rightchild;
-	elementptr next;
-	elementptr previous;
-	marriagedata data;
-} marriage;
-
-typedef struct file {
-	int numberofelements;
-	int newpersonnumber;
-	char filetitle[40];
-	elementptr reserved0;
-	elementptr freeelement;
-	elementptr reserved1;
-    char userdesc[3][20];
-} file;
-
-typedef union element {
-	person person;
-	freeelement freeelement;
-	marriage marriage;
-	file file;
-} element;
-
-typedef struct databaseelement {
-	elementtype type;
-	element element;
-	Desk_bool selected;
-} databaseelement;
-
+elementptr Database_GetLinked(int *index);
 void Database_Select(elementptr person);
 void Database_DeSelect(elementptr person);
 void Database_DeSelectAll(void);
@@ -104,11 +41,9 @@ Desk_bool Database_GetSelect(elementptr person);
 elementtype Database_AnyoneSelected(void);
 void Database_UnlinkSelected(layout *layout);
 void Database_DeleteSelected(layout *layout);
-persondata *Database_GetPersonData(elementptr person);
 elementptr Database_GetMarriage(elementptr person);
 elementptr Database_GetMarriageLtoR(elementptr person);
 elementptr Database_GetMarriageRtoL(elementptr person);
-marriagedata *Database_GetMarriageData(elementptr marriage);
 char *Database_GetName(elementptr person);
 char *Database_GetFullName(elementptr person);
 elementptr Database_GetMother(elementptr person);
@@ -125,8 +60,6 @@ void Database_RemoveMarriage(elementptr marriage);
 void Database_New(void);
 void Database_Remove(void);
 void Database_Init(void);
-void Database_Save(FILE *file);
-void Database_Load(FILE *file);
 char *Database_GetTitle(void);
 elementptr Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
@@ -135,34 +68,37 @@ void Database_Edit(elementptr person);
 elementptr Database_Add(void);
 void Database_Delete(elementptr person);
 int Database_GetNumPeople(void);
-int Database_GetSize(void);
 void Database_StopEditing(void);
-char *Database_GetUserDesc(int num);
-void Database_SetUserDesc(int num,char *desc);
+char *Database_GetPersonUserDesc(int num);
+void Database_SetPersonUserDesc(int num,char *desc);
+char *Database_GetPersonGEDCOMDesc(int num);
+void Database_SetPersonGEDCOMDesc(int num,char *desc);
+char *Database_GetMarriageUserDesc(int num);
+void Database_SetMarriageUserDesc(int num,char *desc);
+char *Database_GetMarriageGEDCOMDesc(int num);
+void Database_SetMarriageGEDCOMDesc(int num,char *desc);
 sextype Database_GetSex(elementptr person);
-void Database_SaveGEDCOM(FILE *file);
+void Database_SaveGEDCOM(FILE *file,Desk_bool plainGEDCOM);
 void Database_SetTitle(char *title);
 void Database_SetNextNewPerson(int personnumber);
 void Database_SetForename(elementptr person,char *name);
 void Database_SetMiddleNames(elementptr person,char *name);
 void Database_SetSurname(elementptr person,char *name);
-void Database_SetSex(elementptr person,char sexchar);
-void Database_SetPlaceOfBirth(elementptr person,char *place);
-void Database_SetDOB(elementptr person,char *date);
-void Database_SetDOD(elementptr person,char *date);
-void Database_SetUser(int num,elementptr person,char *str);
+void Database_SetSex(elementptr person,sextype sexchar);
 void Database_SetMarriage(elementptr person,elementptr marriage);
 void Database_SetParentsMarriage(elementptr person,elementptr marriage);
 void Database_SetPrincipal(elementptr marriage,elementptr person);
 void Database_SetSpouse(elementptr marriage,elementptr person);
-void Database_SetNextMarriage(elementptr marriage,elementptr nextmarriage);
-void Database_SetPreviousMarriage(elementptr marriage,elementptr previousmarriage);
-void Database_SetMarriageDate(elementptr marriage,char *date);
-void Database_SetMarriagePlace(elementptr marriage,char *place);
-void Database_SetDivorceDate(elementptr marriage,char *date);
 elementptr Database_AddMarriage(void);
 void Database_CheckConsistency(void);
 void Database_LinkAllChildren(void);
+void Database_SetPersonUser(int num,elementptr person,char *str);
+void Database_SetMarriageUser(int num,elementptr marriage,char *str);
+char *Database_GetForename(elementptr person);
+char *Database_GetMiddleNames(elementptr person);
+char *Database_GetSurname(elementptr person);
+Desk_bool Database_Loaded(void);
+void Database_LinkAllMarriages(void);
 
 #endif
 

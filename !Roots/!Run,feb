@@ -1,11 +1,16 @@
-IconSprites <Obey$Dir>.!Sprites4
-RMEnsure UtilityModule 4.00 IconSprites <Obey$Dir>.!Sprites
 Set Roots$Dir <Obey$Dir>
+
+Set Roots$RO4 Yes
+RMEnsure UtilityModule 4.00 Set Roots$RO4 No
+If "<Roots$RO4>"="Yes" Then IconSprites <Roots$Dir>.!Sprites4 Else IconSprites <Roots$Dir>.!Sprites
+Unset Roots$RO4
+
+Set File$Type_197 RootFile
+Set Alias$@RunType_197 Run <Roots$Dir>.!Run %%*0
 
 RMEnsure DrawFile RMLoad System:Modules.DrawFile
 RMEnsure DrawFile Error Roots needs the DrawFile module
 
-Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0
 |WimpSlot -Min 500k -Max 500k
 Run <Obey$Dir>.!RunImage %*0 2><Roots$Dir>.stderr
 Taskwindow "Type <Roots$Dir>.stderr" -name stderr -quit
