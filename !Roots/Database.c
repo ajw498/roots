@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.46 2000/10/16 11:44:55 AJW Exp $
+	$Id: Database.c,v 1.47 2000/10/20 19:14:38 AJW Exp $
 
 */
 
@@ -377,6 +377,48 @@ void Database_LinkAllMarriages(void)
 				if (database[person].element.person.marriage==none) database[person].element.person.marriage=i;
 			}
 		}
+	}
+}
+
+Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end)
+/*Check if a link from start to end would be valid*/ 
+{
+	if (Database_GetElementType(start)!=element_PERSON) return Desk_FALSE;
+	switch (Database_GetElementType(end)) {
+		case element_PERSON:
+			/*Check that the dragged person is not the same as the destination person*/
+			if (start==end) return Desk_FALSE;
+			/*Check that both people are in the same generation*/
+			if (Layout_FindYCoord(layout,start)!=Layout_FindYCoord(layout,end)) return Desk_FALSE; /*Use grid coordinates?*/
+			return Desk_TRUE;
+			break;
+
+		case element_MARRIAGE:
+			/*Check that the person does not have parents already*/
+			if (Database_GetMother(start)) return Desk_FALSE;
+			/*Check that the person is in the right generation*/
+			{
+				int FIXME;
+				/*if (Layout_NearestGeneration((dragdata->origmousey)+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())!=Layout_NearestGeneration(mousey)) return;*/
+			}
+			return Desk_TRUE;
+			break;
+	}
+	return Desk_FALSE;
+}
+
+void Database_Link(layout *layout,elementptr start,elementptr end)
+/*Link two elements together if possible*/
+{
+	if (!Database_LinkValid(layout,start,end)) return;
+	switch (Database_GetElementType(end)) {
+		case element_PERSON:
+			Database_Marry(start,end);
+			break;
+
+		case element_MARRIAGE:
+			Database_AddChild(end,start);
+			break;
 	}
 }
 

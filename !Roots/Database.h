@@ -34,6 +34,8 @@ typedef enum sextype {
 	sex_ANY='A'
 } sextype;
 
+void Database_Link(layout *layout,elementptr start,elementptr end);
+Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end);
 elementtype Database_GetElementType(elementptr element);
 elementptr Database_GetLinked(int *index);
 elementptr Database_GetLinkedMarriages(int *index);
