@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Modules.c,v $
+	Revision 1.4  2000/01/13 17:55:34  AJW
+	Calls File_Modified
+
 	Revision 1.3  1999/10/27 16:04:58  AJW
 	Added Modules_ChangedLayout
 
@@ -23,6 +26,7 @@
 #include "Database.h"
 #include "Graphics.h"
 #include "GConfig.h"
+#include "File.h"
 
 static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayout=Desk_FALSE;
 
@@ -89,17 +93,20 @@ void Modules_Init(void)
 void Modules_ChangedStructure(void)
 {
 	changedstructure=Desk_TRUE;
+	File_Modified();
 }
 
 void Modules_ChangedLayout(void)
 {
 	changedlayout=Desk_TRUE;
+	File_Modified();
 }
 
 void Modules_ReflectChanges(void)
 {
 	if (changedstructure) Graphics_Relayout();
 	/*if (changeddata) Graphics_ForceRedraw();*/
+	if (changedlayout) Graphics_ChangedLayout();
 	changedstructure=Desk_FALSE;
 	changeddata=Desk_FALSE;
 	changedlayout=Desk_FALSE;
@@ -108,4 +115,5 @@ void Modules_ReflectChanges(void)
 void Modules_ChangedData(elementptr person)
 {
 	changeddata=Desk_TRUE;
+	File_Modified();
 }
