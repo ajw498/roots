@@ -3,6 +3,7 @@
 
 #include "Desk.Font2.h"
 
+#include "Layout.h"
 
 #define NUMPERSONFIELDS 20
 #define NUMMARRIAGEFIELDS 20 /*these are not correct*/
@@ -103,6 +104,9 @@ typedef struct graphics {
 	fieldproperties personfields[NUMPERSONFIELDS];
 	fieldproperties marriagefields[NUMMARRIAGEFIELDS];
 } graphics;
+
+typedef void (*plotfn)(const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour);
+typedef void (*plottextfn)(const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text);
 
 void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum);
 
