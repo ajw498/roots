@@ -28,22 +28,16 @@
 # Field name is any one of the following
 # Surname
 # Forename
-# Name
+# Name  - forname and surname
 # Middlename
-# Fullname
+# Fullname  - forname, middlenames then surname
 # Sex
-# Dob
-# Dod
-# Birthplace
-# User1
-# User2
-# User3
+# Or any of the field descriptions from file choices, with all spaces removed
+# eg the description  Date Of Birth  would be a field name of  dateofbirth
+#
+# Any line can be preceded with M_,F_ or U_ and it will only be plotted if the persons sex matches
 
 
-ChildLine,20,15,20,25,0,000000
-CentredField,20,11,12,000000,FFFFFF,Trinity.Medium,FullName
-Text,12,7,12,000000,FFFFFF,Trinity.Medium,b
-Text,12,3,12,000000,FFFFFF,Trinity.Medium,d
-Field,15,7,12,000000,FFFFFF,Trinity.Medium,dob
-Field,15,3,12,000000,FFFFFF,Trinity.Medium,dod
+ChildLine,20,11,20,25,0,000000
+CentredField,20,5,12,000000,FFFFFF,Trinity.Medium,FullName
 

@@ -28,10 +28,8 @@
 # Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
 # or
 # CentredField,x,y,size,RRGGBB,RRGGBB (background),font,field name
-# Field name is any one of the following
-# Place
-# Date
-# Divorce
+# Field name is any of the field descriptions from file choices, with all spaces removed
+# eg the description  Date Of Marriage  would be a field name of  dateofmarriage
 
 
 Line,0,5,12,5,0,000000

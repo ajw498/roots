@@ -36,8 +36,51 @@
 # eg the description  Date Of Birth  would be a field name of  dateofbirth
 #
 # Any line can be preceded with M_,F_ or U_ and it will only be plotted if the persons sex matches
+#
+# A bit over the top!
+# You should turn on font background blending for this style.
 
-FilledBox,0,0,40,15,F5F5F5
+FilledBox,0,0,40,15,FFFFFF
+FilledBox,0,0,39,15,FBFBFB
+FilledBox,0,0,38,15,F8F8F8
+FilledBox,0,0,37,15,F4F4F4
+FilledBox,0,0,36,15,EFEFEF
+FilledBox,0,0,35,15,EBEBEB
+FilledBox,0,0,34,15,E8E8E8
+FilledBox,0,0,33,15,E4E4E4
+FilledBox,0,0,32,15,DFDFDF
+FilledBox,0,0,31,15,DBDBDB
+FilledBox,0,0,30,15,D8D8D8
+FilledBox,0,0,29,15,D4D4D4
+FilledBox,0,0,28,15,CFCFCF
+FilledBox,0,0,27,15,CBCBCB
+FilledBox,0,0,26,15,C8C8C8
+FilledBox,0,0,25,15,C4C4C4
+FilledBox,0,0,24,15,BFBFBF
+FilledBox,0,0,23,15,BBBBBB
+FilledBox,0,0,22,15,B8B8B8
+FilledBox,0,0,21,15,B4B4B4
+FilledBox,0,0,20,15,AFAFAF
+FilledBox,0,0,19,15,ABABAB
+FilledBox,0,0,18,15,A8A8A8
+FilledBox,0,0,17,15,A4A4A4
+FilledBox,0,0,16,15,9F9F9F
+FilledBox,0,0,15,15,9B9B9B
+FilledBox,0,0,14,15,989898
+FilledBox,0,0,13,15,949494
+FilledBox,0,0,12,15,8F8F8F
+FilledBox,0,0,11,15,8B8B8B
+FilledBox,0,0,10,15,888888
+FilledBox,0,0,9,15,848484
+FilledBox,0,0,8,15,7F7F7F
+FilledBox,0,0,7,15,7B7B7B
+FilledBox,0,0,6,15,787878
+FilledBox,0,0,5,15,747474
+FilledBox,0,0,4,15,6F6F6F
+FilledBox,0,0,3,15,6B6B6B
+FilledBox,0,0,2,15,686868
+FilledBox,0,0,1,15,646464
+
 Box,0,0,40,15,0,000000
 ChildLine,20,15,20,25,0,000000
 M_CentredField,20,7,12,0000FF,FFFFFF,Trinity.Medium,FullName

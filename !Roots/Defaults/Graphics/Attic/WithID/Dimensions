@@ -11,12 +11,10 @@ GapHeightAbove,10
 # Height of gap from bottom of person to line joining siblings
 GapHeightBelow,10
 # Minimum width of gap between people
-GapWidth,15
+GapWidth,5
 # Width of gap between a married couple
-MarriageWidth,12
+MarriageWidth,20
 # Minimum width between a second spouse and the first
 SecondMarriageGap,3
 # Width of blank space to leave around outside of each window
 WindowBorder,4
-# Height of gap between people in the unlinked window
-GapHeightUnlinked,4

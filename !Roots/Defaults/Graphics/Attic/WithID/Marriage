@@ -32,8 +32,9 @@
 # eg the description  Date Of Marriage  would be a field name of  dateofmarriage
 
 
-Line,0,5,12,5,0,000000
-Line,0,10,12,10,0,000000
-ChildLine,6,-10,6,5,0,000000
-SiblingLine,0,000000
 
+Line,0,4,20,4,0,000000
+Line,0,10,20,10,0,000000
+ChildLine,10,-10,10,4,0,000000
+SiblingLine,0,000000
+CentredField,10,6,12,000000,FFFFFF,Trinity.Medium,date

@@ -1,4 +1,4 @@
-# Person file
+# Marriage file
 #
 # All measurements are in mm
 # Font sizes are in points
@@ -20,31 +20,22 @@
 # Line,x,y,x1,y1,linewidth,RRGGBB
 #
 # ChildLine,x,y,x1,y1,linewidth,RRGGBB
-# This line is only plotted if the person has parents
+# This line is only plotted if the marriage has any children
+#
+# SiblingLine,thickness,RRGGBB
+# This is the line that joins siblings together
 #
 # Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
 # or
 # CentredField,x,y,size,RRGGBB,RRGGBB (background),font,field name
-# Field name is any one of the following
-# Surname
-# Forename
-# Name
-# Middlename
-# Fullname
-# Sex
-# Dob
-# Dod
-# Birthplace
-# User1
-# User2
-# User3
+# Field name is any of the field descriptions from file choices, with all spaces removed
+# eg the description  Date Of Marriage  would be a field name of  dateofmarriage
 
 
-Box,0,0,40,15,0,000000
-ChildLine,20,15,20,25,0,000000
-CentredField,20,11,12,000000,FFFFFF,Trinity.Medium,FullName
-Text,12,7,12,000000,FFFFFF,Trinity.Medium,b
-Text,12,3,12,000000,FFFFFF,Trinity.Medium,d
-Field,15,7,12,000000,FFFFFF,Trinity.Medium,dob
-Field,15,3,12,000000,FFFFFF,Trinity.Medium,dod
 
+Line,-20,-5,32,-5,0,000000
+Line,-20,-5,-20,0,0,000000
+Line,32,-5,32,0,0,000000
+ChildLine,6,-10,6,-5,0,000000
+SiblingLine,0,000000
+CentredField,6,-4,12,000000,FFFFFF,Trinity.Medium,date
