@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.2  1999/10/02 17:49:16  AJW
+	Fixed Database_RemoveSpouse
+
 	Revision 1.1  1999/09/27 15:32:05  AJW
 	Initial revision
 
@@ -219,18 +222,27 @@ void Database_UnlinkPerson(elementptr person)
 
 void Database_RemoveSpouse(elementptr person)
 {
-/*	elementptr spouse,marriage;
+	elementptr principal,marriage,spouse;
 	marriage=Database_GetMarriage(person);
 	if (marriage==none) return;
-	if (Database_GetChild(marriage)!=none) return;
-	if (Database_GetFather(person)!=none) return;
-	spouse=Database_GetSpouse(person);
+	if (Database_GetLeftChild(marriage)!=none) return;
+	if (Database_GetMother(person)!=none) return;
+	principal=Database_GetPrincipalFromMarriage(marriage);
+	spouse=Database_GetSpouseFromMarriage(marriage);
+	if (database[marriage].marriage.previous) database[database[marriage].marriage.previous].marriage.next=database[marriage].marriage.next;
+	if (database[marriage].marriage.next) database[database[marriage].marriage.next].marriage.previous=database[marriage].marriage.previous;
+	if (database[marriage].marriage.previous==none && database[marriage].marriage.next==none) database[principal].person.marriage=none;
 	database[spouse].person.marriage=none;
 	database[marriage].freeelement.next=database[0].file.freeelement;
 	database[0].file.freeelement=marriage;
-	if (database[0].file.linkedpeople==person) database[0].file.linkedpeople=spouse;
+	if (database[0].file.linkedpeople==person) {
+		if (principal==person) database[0].file.linkedpeople=spouse; else database[0].file.linkedpeople=principal;
+	}
+	database[person].person.marriage=none;
+	database[person].person.nextunlinked=database[0].file.unlinkedpeople;
+	database[0].file.unlinkedpeople=person;
 	Modules_ChangedStructure();
-*/}
+}
 
 void Database_RemoveParents(elementptr person)
 {
