@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.18 2000/02/28 20:20:49 uid1 Exp $
+	$Id: File.c,v 1.19 2000/02/28 21:36:44 uid1 Exp $
 
 */
 
@@ -138,7 +138,7 @@ void File_LoadFile(char *filename)
 			if ((pos+size)!=ftell(file)) AJWLib_Error2_HandleMsgs("Error.Corrupt:Corrupt file");
 		}
 		AJWLib_File_fclose(file);
-		Windows_LayoutNormal(layout);
+		Windows_LayoutNormal(layout,Desk_FALSE);
 		if (!graphicsloaded) Graphics_LoadStyle(Config_GraphicsStyle());
 		strcpy(currentfilename,filename);
 		modified=Desk_FALSE;
@@ -156,17 +156,14 @@ void File_LoadFile(char *filename)
 
 void File_New(void)
 {
-	modified=Desk_FALSE;
 	Desk_Error2_Try {
-		strcpy(currentfilename,AJWLib_Msgs_TempLookup("File.Tree:Untitled"));
-		Windows_FileModified();
 		Database_New();
 		Desk_Error2_Try {
 			Graphics_LoadStyle(Config_GraphicsStyle());
 			Desk_Error2_Try {
 				Windows_OpenWindow(wintype_UNLINKED,none,0,100,NULL);
 				Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
-				Windows_LayoutNormal(NULL);
+				Windows_LayoutNormal(NULL,Desk_TRUE);
 				File_GetCurrentTime();
 			} Desk_Error2_Catch {
 				Graphics_RemoveStyle();
@@ -180,6 +177,9 @@ void File_New(void)
 	} Desk_Error2_Catch {
 		AJWLib_Error2_Report("%s");
 	} Desk_Error2_EndCatch
+	modified=Desk_FALSE;
+	strcpy(currentfilename,AJWLib_Msgs_TempLookup("File.Tree:Untitled"));
+	Windows_FileModified();
 }
 
 void File_Remove(void)

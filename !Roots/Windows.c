@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.58 2000/02/28 20:20:51 uid1 Exp $
+	$Id: Windows.c,v 1.59 2000/02/28 21:36:47 uid1 Exp $
 
 */
 
@@ -1177,22 +1177,52 @@ void Windows_FileModified(void)
 	}
 }
 
-void Windows_LayoutNormal(layout *layout)
+void Windows_CloseNewView(void)
+{
+	Desk_Window_Hide(newviewwin);
+}
+
+static void Windows_OpenWindowCentered(windowdata *windowdata,Desk_convert_block *coords)
+{
+	Desk_window_openblock blk;
+	AJWLib_Assert(windowdata!=NULL);
+	blk.window=windowdata->handle;
+	blk.behind=-1;
+	blk.screenrect.min.x=0;
+	blk.screenrect.max.x=INFINITY;
+	blk.screenrect.min.y=-INFINITY;
+	blk.screenrect.max.y=Desk_screen_size.y;
+	if (windowdata->type!=wintype_UNLINKED) {
+		Desk_wimp_rect bbox=Layout_FindExtent(windowdata->layout,Desk_FALSE);
+		blk.screenrect.min.x=Desk_screen_size.x/2-((Graphics_WindowBorder()+bbox.max.x-bbox.min.x)*windowdata->scale)/200;
+		blk.screenrect.max.y=Desk_screen_size.y/2+((Graphics_WindowBorder()+(Config_Title() ? Graphics_TitleHeight() : 0)+bbox.max.y-bbox.min.y)*windowdata->scale)/200;
+	}
+	blk.scroll.x=0;
+	blk.scroll.y=0;
+	if (coords) {
+		blk.screenrect=coords->screenrect;
+		blk.scroll=coords->scroll;
+	}
+	Desk_Wimp_OpenWindow(&blk);
+
+}
+
+void Windows_LayoutNormal(layout *layout,Desk_bool opencentred)
 {
 	int i;
 	if (layout==NULL) Desk_Error2_TryCatch(layout=Layout_LayoutNormal();,AJWLib_Error2_Report("%s");)
 	for (i=0;i<MAXWINDOWS;i++) {
-		if (windows[i].handle && windows[i].type==wintype_NORMAL) {
-			AJWLib_Assert(windows[i].layout==NULL);
+		if (windows[i].handle && windows[i].type==wintype_NORMAL && windows[i].layout==NULL) {
 			windows[i].layout=layout;
 			Windows_ResizeWindow(&windows[i]);
+			if (opencentred) Windows_OpenWindowCentered(&windows[i],NULL);
 		}
 	}
 }
 
 void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale,Desk_convert_block *coords)
 {
-	/*Let any Error2s be habdled by the calling function*/
+	/*Let any Error2s be handled by the calling function*/
 	int newwindow;
 	char str[256]="";
 	layout *layoutnormal=NULL;
@@ -1212,16 +1242,6 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 	windows[newwindow].person=person;
 	windows[newwindow].generations=generations;
 	windows[newwindow].scale=scale;
-	if (coords==NULL) {
-		Desk_Window_Show(windows[newwindow].handle,Desk_open_CENTERED);
-	} else {
-		Desk_window_openblock blk;
-		blk.window=windows[newwindow].handle;
-		blk.screenrect=coords->screenrect;
-		blk.scroll=coords->scroll;
-		blk.behind=-1;
-		Desk_Wimp_OpenWindow(&blk);
-	}
 	switch (type) {
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
@@ -1261,10 +1281,12 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			windows[newwindow].layout=NULL;
 			AJWLib_Assert(0);
 	}
-	if (type!=wintype_NORMAL) Windows_ResizeWindow(&windows[newwindow]);
+	if (type!=wintype_NORMAL || layoutnormal!=NULL) Windows_ResizeWindow(&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Windows_MouseClick,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
+	Windows_OpenWindowCentered(&windows[newwindow],coords);
+	File_Modified();
 }
 
 static void Windows_MainMenuClick(int entry,void *ref)
@@ -1345,7 +1367,12 @@ static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 			AJWLib_Assert(0);
 	}
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(newviewwin);
-	Desk_Error2_TryCatch(Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),100,NULL);,AJWLib_Error2_Report("%s");)
+	Desk_Error2_Try {
+		Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),100,NULL);
+		if (wintype==wintype_NORMAL) Windows_LayoutNormal(NULL,Desk_TRUE);
+	} Desk_Error2_Catch {
+		AJWLib_Error2_Report("%s");
+	} Desk_Error2_EndCatch
 	return Desk_TRUE;
 }
 

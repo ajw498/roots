@@ -3,7 +3,7 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.12 2000/02/28 17:07:24 uid1 Exp $
+	$Id: Modules.c,v 1.13 2000/02/28 21:36:46 uid1 Exp $
 
 */
 
@@ -41,6 +41,7 @@ void Modules_ReflectChanges(void)
 {
 	if (changedstructure) {
 		Windows_Relayout();
+		Windows_CloseNewView();
 		Database_StopEditing();
 		Windows_CloseAddParentsWindow();
 	}
