@@ -33,6 +33,7 @@ void Graphics_LoadPersonFileLine(char *line);
 void Graphics_LoadMarriageFileLine(char *line);
 void Graphics_LoadDimensionsFileLine(char *line);
 void Graphics_LoadTitleFileLine(char *line);
+void Graphics_LoadLuaFileLine(char *line);
 void Graphics_SetGraphicsStyle(char *style);
 
 #endif

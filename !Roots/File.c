@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.36 2000/11/06 23:45:51 AJW Exp $
+	$Id: File.c,v 1.37 2000/11/11 21:51:19 AJW Exp $
 
 */
 
@@ -302,6 +302,10 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		
 	} else if (!Desk_stricmp(tag,"FAM.CHIL")) {
 		/* Do nothing, as database will sort this out after everyone has been loaded*/
+
+	} else if (!Desk_stricmp(tag,"_GRAPHICS._LUAFILE._LINE")) {
+		if (prescan) return;
+		Graphics_LoadLuaFileLine(data);
 
 	} else if (!Desk_stricmp(tag,"_GRAPHICS._PERSONFILE._LINE")) {
 		if (prescan) return;
