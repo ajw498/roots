@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.44 2000/02/24 19:01:02 uid1 Exp $
+	$Id: Windows.c,v 1.45 2000/02/25 16:59:26 uid1 Exp $
 
 */
 
@@ -153,12 +153,12 @@ static windowdata *menuoverwindow;
 
 void Windows_RedrawPerson(Desk_window_handle win,personlayout *person)
 {
-	Desk_Window_ForceRedraw(win,person->x-REDRAWOVERLAP,person->y-REDRAWOVERLAP,person->x+Graphics_PersonWidth()+REDRAWOVERLAP,person->y+Graphics_PersonHeight()+REDRAWOVERLAP);
+	Desk_Window_ForceRedraw(win,(Draw_GetScaleFactor()*person->x)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*person->y)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*(person->x+Graphics_PersonWidth()))/100+REDRAWOVERLAP,(Draw_GetScaleFactor()*(person->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
 void Windows_RedrawMarriage(Desk_window_handle win,marriagelayout *marriage)
 {
-	Desk_Window_ForceRedraw(win,marriage->x-REDRAWOVERLAP,marriage->y-REDRAWOVERLAP,marriage->x+Graphics_MarriageWidth()+REDRAWOVERLAP,marriage->y+Graphics_PersonHeight()+REDRAWOVERLAP);
+	Desk_Window_ForceRedraw(win,(Draw_GetScaleFactor()*marriage->x)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*marriage->y)/100-REDRAWOVERLAP,(Draw_GetScaleFactor()*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(Draw_GetScaleFactor()*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
 static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
@@ -170,8 +170,6 @@ static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *wi
 	while (more) {
 #if DEBUG
 		Desk_ColourTrans_SetGCOL(0x00000000,0,0);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-		Desk_ColourTrans_SetGCOL(0xFF000000,0,0);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 		Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
@@ -194,7 +192,7 @@ static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-		Graphics_PlotPerson(addparentsperson,blk.rect.min.x-blk.scroll.x+332,blk.rect.max.y-blk.scroll.y-16-Graphics_PersonHeight(),Desk_FALSE,Desk_FALSE);
+		Graphics_PlotPerson(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,addparentsperson,332,16-Graphics_PersonHeight(),Desk_FALSE,Desk_FALSE);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 	return Desk_TRUE;
@@ -282,7 +280,7 @@ void Windows_ResizeWindow(windowdata *windowdata)
 		maxyextent=Desk_TRUE;
 	}
 	/*Set window extent to fit layout size*/
-	Desk_Window_SetExtent(windowdata->handle,box.min.x-Graphics_WindowBorder(),box.min.y-Graphics_WindowBorder(),box.max.x+Graphics_WindowBorder(),box.max.y+Graphics_WindowBorder());
+	Desk_Window_SetExtent(windowdata->handle,(Draw_GetScaleFactor()*(box.min.x-Graphics_WindowBorder()))/100,(Draw_GetScaleFactor()*(box.min.y-Graphics_WindowBorder()))/100,(Draw_GetScaleFactor()*(box.max.x+Graphics_WindowBorder()))/100,(Draw_GetScaleFactor()*(box.max.y+Graphics_WindowBorder()))/100);
 	/*Reread window position as it might have changed*/
 	Desk_Window_GetInfo3(windowdata->handle,&infoblk);
 	Desk_Wimp_GetWindowOutline(&outlineblk);
@@ -361,6 +359,7 @@ void Windows_ChangedLayout(void)
 
 void Windows_PlotDragBox(dragdata *dragdata)
 {
+	/*Plot or remove a drag box*/
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
 	blk.window=dragdata->windowdata->handle;
@@ -370,14 +369,15 @@ void Windows_PlotDragBox(dragdata *dragdata)
 	blk.rect.max.y=INFINITY;
 	Desk_Wimp_UpdateWindow(&blk,&more);
 	while (more) {
-		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x+dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,blk.rect.max.y-blk.scroll.y+dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,EORCOLOUR);
-		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x+dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,blk.rect.max.y-blk.scroll.y+dragdata->persony,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,EORCOLOURRED);
+		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,EORCOLOUR);
+		Draw_EORRectangle(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,dragdata->persony,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,EORCOLOURRED);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 }
 
 void Windows_DragEnd(void *ref)
 {
+	/*User has finsihed a drag*/
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
 	dragdata *dragdata=ref;
@@ -409,11 +409,11 @@ void Windows_DragEnd(void *ref)
 		/*act as if drag had ended on same win as started on*/
 		if (dragdata->plotted) Windows_PlotDragBox(dragdata);
 		Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
-		mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
+		mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
 		Windows_AddSelected(dragdata->windowdata->layout,mousex+dragdata->oldoffset-dragdata->origmousex);
 		Layout_LayoutLines(dragdata->windowdata->layout);
 		Windows_ResizeWindow(dragdata->windowdata);
-		Desk_Window_ForceRedraw(dragdata->windowdata->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+		Desk_Window_ForceWholeRedraw(dragdata->windowdata->handle);
 	} else if (dragdata->windowdata->type==wintype_UNLINKED) {
 		if (windows[window].type==wintype_NORMAL) {
 			AJWLib_Assert(Database_IsUnlinked(initialperson));
@@ -423,8 +423,8 @@ void Windows_DragEnd(void *ref)
 				return;
 			}
 			Desk_Window_GetCoords(mouseblk.window,&blk);
-			mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-			mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+			mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+			mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
 			for (i=0;i<windows[window].layout->numpeople;i++) {
 				if (mousex>=windows[window].layout->person[i].x && mousex<=windows[window].layout->person[i].x+Graphics_PersonWidth()) {
 					if (mousey>=windows[window].layout->person[i].y && mousey<=windows[window].layout->person[i].y+Graphics_PersonHeight()) {
@@ -434,7 +434,7 @@ void Windows_DragEnd(void *ref)
 							addparentsperson=initialperson;
 							addparentschild=finalperson;
 							Desk_Window_SetExtent(addparentswin,0,304>Graphics_PersonHeight()+32 ? -304 : -Graphics_PersonHeight()-32,348+Graphics_PersonWidth(),0);
-							Desk_Window_ForceRedraw(addparentswin,-INFINITY,-INFINITY,INFINITY,INFINITY);
+							Desk_Window_ForceWholeRedraw(addparentswin);
 							Desk_Window_Show(addparentswin,Desk_open_CENTERED);
 						} else {
 							Database_Marry(finalperson,initialperson);
@@ -488,8 +488,8 @@ void Windows_SelectDragEnd(void *ref)
 	int mousex,mousey,i;
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
-	mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-	mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
 		if (mousex>dragdata->windowdata->layout->person[i].x && dragdata->oldmousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() || mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth() && dragdata->oldmousex>dragdata->windowdata->layout->person[i].x) {
 			if (mousey>dragdata->windowdata->layout->person[i].y && dragdata->oldmousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() || mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight() && dragdata->oldmousey>dragdata->windowdata->layout->person[i].y) {
@@ -570,7 +570,7 @@ void Windows_DragFn(void *ref)
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Wimp_GetWindowState(dragdata->windowdata->handle,&blk);
 	Desk_Window_GetInfo3(dragdata->windowdata->handle,&infoblk);
-	mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
+	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/Draw_GetScaleFactor();
 	if (mousex!=dragdata->oldmousex) {
 		/*Unplot drag box if it has moved*/
 		Windows_PlotDragBox(dragdata);
@@ -623,8 +623,8 @@ void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdat
 	int mousex,mousey;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-	mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
 	dragblk.type=Desk_drag_INVISIBLE;
 	dragdata.coords=Layout_FindExtent(windowdata->layout,Desk_TRUE);
 	dragdata.coords.min.x-=mousex;
@@ -698,13 +698,13 @@ void Windows_StartDragUnlinked(elementptr person,int x,int y,windowdata *windowd
 	int mousex,mousey;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-	mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
 	dragblk.type=Desk_drag_FIXEDBOX;
-	dragblk.screenrect.min.x=x+(blk.screenrect.min.x-blk.scroll.x);
-	dragblk.screenrect.max.x=x+Graphics_PersonWidth()+(blk.screenrect.min.x-blk.scroll.x);
-	dragblk.screenrect.min.y=y+(blk.screenrect.max.y-blk.scroll.y);
-	dragblk.screenrect.max.y=y+Graphics_PersonHeight()+(blk.screenrect.max.y-blk.scroll.y);
+	dragblk.screenrect.min.x=(Draw_GetScaleFactor()*x)/100+(blk.screenrect.min.x-blk.scroll.x);
+	dragblk.screenrect.max.x=(Draw_GetScaleFactor()*(x+Graphics_PersonWidth()))/100+(blk.screenrect.min.x-blk.scroll.x);
+	dragblk.screenrect.min.y=(Draw_GetScaleFactor()*y)/100+(blk.screenrect.max.y-blk.scroll.y);
+	dragblk.screenrect.max.y=(Draw_GetScaleFactor()*(y+Graphics_PersonHeight()))/100+(blk.screenrect.max.y-blk.scroll.y);
 	dragblk.parent.min.y=dragblk.screenrect.min.y-mouseblk.pos.y;
 	dragblk.parent.max.y=Desk_screen_size.y+dragblk.screenrect.max.y-mouseblk.pos.y;
 	dragblk.parent.min.x=dragblk.screenrect.min.x-mouseblk.pos.x;
@@ -731,8 +731,8 @@ void Windows_StartDragSelect(windowdata *windowdata)
 	int mousex,mousey;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
-	mousex=mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-	mousey=mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
 	dragblk.type=Desk_drag_RUBBERBOX;
 	dragblk.screenrect.min.x=mouseblk.pos.x;
 	dragblk.screenrect.max.x=mouseblk.pos.x;
@@ -756,8 +756,8 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	int mousex,mousey,i;
 	Desk_convert_block blk;
 	Desk_Window_GetCoords(windowdata->handle,&blk);
-	mousex=block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x);
-	mousey=block->data.mouse.pos.y-(blk.screenrect.max.y-blk.scroll.y);
+	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/Draw_GetScaleFactor();
+	mousey=((block->data.mouse.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/Draw_GetScaleFactor();
 	menuoverperson=none;
 	menuoverwindow=windowdata;
 	AJWLib_Menu_Shade(personmenu,personmenu_ADD);
@@ -925,7 +925,7 @@ void Windows_Relayout(void)
 					AJWLib_Assert(0);
 			}
 			Windows_ResizeWindow(&windows[i]);
-			Desk_Window_ForceRedraw(windows[i].handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Desk_Window_ForceWholeRedraw(windows[i].handle);
 		}
 	}
 }
@@ -1226,19 +1226,19 @@ void Windows_SelectMenuClick(int entry,void *ref)
 	switch (entry) {
 		case selectmenu_DESCENDENTS:
 			Layout_SelectDescendents(menuoverwindow->layout,menuoverperson);
-			Desk_Window_ForceRedraw(menuoverwindow->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Desk_Window_ForceWholeRedraw(menuoverwindow->handle);
 			break;
 		case selectmenu_ANCESTORS:
 			Layout_SelectAncestors(menuoverwindow->layout,menuoverperson);
-			Desk_Window_ForceRedraw(menuoverwindow->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Desk_Window_ForceWholeRedraw(menuoverwindow->handle);
 			break;
 		case selectmenu_SIBLINGS:
 			Layout_SelectSiblings(menuoverwindow->layout,menuoverperson);
-			Desk_Window_ForceRedraw(menuoverwindow->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Desk_Window_ForceWholeRedraw(menuoverwindow->handle);
 			break;
 		case selectmenu_SPOUSES:
 			Layout_SelectSpouses(menuoverwindow->layout,menuoverperson);
-			Desk_Window_ForceRedraw(menuoverwindow->handle,-INFINITY,-INFINITY,INFINITY,INFINITY);
+			Desk_Window_ForceWholeRedraw(menuoverwindow->handle);
 			break;
 	}
 }
@@ -1275,7 +1275,7 @@ void Windows_Init(void)
 	numwindows=0;
 	for (i=0;i<MAXWINDOWS;i++) windows[i].handle=0;
 	Desk_Drag_Initialise(Desk_TRUE);
-	Draw_SetScaleFactor(1<<24);
+	Draw_SetScaleFactor(200);
 	newviewwin=Desk_Window_Create("NewView",Desk_template_TITLEMIN);
 	Desk_Icon_InitIncDecHandler(newviewwin,newview_GENERATIONS,newview_UP,newview_DOWN,Desk_FALSE,1,1,999,10);
 	AJWLib_Icon_RegisterCheckAdjust(newviewwin,newview_NORMAL);
