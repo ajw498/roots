@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.8  2000/01/09 12:19:10  AJW
+	Added reading and stroing of font name and size
+
 	Revision 1.7  1999/10/25 16:09:28  AJW
 	Added centering of fields
 
@@ -69,7 +72,7 @@
 #include "Config.h"
 #include "Layout.h"
 
-#define GRAPHICSDIR "<FT$Dir>.Graphics"
+#define GRAPHICSDIR "<Roots$Dir>.Graphics"
 
 graphics graphicsdata;
 
@@ -166,6 +169,8 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.bgcolour=Graphics_RGBToPalette(values[5]);
 				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.text,values[7]);
 				size=(int)strtol(values[3],NULL,10);
+				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.fontname,values[6]);
+				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.size=size;
 				Desk_Font2_ClaimFont(&(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.font),values[6],16*size,16*size);
 			}
 			break;
@@ -203,6 +208,8 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				graphicsdata.personfields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.personfields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
+				strcpy(graphicsdata.personfields[field].textproperties.fontname,values[6]);
+				graphicsdata.personfields[field].textproperties.size=size;
 				Desk_Font2_ClaimFont(&(graphicsdata.personfields[field].textproperties.font),values[6],16*size,16*size);
 				/*errors - font not found*/
 			}
@@ -310,6 +317,8 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				graphicsdata.personfields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
 				graphicsdata.personfields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
+				strcpy(graphicsdata.personfields[field].textproperties.fontname,values[6]);
+				graphicsdata.personfields[field].textproperties.size=size;
 				Desk_Font2_ClaimFont(&(graphicsdata.personfields[field].textproperties.font),values[6],16*size,16*size);
 				/*errors - font not found*/
 			}
