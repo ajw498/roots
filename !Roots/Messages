@@ -32,7 +32,7 @@ Title.Select:Select
 Menu.Select:Descendents,Ancestors,Siblings,Spouses
 
 Title.File:File
-Menu.File:Info,Save,Export,Choices...
+Menu.File:Info,Save,Export,Choices...,Print...
 
 Title.Export:Export
 Menu.Export:~GEDCOM,Draw,~Text
@@ -92,5 +92,6 @@ Error.NoDir:Cannot find graphics style %s
 Error.NoFile:Cannot find %s file in graphics style %s
 Error.NufWin:You cannot have more than %d windows open at once
 Error.CmdLine:Too many command line arguments
+Error.Print:Error whilst printing (%s)
 Error.Bad:Sorry, <Task.Name> has suffered an error (%s). Click Ok to continue or Cancel to quit.
 Error.Fatal:Sorry, <Task.Name> has suffered an internal error (%s) and must exit immediately.
