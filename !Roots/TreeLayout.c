@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.29 2000/02/29 23:52:28 uid1 Exp $
+	$Id: TreeLayout.c,v 1.30 2000/03/04 23:52:31 uid1 Exp $
 
 */
 
@@ -779,6 +779,7 @@ void Layout_Free(layout *layout)
 }
 
 int Layout_GetSize(layout *layout)
+/*Return the size of a given layout*/
 {
 	int size=0;
 	if (layout!=NULL) {
@@ -791,6 +792,7 @@ int Layout_GetSize(layout *layout)
 }
 
 void Layout_Save(layout *layout,FILE *file)
+/*Save a layout to the given file ptr*/
 {
 	tag tag=tag_LAYOUT;
 	int size;
@@ -808,6 +810,7 @@ void Layout_Save(layout *layout,FILE *file)
 }
 
 layout *Layout_Load(FILE *file)
+/*Load a layout from the given file ptr*/
 {
 	layout *layout;
 	AJWLib_Assert(file!=NULL);
