@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.69 2001/02/04 13:32:47 AJW Exp $
+	$Id: Layout.c,v 1.70 2001/02/04 16:42:55 AJW Exp $
 
 */
 
@@ -405,7 +405,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.69 2001/02/04 13:32:47 AJW Exp $
+	$Id: Layout.c,v 1.70 2001/02/04 16:42:55 AJW Exp $
 
 */
 
@@ -951,7 +951,7 @@ static void Windows_GetOffset(dragdata *dragdata)
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x);
 			if (Database_GetElementType(dragdata->windowdata->layout->person[i].element)==element_PERSON) {
 				if (Database_GetElementType(dragdata->person)==element_PERSON) {
-					distance+=dragdata->windowdata->layout->person[i].width;
+					distance+=dragdata->personwidth;
 					if (Database_Married(dragdata->person,dragdata->windowdata->layout->person[i].element)) distance+=Graphics_MarriageWidth(); else distance+=Graphics_GapWidth();
 				} else {
 					distance+=Graphics_MarriageWidth();
