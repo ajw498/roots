@@ -16,12 +16,13 @@ typedef int elementptr;
 
 
 typedef enum elementtype {
-	element_FILE,
+	element_NONE,
 	element_PERSON,
 	element_MARRIAGE,
+	element_SELECTION,
 	element_FREE,
-	element_TITLE,
-	element_NONE
+	element_FILE,
+	element_TITLE
 } elementtype;
 
 typedef enum sex {
@@ -99,7 +100,9 @@ void Database_Select(elementptr person);
 void Database_DeSelect(elementptr person);
 void Database_DeSelectAll(void);
 Desk_bool Database_GetSelect(elementptr person);
+elementtype Database_AnyoneSelected(void);
 void Database_UnlinkSelected(layout *layout);
+void Database_DeleteSelected(layout *layout);
 persondata *Database_GetPersonData(elementptr person);
 elementptr Database_GetMarriage(elementptr person);
 elementptr Database_GetMarriageLtoR(elementptr person);
@@ -127,8 +130,7 @@ char *Database_GetTitle(void);
 elementptr Database_Marry(elementptr linked,elementptr unlinked);
 void Database_AddChild(elementptr marriage,elementptr child);
 void Database_EditTitle(void);
-void Database_EditPerson(elementptr person);
-void Database_EditMarriage(elementptr marriage);
+void Database_Edit(elementptr person);
 elementptr Database_Add(void);
 void Database_Delete(elementptr person);
 int Database_GetNumPeople(void);

@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.30 2000/06/26 19:43:56 AJW Exp $
+	$Id: Database.c,v 1.31 2000/06/26 21:45:07 AJW Exp $
 
 */
 
@@ -81,6 +81,7 @@ static void Database_FreeElement(elementptr element)
 	database[element].element.freeelement.next=database[0].element.file.freeelement;
 	database[0].element.file.freeelement=element;
 	database[element].type=element_FREE;
+	database[element].selected=Desk_FALSE;
 }
 
 void Database_Select(elementptr person)
@@ -106,6 +107,29 @@ void Database_DeSelectAll(void)
 			database[i].selected=Desk_FALSE;
 		}
 	}
+}
+
+elementtype Database_AnyoneSelected(void)
+{
+	int i;
+	elementtype selected=element_NONE;
+	AJWLib_Assert(database!=NULL);
+	for (i=1;i<database[0].element.file.numberofelements;i++) {
+		if (database[i].selected) {
+			if (database[i].type==element_PERSON || database[i].type==element_MARRIAGE) {
+				switch (selected) {
+					case element_NONE:
+						selected=database[i].type;
+						break;
+					case element_PERSON:
+					case element_MARRIAGE:
+						selected=element_SELECTION;
+						return selected;
+				}
+			}
+		}
+	}
+	return selected;
 }
 
 Desk_bool Database_GetSelect(elementptr person)
@@ -173,6 +197,29 @@ void Database_UnlinkSelected(layout *layout)
 				if (database[database[i].element.marriage.principal].selected!=database[i].selected || database[database[i].element.marriage.spouse].selected!=database[i].selected) {
 					Layout_RemoveMarriage(layout,i);
 					Database_RemoveMarriage(i);
+					Modules_ChangedStructure();
+					break;
+			}
+		}
+	}
+}
+
+void Database_DeleteSelected(layout *layout)
+{
+	int i;
+	AJWLib_Assert(database!=NULL);
+	Database_UnlinkSelected(layout);
+	for (i=1;i<database[0].element.file.numberofelements;i++) {
+		if (database[i].selected) {
+			switch (database[i].type) {
+				case element_PERSON:
+					Layout_RemovePerson(layout,i);
+					Database_FreeElement(i);
+					Modules_ChangedStructure();
+					break;
+				case element_MARRIAGE:
+					Layout_RemoveMarriage(layout,i);
+					Database_FreeElement(i);
 					Modules_ChangedStructure();
 					break;
 			}
@@ -424,7 +471,7 @@ void Database_AddChild(elementptr marriage,elementptr child)
 	Modules_ChangedStructure();
 }
 
-void Database_EditPerson(elementptr person)
+static void Database_EditPerson(elementptr person)
 {
 	AJWLib_Assert(database!=NULL);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_SURNAME,database[person].element.person.data.surname);
@@ -548,7 +595,7 @@ static Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void 
 	return Desk_TRUE;
 }
 
-void Database_EditMarriage(elementptr marriage)
+static void Database_EditMarriage(elementptr marriage)
 {
 	char name[256];
 	AJWLib_Assert(database!=NULL);
@@ -563,6 +610,20 @@ void Database_EditMarriage(elementptr marriage)
 	Desk_Window_Show(editmarriagewin,editingmarriage ? Desk_open_WHEREVER : Desk_open_CENTERED);
 	Desk_Icon_SetCaret(editmarriagewin,editmarriageicon_PLACE);
 	editingmarriage=marriage;
+}
+
+void Database_Edit(elementptr person)
+{
+	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(person!=none);
+	switch (database[person].type) {
+		case element_PERSON:
+			Database_EditPerson(person);
+			break;
+		case element_MARRIAGE:
+			Database_EditMarriage(person);
+			break;
+	}
 }
 
 void Database_Delete(elementptr person)
