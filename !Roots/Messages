@@ -26,7 +26,7 @@ Menu.Title:<Title.Mr>,<Title.Mrs>,<Title.Miss>,<Title.Ms>,<Title.Dr>
 Title.Surname:Surnames
 
 Title.Main:<Task.Name>
-Menu.Main:File,Person,Select,New view...,~Search...,~Reports...
+Menu.Main:File,Person,Select,New view...,~Search...,~Reports...,Scale view...
 
 Title.Select:Select
 Menu.Select:Descendents,~Ancestors,Siblings,Spouses
@@ -39,6 +39,11 @@ Menu.Export:~GEDCOM,Draw,~Text
 
 Title.Person:Person
 Menu.Person:Add,Delete,Unlink
+
+Scale.1:33
+Scale.2:80
+Scale.3:100
+Scale.4:120
 
 Win.Desc:Descendents of
 Win.Anc:Ancestors of
