@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.50 2000/02/26 17:47:25 uid1 Exp $
+	$Id: Windows.c,v 1.51 2000/02/26 18:54:29 uid1 Exp $
 
 */
 
@@ -174,6 +174,15 @@ void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 void Windows_RedrawMarriage(windowdata *windowdata,marriagelayout *marriage)
 {
 	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*marriage->x)/100-REDRAWOVERLAP,(windowdata->scale*marriage->y)/100-REDRAWOVERLAP,(windowdata->scale*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
+}
+
+void Windows_ForceRedraw(void)
+{
+	int i;
+	for (i=0;i<MAXWINDOWS;i++) {
+		if (windows[i].handle) Desk_Window_ForceWholeRedraw(windows[i].handle);
+		/*Make this more efficient*/
+	}
 }
 
 static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
@@ -851,6 +860,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 					}
 					if (windowdata->type==wintype_NORMAL) AJWLib_Menu_UnShade(mainmenu,mainmenu_SELECT);
 				} else if (block->data.mouse.button.data.select) {
+					Windows_UnselectAll(windowdata);
 					Database_EditPerson(windowdata->layout->person[i].person);
 					return Desk_TRUE;
 				} else if (block->data.mouse.button.data.adjust) {
@@ -895,6 +905,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		if (mousex>=windowdata->layout->marriage[i].x && mousex<=windowdata->layout->marriage[i].x+Graphics_MarriageWidth()) {
 			if (mousey>=windowdata->layout->marriage[i].y && mousey<=windowdata->layout->marriage[i].y+Graphics_PersonHeight()) {
 				if (block->data.mouse.button.data.select) {
+					Windows_UnselectAll(windowdata);
 					Database_EditMarriage(windowdata->layout->marriage[i].marriage);
 					return Desk_TRUE;
 				} else if (block->data.mouse.button.data.clickselect) {

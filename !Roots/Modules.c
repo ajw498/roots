@@ -3,7 +3,7 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.8 2000/02/21 23:58:42 uid1 Exp $
+	$Id: Modules.c,v 1.9 2000/02/26 18:54:29 uid1 Exp $
 
 */
 
@@ -38,7 +38,7 @@ void Modules_ChangedLayout(void)
 void Modules_ReflectChanges(void)
 {
 	if (changedstructure) Windows_Relayout();
-	/*if (changeddata) Windows_ForceRedraw();*/
+	if (changeddata) Windows_ForceRedraw();
 	if (changedlayout) Windows_ChangedLayout();
 	changedstructure=Desk_FALSE;
 	changeddata=Desk_FALSE;
