@@ -2,56 +2,10 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Log: Database.c,v $
-	Revision 1.14  2000/02/20 19:45:18  uid1
-	Added creation of new database and removal of old database when necessary
-	Added setting of normal window title properly (including modified flag)
+	$Id: Database.c,v 1.15 2000/02/20 23:03:13 uid1 Exp $
 
-	Revision 1.13  2000/01/14 19:42:18  AJW
-	Added Database_Load and Remove
-	Added Asserts
-	
-	Revision 1.12  2000/01/13 23:33:02  AJW
-	Added GetNumPeople and GetSize
-	Moved InfoWin handling to Graphics.c
-
-	Revision 1.11  2000/01/13 17:52:00  AJW
-	Moved modified flag into File.c
-
-	Revision 1.10  2000/01/11 17:12:55  AJW
-	Changed Database_Save to work with File.c functions
-
-	Revision 1.9  1999/10/27 16:47:47  AJW
-	Got Database_Info partially working
-
-	Revision 1.8  1999/10/25 16:50:11  AJW
-	Added Database_GetName etc functions
-
-	Revision 1.7  1999/10/25 16:29:30  AJW
-	Added Database_GetFilename and Database_New
-
-	Revision 1.6  1999/10/11 19:28:59  AJW
-	Changed Database_Add and _Init to return void - they now use Error2
-
-	Revision 1.5  1999/10/11 17:56:04  AJW
-	Handles Edit marriage window now
-
-	Revision 1.4  1999/10/10 20:53:46  AJW
-	Modified to use Desk
-
-	Revision 1.3  1999/10/02 18:04:43  AJW
-	Fixed Database_RemoveParents
-
-	Revision 1.2  1999/10/02 17:49:16  AJW
-	Fixed Database_RemoveSpouse
-
-	Revision 1.1  1999/09/27 15:32:05  AJW
-	Initial revision
-
-	
 */
 
-/*	Includes  */
 
 #include "Desk.Window.h"
 #include "Desk.Error2.h"
@@ -78,8 +32,6 @@
 #include "Modules.h"
 #include "File.h"
 
-
-/*	Macros  */
 
 #define editpersonicon_SURNAME 1
 #define editpersonicon_FORENAME 9
@@ -713,18 +665,25 @@ int Database_GetSize(void)
 
 void Database_Save(FILE *file)
 {
+	tag tag=tag_DATABASE;
+	int size;
 	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(file!=NULL);
 /*Remove free elements?*/
 /*Consistency check?*/
+	size=Database_GetSize()+sizeof(tag)+sizeof(int);
+	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
 	AJWLib_File_fwrite(database,sizeof(element),database[0].file.numberofelements,file);
 }
 
 void Database_Load(FILE *file)
 {
-	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(database==NULL);
+	AJWLib_Assert(file!=NULL);
 /*Remove free elements?*/
 /*Consistency check?*/
-	AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element));
+	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element));
 	AJWLib_File_fread(database,sizeof(element),1,file);
 	AJWLib_Flex_Extend((flex_ptr)&database,sizeof(element)*database[0].file.numberofelements);
 	AJWLib_File_fread(database+1,sizeof(element),database[0].file.numberofelements-1,file);

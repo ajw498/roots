@@ -1,2 +1,2 @@
 Dir <Obey$Dir>
-make clean
+make -s clean

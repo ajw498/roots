@@ -25,18 +25,20 @@ void Windows_ChangedLayout(void);
 
 Desk_bool Windows_BringToFront(void);
 
-void Windows_OpenWindow(wintype type,elementptr person,int generations,layout *layout);
+void Windows_OpenWindow(wintype type,elementptr person,int generations);
 
 void Windows_Relayout(void);
 
 int Windows_GetSize(void);
 
-void Windows_Save(FILE *file);
+layout *Windows_Save(FILE *file,int *index);
 
 void Windows_Load(FILE *file);
 
 void Windows_FilenameChanged(char *filename);
 
 void Windows_FileModified(void);
+
+void Windows_LayoutNormal(layout *layout);
 
 #endif

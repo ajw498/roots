@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.10 2000/02/20 19:45:19 uid1 Exp $
+	$Id: File.c,v 1.11 2000/02/20 23:03:15 uid1 Exp $
 
 */
 
@@ -33,6 +33,7 @@
 #include "AJWLib.File.h"
 #include "AJWLib.Flex.h"
 #include "AJWLib.Str.h"
+#include "AJWLib.Assert.h"
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
 
@@ -55,16 +56,21 @@ static Desk_bool modified=Desk_FALSE;
 
 Desk_bool File_SaveFile(char *filename,void *ref)
 {
-	FILE *file;
+	FILE *file=NULL;
 	char fileid[]=FILEID;
 	int fileversion=FILEVERSION;
+	layout *normallayout=NULL,*layout=NULL;
+	int nextwindow=0;
 	strcpy(newfilename,filename);
-	file=AJWLib_File_fopen(filename,"w");
+	file=AJWLib_File_fopen(filename,"wb");
 	AJWLib_File_fwrite(fileid,1,4,file);
 	AJWLib_File_fwrite(&fileversion,4,1,file);
 	Database_Save(file);
 /*	Graphics_Save(file);*/
-	Windows_Save(file);
+	while (nextwindow>=0) {
+		if ((layout=Windows_Save(file,&nextwindow))!=NULL) normallayout=layout;
+	}
+	if (normallayout) Layout_Save(normallayout,file);
 	AJWLib_File_fclose(file);
 	/*Error handling*/
 	return Desk_TRUE;
@@ -72,10 +78,11 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 
 void File_LoadFile(char *filename)
 {
-	FILE *file;
+	FILE *file=NULL;
 	char fileid[5];
+	layout *layout=NULL;
 	int fileversion;
-	file=AJWLib_File_fopen(filename,"r");
+	file=AJWLib_File_fopen(filename,"rb");
 	AJWLib_File_fread(fileid,1,4,file);
 	AJWLib_File_fread(&fileversion,4,1,file);
 	fileid[4]='\0';
@@ -91,11 +98,34 @@ void File_LoadFile(char *filename)
 		}
 		Desk_Error_Report(1,"This was produced by a later version of Roots, but I will try to load it anyway"); /*Give a choice? msgs*/
 	}
-	Database_New();
-	Database_Load(file);
-/*	Graphics_Load(file);*/
-	Windows_Load(file);
+	while (!feof(file)) {
+		int size;
+		tag tag;
+		long int pos=ftell(file);
+		AJWLib_File_fread(&tag,sizeof(tag),1,file);
+		AJWLib_File_fread(&size,sizeof(int),1,file);
+		if (feof(file)) break;
+		switch (tag) {
+			case tag_WINDOW:
+				Windows_Load(file);
+				break;
+			case tag_DATABASE:
+				AJWLib_Assert(Database_GetSize()==0); /*Make this a proper error?*/
+				Database_Load(file);
+				break;
+			case tag_LAYOUT:
+				AJWLib_Assert(layout==NULL); /*Make this a proper error?*/
+				layout=Layout_Load(file);
+				break;
+			default:
+				Desk_Error_Report(1,"Tag is %d",tag);
+				AJWLib_Assert(0);
+				fseek(file,pos+size,SEEK_SET);
+		}
+		if ((pos+size)!=ftell(file)) Desk_Error2_HandleText("Corrupt file or something");
+	}
 	AJWLib_File_fclose(file);
+	Windows_LayoutNormal(layout);
 	strcpy(currentfilename,filename);
 	modified=Desk_FALSE;
 	Windows_FilenameChanged(currentfilename);
