@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.28 2000/02/28 21:36:45 uid1 Exp $
+	$Id: Layout.c,v 1.29 2000/02/29 23:52:28 uid1 Exp $
 
 */
 
@@ -35,6 +35,13 @@ typedef struct {
 	int maxx;
 } line;
 
+typedef enum direction {
+	direction_RTOL,
+	direction_BOTH,
+	direction_LTOR,
+	direction_NONE
+} direction;
+
 typedef void (*callfn)(layout *layout,elementptr person,int,Desk_bool,Desk_bool);
 
 static line *spaces;
@@ -46,7 +53,8 @@ Desk_bool halt;
 static int numgenerations,addamount,firstplot,largenumber;
 static Desk_bool selectmarriages;
 
-void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn);
+static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn);
+static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int generation,callfn fn);
 
 layout *Layout_LayoutUnlinked(void)
 {
@@ -416,6 +424,43 @@ static void Layout_Plot(layout *layout,elementptr person,int generation,Desk_boo
 	Layout_PlotPerson(layout,person,generation,lefttoright,child);
 }
 
+static void Layout_PlotAncestors(layout *layout,elementptr person,int generation,Desk_bool lefttoright,Desk_bool child)
+{
+	int amount=0;
+	elementptr mother,principal,principalmother;
+	int motherx,principalmotherx;
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(person!=none);
+	Layout_ExtendGeneration(generation);
+	Layout_ExtendGeneration(generation-1);
+	mother=Database_GetMother(person);
+	principal=Database_GetPrincipalFromMarriage(Database_GetMarriage(person));
+	principalmother=Database_GetMother(principal);
+	motherx=Layout_FindXCoord(layout,mother);
+	principalmotherx=Layout_FindXCoord(layout,principalmother);
+	if (person!=principal) {
+		if (mother && principalmother) {
+			amount=(motherx+principalmotherx)/2+Graphics_PersonWidth();
+		} else if (mother || principalmother) {
+			amount=motherx+principalmotherx+(Graphics_PersonWidth()-Graphics_MarriageWidth())/2;
+		}
+		if (amount<spaces[generation-mingeneration].minx) {
+			spaces[generation-mingeneration].minx=amount;
+		} else {
+			addamount=spaces[generation-mingeneration].minx-amount;
+			Layout_TraverseAncestorTree(layout,mother,generation-1,Layout_Add);
+		}
+	} else {
+		amount=principalmotherx+(Graphics_PersonWidth()-Graphics_MarriageWidth())/2;
+		if (amount>spaces[generation-mingeneration].minx) {
+			addamount=spaces[generation-mingeneration].minx-principalmotherx-Graphics_PersonWidth()-(Graphics_GapWidth()-Graphics_MarriageWidth())/2;
+			/*This gets it wrong if there is no mother but the principal mother is too far to the right*/
+			Layout_TraverseAncestorTree(layout,principalmother,generation-1,Layout_Add);
+		}
+	}
+	Layout_PlotPerson(layout,person,generation,lefttoright,child);
+}
+
 void Layout_RemovePerson(layout *layout,elementptr person)
 {
 	int i;
@@ -483,7 +528,7 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 	return box;
 }
 
-void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn)
+static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn)
 {
 	AJWLib_Assert(layout!=NULL);
 	if (person==none) return;
@@ -517,18 +562,16 @@ void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doa
 /*Traversing righttoleft is broken*/
 }
 
-static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool doparents,int generation,callfn fn)
+static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int generation,callfn fn)
 {
+	elementptr principal;
 	AJWLib_Assert(layout!=NULL);
-	Desk_UNUSED(doallsiblings);
 	if (person==none) return;
-	if (domarriage>=2)  Layout_TraverseAncestorTree(layout,Database_GetMarriageRtoL(person),3,0,Desk_TRUE,generation,fn);
-	if (domarriage==3 && Database_GetMarriageRtoL(person)!=none) return;
-/*	if (doallsiblings>=2)  Layout_TraverseAncestorTree(layout,Database_GetSiblingRtoL(person),2,3,Desk_FALSE,generation,fn);
-*/	if (domarriage==2 || Database_GetMarriageRtoL(person)==none) fn(layout,person,generation,Desk_TRUE,Desk_TRUE);
-	if ((domarriage==Desk_TRUE || domarriage==2))  Layout_TraverseAncestorTree(layout,Database_GetMarriageLtoR(person),Desk_TRUE,0,Desk_TRUE,generation,fn);
-/*	if ((doallsiblings==1 || doallsiblings==2))  Layout_TraverseAncestorTree(layout,Database_GetSiblingLtoR(person),2,1,Desk_FALSE,generation,fn);
-*/	if (doparents && (domarriage==2 || Database_GetMarriageRtoL(person)==none)) Layout_TraverseAncestorTree(layout,Database_GetMother(person),2,2,Desk_TRUE,generation-1,fn);
+	principal=Database_GetPrincipalFromMarriage(Database_GetMarriage(person));
+	Layout_TraverseAncestorTree(layout,Database_GetMother(person),generation-1,fn);
+	if (person!=principal && principal!=none) Layout_TraverseAncestorTree(layout,Database_GetMother(principal),generation-1,fn);
+	fn(layout,person,generation,Desk_FALSE,Desk_TRUE);
+	if (person!=principal && principal!=none) fn(layout,principal,generation,Desk_FALSE,Desk_TRUE);
 }
 
 static void Layout_TraverseDescendentTree(layout *layout,elementptr person,int domarriage,int generation,callfn fn)
@@ -573,7 +616,7 @@ void Layout_SelectAncestors(layout *layout,elementptr person)
 	AJWLib_Assert(person!=none);
 	numgenerations=INFINITY;
 	selectmarriages=Desk_TRUE;
-/*	Layout_TraverseAncestorTree(layout,person,2,2,0,Layout_Select);*/
+	Layout_TraverseAncestorTree(layout,person,0,Layout_Select);
 }
 
 void Layout_SelectSiblings(layout *layout,elementptr person)
@@ -705,12 +748,12 @@ layout *Layout_LayoutAncestors(elementptr person,int generations)
 		spaces[0].maxx=0;
 		mingeneration=0;
 		maxgeneration=0;
-		numgenerations=generations;
+		numgenerations=generations; /*?*/
 		layout->title.x=INFINITY;
 		layout->title.y=INFINITY;
 		largenumber=0;
 		firstplot=Desk_TRUE;
-		Layout_TraverseAncestorTree(layout,person,2,2,Desk_TRUE,0,Layout_Plot);
+		Layout_TraverseAncestorTree(layout,person,-generations,Layout_PlotAncestors);
 		Layout_LayoutMarriages(layout);
 		Layout_LayoutLines(layout);
 		AJWLib_Flex_Free((flex_ptr)&spaces);

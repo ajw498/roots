@@ -29,7 +29,7 @@ Title.Main:<Task.Name>
 Menu.Main:File,Person,Select,New view...,Scale view...
 
 Title.Select:Select
-Menu.Select:Descendents,~Ancestors,Siblings,Spouses
+Menu.Select:Descendents,Ancestors,Siblings,Spouses
 
 Title.File:File
 Menu.File:Info,Save,Export
