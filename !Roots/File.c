@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.47 2001/10/20 19:41:18 AJW Exp $
+	$Id: File.c,v 1.48 2002/07/27 14:45:20 ajw Exp $
 
 */
 
@@ -440,6 +440,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		if (prescan) {
 			if (!Desk_strnicmp(tag,"INDI.",5)) {
 				for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+					float FIXME_NOW;
 					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i),tag)) return;
 					if (!Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i),"")) {
 						Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,tag);
@@ -628,7 +629,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 		if (fgets(line,MAXLINELEN,file)!=NULL) {
 			/* Get the first line, File_GEDCOMLine will get and process the rest*/
 			if (prescan) {
-				Windows_OpenFileConfig();
+				Database_OpenFileConfig();
 				Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Imp:"));
 			} else {
 				File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);

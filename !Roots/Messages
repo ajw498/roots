@@ -51,6 +51,9 @@ Menu.Just:Left,Right,Centred
 Title.Move:Move
 Menu.Move:Don't move,Move by half,Move
 
+Title.Field:Field type
+Menu.Field:Text field,Option,Closed list,Open list
+
 Edit.Person:Edit person
 Edit.Marr:Edit marriage
 
@@ -115,6 +118,40 @@ User.M2:Date
 User.M3:Divorce
 User.M4:Notes
 User.M5:*
+
+List.P1:*
+List.P2:*
+List.P3:*
+List.P4:*
+List.P5:*
+List.P6:*
+List.P7:*
+List.P8:*
+List.P9:*
+List.P10:*
+
+List.M1:*
+List.M2:*
+List.M3:*
+List.M4:*
+List.M5:*
+
+Type.P1:0
+Type.P2:0
+Type.P3:0
+Type.P4:0
+Type.P5:0
+Type.P6:0
+Type.P7:0
+Type.P8:0
+Type.P9:0
+Type.P10:0
+
+Type.M1:0
+Type.M2:0
+Type.M3:0
+Type.M4:0
+Type.M5:0
 
 GED.P1:INDI.BIRT.DATE
 GED.P2:INDI.BIRT.PLAC
