@@ -8,3 +8,4 @@ RMEnsure DrawFile Error Roots needs the DrawFile module
 Set Alias$@RunType_090 Run <Roots$Dir>.!Run %%*0
 |WimpSlot -Min 500k -Max 500k
 Run <Obey$Dir>.!RunImage %*0 2><Roots$Dir>.stderr
+Taskwindow "Type <Roots$Dir>.stderr" -name stderr -quit

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.73 2000/06/28 20:12:06 AJW Exp $
+	$Id: Windows.c,v 1.74 2000/06/29 20:39:34 AJW Exp $
 
 */
 
@@ -190,6 +190,7 @@ extern layout *debuglayout;
 #endif
 
 static windowdata windows[MAXWINDOWS];
+static Desk_bool menusdeletedvalid=Desk_FALSE;
 static int numwindows;
 static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,scalewin,unsavedwin,fileconfigwin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu,fileconfigmenu=NULL;
@@ -242,6 +243,7 @@ static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *wi
 static void Windows_UnselectAll(windowdata *windowdata)
 {
 	int i;
+	AJWLib_Assert(windowdata!=NULL);
 	for (i=0;i<windowdata->layout->numpeople;i++) {
 		if (Database_GetSelect(windowdata->layout->person[i].person)) {
 			Database_DeSelect(windowdata->layout->person[i].person);
@@ -851,8 +853,11 @@ static Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
 	Desk_UNUSED(block);
-	Windows_UnselectAll(windowdata);
-	Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted);
+	if (menusdeletedvalid) {
+		Windows_UnselectAll(windowdata);
+		Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted);
+	}
+	menusdeletedvalid=Desk_FALSE;
 	return Desk_TRUE;
 }
 
@@ -862,6 +867,7 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	int mousex,mousey,i;
 	Desk_convert_block blk;
 	elementtype selected;
+	menusdeletedvalid=Desk_FALSE;
 	if (!block->data.mouse.button.data.menu) Desk_Icon_SetCaret(block->data.mouse.window,-1);
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
@@ -901,9 +907,10 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		}
 	}
 	/*See if we clicked on the title*/
-	if (mousey>windowdata->layout->title.y-Graphics_TitleHeight()/2) {
+	if (Config_Title() && mousey>windowdata->layout->title.y-Graphics_TitleHeight()/2) {
 		mousedata.type=element_TITLE;
 	}
+	
 	/*Check for a double click*/
 	if (block->data.mouse.button.data.select) {
 		Windows_UnselectAll(windowdata);
@@ -949,12 +956,14 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 								Windows_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
 								selected=element_PERSON;
 								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
+								menusdeletedvalid=Desk_TRUE;
 								break;
 							case element_MARRIAGE:
 								Database_Select(mousedata.element);
 								Windows_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
 								selected=element_MARRIAGE;
 								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
+								menusdeletedvalid=Desk_TRUE;
 								break;
 						}
 					}
@@ -1150,6 +1159,7 @@ void Windows_CloseAllWindows(void)
 /*Tidy up quietly*/
 {
 	int i;
+	menusdeletedvalid=Desk_FALSE;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
 			Desk_Error2_TryCatch(if (windows[i].layout) Layout_Free(windows[i].layout);,)
@@ -1166,6 +1176,7 @@ static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *win
 {
 	int i,found=0;
 	Desk_UNUSED(block);
+	menusdeletedvalid=Desk_FALSE;
 	for (i=0;i<MAXWINDOWS;i++)
 		if (windows[i].handle!=0)
 			if (windows[i].type==wintype_NORMAL) found++;

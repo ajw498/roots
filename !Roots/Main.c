@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.20 2000/06/28 22:04:12 AJW Exp $
+	$Id: Main.c,v 1.21 2000/06/29 20:39:30 AJW Exp $
 	
 */
 
@@ -126,7 +126,9 @@ int main(int argc,char *argv[])
 	Desk_Error2_Init_JumpSig();
 	signal(SIGABRT,SIG_DFL);
 	Desk_Error2_Try {
+		MemCheck_SetChecking(0,0);
 		Desk_Resource_Initialise(DIRPREFIX);
+		MemCheck_SetChecking(1,1);
 		Desk_Msgs_LoadFile("Messages");
 		Desk_Event_Initialise(taskname=AJWLib_Msgs_Lookup("Task.Name:"));
 		errbad=AJWLib_Msgs_Lookup("Error.Bad:%s Click Ok to continue, Cancel to quit.");
