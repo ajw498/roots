@@ -8,10 +8,17 @@
 
 typedef int elementptr;
 
+typedef enum elementtype {
+	element_FILE,
+	element_PERSON,
+	element_MARRIAGE,
+	element_FREE
+} elementtype;
+
 typedef enum sex {
-	male='M',
-	female='F',
-	unknown='U'
+	sex_MALE='M',
+	sex_FEMALE='F',
+	sex_UNKNOWN='U'
 } sex;
 
 typedef union {
@@ -34,7 +41,6 @@ typedef struct persondata {
 	date dod;
     char placeofbirth[20];
     char userdata[3][20];
-/*    char notes[200];*/
 } persondata;
 
 typedef struct person {
@@ -69,8 +75,8 @@ typedef struct marriage {
 
 typedef struct file {
 	int numberofelements;
-	char filetitle[20];
-	char filedescription[200];
+	int newpersonnumber;
+	char filetitle[40];
 	elementptr unlinkedpeople;
 	elementptr freeelement;
 	elementptr linkedpeople;
@@ -83,6 +89,11 @@ typedef union element {
 	marriage marriage;
 	file file;
 } element;
+
+typedef struct databaseelement {
+	elementtype type;
+	element element;
+} databaseelement;
 
 persondata *Database_GetPersonData(elementptr person);
 elementptr Database_GetMarriage(elementptr person);
