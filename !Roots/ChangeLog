@@ -6,6 +6,8 @@ lua graphics styles
 auto sized marriages
 fixed to person marraiges
 people more than one generation below their parents
+making people taller doesn't cause problems anymore
+save as default for file choices
 
 ##v1.02 11-Oct-00
 Changing the file choices now marks the file as modified

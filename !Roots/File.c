@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.44 2000/11/21 22:12:30 AJW Exp $
+	$Id: File.c,v 1.45 2000/11/29 21:29:53 AJW Exp $
 
 */
 
@@ -67,7 +67,11 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 	/*file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
 		fprintf(file,"0 HEAD\n1 SOUR Roots\n2 VERS %s\n2 CORP Alex Waugh\n3 ADDR http://www.ecs.soton.ac.uk/~ajw498/\n",ROOTS_VERSION);
-		fprintf(file,"1 CHAR ASCII\n1 GEDC\n2 VERS 5.5\n2 FORM LINEAGE-LINKED\n");
+		if (plain) {
+			fprintf(file,"1 CHAR ASCII\n1 GEDC\n2 VERS 5.5\n2 FORM LINEAGE-LINKED\n");
+		} else {
+			fprintf(file,"0 _MARRTYPE\n1 _SEP %d\n1 _JOIN %d\n",Config_SeparateMarriages(),Config_JoinMarriages());
+		}
 		Database_SaveGEDCOM(file,plain);
 		if (!plain) {
 			Graphics_SaveGEDCOM(file);
@@ -150,6 +154,12 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 	} else if (!Desk_stricmp(tag,"HEAD.CHAR")) {
 	} else if (!Desk_stricmp(tag,"HEAD.GEDC.VERS")) {
 	} else if (!Desk_stricmp(tag,"HEAD.GEDC.FORM")) {
+	} else if (!Desk_stricmp(tag,"_MARRTYPE._SEP")) {
+		Config_SetSeparateMarriages(NULL,(Desk_bool)atoi(data));
+
+	} else if (!Desk_stricmp(tag,"_MARRTYPE._JOIN")) {
+		Config_SetJoinMarriages((Desk_bool)atoi(data));
+
 	} else if (!Desk_stricmp(tag,"_FILEINFO._TITLE")) {
 		if (prescan) return;
 		Database_SetTitle(data);
