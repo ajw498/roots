@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.25  2000/01/08 20:01:14  AJW
+	Made Redraw code more generic
+
 	Revision 1.24  2000/01/06 17:19:14  AJW
 	Calls Draw_Save
 
@@ -124,14 +127,13 @@
 #include "GConfig.h"
 #include "Config.h"
 #include "Layout.h"
+#include "Drawfile.h"
 #include "Draw.h"
 
 /*	Macros  */
 
 #define MAXWINDOWS 10
 #define REDRAWOVERLAP 4
-
-#define SWI_ColourTrans_SetFontColours 0x4074F
 
 #define EORCOLOUR 0xFFFFFF00
 #define EORCOLOURRED 0xFFFF0000
@@ -207,8 +209,10 @@ static Desk_window_handle addparentswin,newviewwin,fileinfowin;
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,menuoverperson,newviewperson;
 static windowdata *menuoverwindow;
-static os_trfm matrix;
+os_trfm matrix; /*make static? needed in Draw.c*/
 extern graphics graphicsdata;
+static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
+static plottextfn Graphics_PlotText=NULL;
 /*Make menuoverperson static local var to be passed as a reference?*/
 
 void Graphics_RedrawPerson(Desk_window_handle win,personlayout *person)
@@ -228,26 +232,21 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 		int xcoord=0;
 		switch (graphicsdata.person[i].type) {
 			case graphictype_RECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
-				AJWLib_Draw_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,&matrix);
+				Graphics_PlotRectangle(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
-				AJWLib_Draw_PlotRectangleFilled(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,&matrix);
+				Graphics_PlotRectangleFilled(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,graphicsdata.person[i].details.linebox.x1,graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_CHILDLINE:
 				if (!child) break;
 				/*A line that is only plotted if there is a child and child==Desk_FALSE ?*/
 			case graphictype_LINE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.person[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
-				AJWLib_Draw_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,&matrix);
+				Graphics_PlotLine(x+graphicsdata.person[i].details.linebox.x0,y+graphicsdata.person[i].details.linebox.y0,x+graphicsdata.person[i].details.linebox.x1,y+graphicsdata.person[i].details.linebox.y1,graphicsdata.person[i].details.linebox.thickness,graphicsdata.person[i].details.linebox.colour);
 				break;
 			case graphictype_CENTREDTEXTLABEL:
-				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
+/*Won't work for drawfile*/				xcoord=-AJWLib_Font_GetWidth(graphicsdata.person[i].details.textlabel.properties.font->handle,graphicsdata.person[i].details.textlabel.text)/2;
 			case graphictype_TEXTLABEL:
-				Desk_Font_SetFont(graphicsdata.person[i].details.textlabel.properties.font->handle);
-				Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,14);
-				Desk_Font_Paint(graphicsdata.person[i].details.textlabel.text,Desk_font_plot_OSCOORS,x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y);
+				Graphics_PlotText(x+xcoord+graphicsdata.person[i].details.textlabel.properties.x,y+graphicsdata.person[i].details.textlabel.properties.y,graphicsdata.person[i].details.textlabel.properties.font->handle,NULL/*fontname*/,12/*size*/,graphicsdata.person[i].details.textlabel.properties.bgcolour,graphicsdata.person[i].details.textlabel.properties.colour,graphicsdata.person[i].details.textlabel.text);
 				break;
 		}
 	}
@@ -304,10 +303,8 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 				default:
 					strcat(fieldtext,"Unimplemented");
 			}
-			Desk_Font_SetFont(graphicsdata.personfields[i].textproperties.font->handle);
-			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,14));
-			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
-			Desk_Font_Paint(fieldtext,Desk_font_plot_OSCOORS,x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y);
+/*Doesn't work for drawfile*/			if (graphicsdata.personfields[i].type==graphictype_CENTREDFIELD) xcoord=-AJWLib_Font_GetWidth(graphicsdata.personfields[i].textproperties.font->handle,fieldtext)/2;
+			Graphics_PlotText(x+xcoord+graphicsdata.personfields[i].textproperties.x,y+graphicsdata.personfields[i].textproperties.y,graphicsdata.personfields[i].textproperties.font->handle,NULL/*fontname*/,12/*size*/,graphicsdata.personfields[i].textproperties.bgcolour,graphicsdata.personfields[i].textproperties.colour,fieldtext);
 		}
 	}
 	if (selected) {
@@ -323,23 +320,18 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		switch (graphicsdata.marriage[i].type) {
 			case graphictype_RECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
-				AJWLib_Draw_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,&matrix);
+				Graphics_PlotRectangle(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_FILLEDRECTANGLE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
-				AJWLib_Draw_PlotRectangleFilled(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,&matrix);
+				Graphics_PlotRectangleFilled(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,graphicsdata.marriage[i].details.linebox.x1,graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_CHILDLINE:
 				if (!childline) break;
 			case graphictype_LINE:
-				Desk_ColourTrans_SetGCOL(graphicsdata.marriage[i].details.linebox.colour,0/*or 1<<8 to use ECFs ?*/,0);
-				AJWLib_Draw_PlotLine(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,&matrix);
+				Graphics_PlotLine(x+graphicsdata.marriage[i].details.linebox.x0,y+graphicsdata.marriage[i].details.linebox.y0,x+graphicsdata.marriage[i].details.linebox.x1,y+graphicsdata.marriage[i].details.linebox.y1,graphicsdata.marriage[i].details.linebox.thickness,graphicsdata.marriage[i].details.linebox.colour);
 				break;
 			case graphictype_TEXTLABEL:
-				Desk_Font_SetFont(graphicsdata.marriage[i].details.textlabel.properties.font->handle);
-				Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,14);
-				Desk_Font_Paint(graphicsdata.marriage[i].details.textlabel.text,Desk_font_plot_OSCOORS,x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y);
+				Graphics_PlotText(x+graphicsdata.marriage[i].details.textlabel.properties.x,y+graphicsdata.marriage[i].details.textlabel.properties.y,graphicsdata.marriage[i].details.textlabel.properties.font->handle,NULL/*name*/,12/*size*/,graphicsdata.marriage[i].details.textlabel.properties.bgcolour,graphicsdata.marriage[i].details.textlabel.properties.colour,graphicsdata.marriage[i].details.textlabel.text);
 				break;
 		}
 	}
@@ -356,9 +348,7 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 */				default:
 					strcat(fieldtext,"Unimplemented");
 			}
-			Desk_Font_SetFont(graphicsdata.marriagefields[i].textproperties.font->handle);
-			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,14));
-			Desk_Font_Paint(fieldtext,Desk_font_plot_OSCOORS,x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y);
+			Graphics_PlotText(x+graphicsdata.marriagefields[i].textproperties.x,y+graphicsdata.marriagefields[i].textproperties.y,graphicsdata.marriagefields[i].textproperties.font->handle,NULL/*name*/,12/*size*/,graphicsdata.marriagefields[i].textproperties.bgcolour,graphicsdata.marriagefields[i].textproperties.colour,fieldtext);
 		}
 	}
 	if (selected) {
@@ -370,18 +360,35 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 
 void Graphics_PlotChildren(int leftx,int rightx,int y)
 {
-	Desk_ColourTrans_SetGCOL(graphicsdata.siblinglinecolour,0/*or 1<<8 to use ECFs ?*/,0);
-	AJWLib_Draw_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,&matrix);
+	Graphics_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
 }
 
-static Desk_bool Graphics_Redraw(Desk_event_pollblock *block,windowdata *windowdata)
+void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
+{
+	int i;
+	/*use the clip rect*/
+	Graphics_PlotLine=plotline;
+	Graphics_PlotRectangle=plotrect;
+	Graphics_PlotRectangleFilled=plotrectfilled;
+	Graphics_PlotText=plottext;
+	for (i=0;i<layout->numchildren;i++) {
+		Graphics_PlotChildren(originx+layout->children[i].leftx,originx+layout->children[i].rightx,originy+layout->children[i].y);
+	}
+	for (i=layout->nummarriages-1;i>=0;i--) {
+		Graphics_PlotMarriage(originx+layout->marriage[i].x,originy+layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
+	}
+	for (i=layout->numpeople-1;i>=0;i--) {
+		Graphics_PlotPerson(layout->person[i].person,originx+layout->person[i].x,originy+layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
+	}
+}
+
+static Desk_bool Graphics_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-		int i=0;
 #if DEBUG
 		Desk_ColourTrans_SetGCOL(0x00000000,0,0);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
@@ -395,17 +402,8 @@ static Desk_bool Graphics_Redraw(Desk_event_pollblock *block,windowdata *windowd
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 #endif
-		for (i=0;i<windowdata->layout->numchildren;i++) {
-			Graphics_PlotChildren(blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].leftx,blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].rightx,blk.rect.max.y-blk.scroll.y+windowdata->layout->children[i].y);
-		}
-		for (i=windowdata->layout->nummarriages-1;i>=0;i--) {
-			Graphics_PlotMarriage(blk.rect.min.x-blk.scroll.x+windowdata->layout->marriage[i].x,blk.rect.max.y-blk.scroll.y+windowdata->layout->marriage[i].y,windowdata->layout->marriage[i].marriage,windowdata->layout->marriage[i].childline,windowdata->layout->marriage[i].selected);
-		}
-		for (i=windowdata->layout->numpeople-1;i>=0;i--) {
-			Graphics_PlotPerson(windowdata->layout->person[i].person,blk.rect.min.x-blk.scroll.x+windowdata->layout->person[i].x,blk.rect.max.y-blk.scroll.y+windowdata->layout->person[i].y,windowdata->layout->person[i].child,windowdata->layout->person[i].selected);
-		}
+		Graphics_Redraw(windowdata->layout,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,&(blk.cliprect),Desk_TRUE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
 		Desk_Wimp_GetRectangle(&blk,&more);
-		/*Use clip rectangle??*/
 	}
 	return Desk_TRUE;
 }
@@ -1101,7 +1099,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,Database_GetFilename());
 #if DEBUG
-			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
 			if (layoutnormal==NULL) windows[newwindow].layout=Layout_LayoutNormal(); else windows[newwindow].layout=layoutnormal;
@@ -1119,7 +1117,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 #if DEBUG
-			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
 			windows[newwindow].layout=Layout_LayoutAncestors(person,generations);
@@ -1135,7 +1133,7 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 	Graphics_ResizeWindow(&windows[newwindow]);
 	/*Register handlers for this window*/
 	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
-	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_CloseWindow,&windows[newwindow]);
 }
 
@@ -1215,7 +1213,7 @@ void Graphics_ExportClick(int entry,void *ref)
 {
 	switch (entry) {
 		case exportmenu_DRAW:
-			Draw_Save("Fred",menuoverwindow->layout);
+			Drawfile_Save("Fred",menuoverwindow->layout);
 			/*menu over window is only valid if menu was clicked over a person!*/
 			break;
 	}
