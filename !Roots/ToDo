@@ -3,3 +3,4 @@ reports
 searching
 arrange siblings according to age etc
 name completion
+Person->Delete menu entry gets corrupt

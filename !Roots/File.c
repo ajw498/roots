@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.31 2000/09/22 10:06:04 AJW Exp $
+	$Id: File.c,v 1.32 2000/09/25 18:44:11 AJW Exp $
 
 */
 
@@ -84,11 +84,10 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 			Windows_FileModified();
 			File_GetCurrentTime();
 		}
-		AJWLib_File_fclose(file);
 	} Desk_Error2_Catch {
-		if (file) fclose(file);
 		AJWLib_Error2_ReportMsgs("Error.Save:%s");
 	} Desk_Error2_EndCatch
+	if (file) fclose(file);
     return Desk_TRUE;
 }
 
@@ -514,7 +513,7 @@ static char *File_GEDCOMLine(FILE *file,char *line,char *existingtag,char *exist
 		}
 		id=idbuffer;
 		/* Check for overlong tags*/
-		if (strlen(wholetag)+strlen(tag)+2>MAXLINELEN) AJWLib_Error2_HandleMsgs("Error.TooLong:");
+		if (strlen(existingtag)+strlen(tag)+2>MAXLINELEN) AJWLib_Error2_HandleMsgs("Error.TooLong:");
 		/* Create the tag including all tags from higher levels*/
 		if (existingtag) sprintf(wholetag,"%s.%s",existingtag,tag); else strcpy(wholetag,tag);
 		/* Do something if there is data associated with the line*/
@@ -543,7 +542,7 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 	char line[MAXLINELEN];
 	static char oldfilename[256];
 	layout* gedcomlayout=NULL;
-	Desk_bool prescan;
+	volatile Desk_bool prescan;
 
 	AJWLib_Assert(idarray==NULL);
 	AJWLib_Assert(idarraysize==0);
@@ -559,41 +558,42 @@ void File_LoadGEDCOM(char *filename,Desk_bool plain)
 	Desk_Error2_Try {
 		Desk_Hourglass_On();
 		if (prescan || !plain) Database_New();
-		if (fgets(line,MAXLINELEN,file)==NULL) AJWLib_Error2_HandleMsgs("Error.TooLong:");
-		/* Get the first line, File_GEDCOMLine will get and process the rest*/
-		if (prescan) {
-			int i;
-
-			Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
-			Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Imp:"));
-			for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-				Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,"");
-				Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,"");
+		if (fgets(line,MAXLINELEN,file)!=NULL) {
+			/* Get the first line, File_GEDCOMLine will get and process the rest*/
+			if (prescan) {
+				int i;
+	
+				Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
+				Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Imp:"));
+				for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,"");
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,"");
+				}
+				for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,"");
+					Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,"");
+				}
 			}
-			for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-				Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,"");
-				Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,"");
+			File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
+			if (!prescan) {
+				Database_LinkAllChildren();
+				Database_LinkAllMarriages();
+				Database_CheckConsistency();
+				if (plain) {
+					Graphics_LoadStyle(AJWLib_Msgs_TempLookup("Style.Default:Default"));
+					gedcomlayout=Layout_LayoutNormal();
+					Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
+				} else {
+					gedcomlayout=Layout_GetGEDCOMLayout();
+					Layout_LayoutLines(gedcomlayout);
+				}
+				Windows_LayoutNormal(gedcomlayout,Desk_FALSE);
+				if (!plain) strcpy(currentfilename,filename); else strcpy(currentfilename,"GEDCOM");
+				modified=Desk_FALSE;
+				Windows_FileModified();
+				Desk_File_Date(filename,fivebytedate);
+				Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Territory_ConvertStandardDateAndTime,-1,fivebytedate,filedate,sizeof(filedate)));
 			}
-		}
-		File_GEDCOMLine(file,line,NULL,NULL,plain,prescan);
-		if (!prescan) {
-			Database_LinkAllChildren();
-			Database_LinkAllMarriages();
-			Database_CheckConsistency();
-			if (plain) {
-				Graphics_LoadStyle(AJWLib_Msgs_TempLookup("Style.Default:Default"));
-				gedcomlayout=Layout_LayoutNormal();
-				Windows_OpenWindow(wintype_NORMAL,none,0,100,NULL);
-			} else {
-				gedcomlayout=Layout_GetGEDCOMLayout();
-				Layout_LayoutLines(gedcomlayout);
-			}
-			Windows_LayoutNormal(gedcomlayout,Desk_FALSE);
-			if (!plain) strcpy(currentfilename,filename); else strcpy(currentfilename,"GEDCOM");
-			modified=Desk_FALSE;
-			Windows_FileModified();
-			Desk_File_Date(filename,fivebytedate);
-			Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Territory_ConvertStandardDateAndTime,-1,fivebytedate,filedate,sizeof(filedate)));
 		}
 		Desk_Hourglass_Off();
 		AJWLib_File_fclose(file);
@@ -684,6 +684,8 @@ void File_Result(Desk_save_result result,void *ref)
 			/*date=olddate;*/
 			Windows_FileModified();
 			Desk_Msgs_Report(1,"Error.BadDrag:Data transer failed");
+			break;
+		default:
 			break;
 	}
 }
