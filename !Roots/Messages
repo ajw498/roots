@@ -15,7 +15,7 @@ Title.Ms:Ms
 Title.Dr:Dr
 
 Title.IconBar:<Task.Name>
-Menu.IconBar:Info,~Choices...,Quit
+Menu.IconBar:Info,Choices...,Quit
 
 Title.Sex:Sex
 Menu.Sex:<Sex.M>,<Sex.F>,<Sex.U>
@@ -39,6 +39,8 @@ Menu.Export:~GEDCOM,Draw,~Text
 
 Title.Person:Person
 Menu.Person:Add,Delete,Unlink
+
+Title.Config:Styles
 
 Scale.1:33
 Scale.2:80

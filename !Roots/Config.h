@@ -3,11 +3,9 @@
 
 char *Config_GraphicsStyle(void);
 
-Desk_bool Config_SaveGraphicsStyle(void);
-
-Desk_bool Config_LoadGraphicsStyle(void);
-
 Desk_bool Config_ImportGraphicsStyle(void);
+
+Desk_bool Config_Title(void);
 
 Desk_bool Config_Snap(void);
 
@@ -22,5 +20,9 @@ Desk_bool Config_AutoIncreaseSize(void);
 Desk_bool Config_AutoIncreaseAlways(void);
 
 char *Config_UserDesc(int num);
+
+void Config_Init(void);
+
+void Config_Open(void);
 
 #endif
