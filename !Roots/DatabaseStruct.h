@@ -25,12 +25,12 @@ typedef enum elementtype {
 	element_TITLE
 } elementtype;
 
-typedef enum sex {
+typedef enum sextype {
 	sex_MALE='M',
 	sex_FEMALE='F',
 	sex_UNKNOWN='U',
 	sex_ANY='A'
-} sex;
+} sextype;
 
 typedef char date[20];
 
@@ -39,7 +39,7 @@ typedef struct persondata {
 	char forename[20];
 	char middlenames[20];
 	char title[10];
-	sex  sex;
+	sextype sex;
 	date dob;
 	date dod;
     char placeofbirth[20];
@@ -139,7 +139,7 @@ int Database_GetSize(void);
 void Database_StopEditing(void);
 char *Database_GetUserDesc(int num);
 void Database_SetUserDesc(int num,char *desc);
-sex Database_GetSex(elementptr person);
+sextype Database_GetSex(elementptr person);
 
 
 #endif
