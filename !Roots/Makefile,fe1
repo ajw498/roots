@@ -38,12 +38,12 @@ TARGET		=	!RunImage
 
 INCLUDE	=	C:
 
-CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -fah
-#CCFLAGS		=	$(CCEXTRA) -throwback -strict -Otime -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2 -fah
+#CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -fah
+CCFLAGS		=	$(CCEXTRA) -throwback -strict -Otime -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2 -fah
 LINKFLAGS	=	$(LINKEXTRA) -d
 
-CC		=	MemCheck.cc cc -c $(CCFLAGS)
-#CC		=	cc -c $(CCFLAGS)
+#CC		=	MemCheck.cc cc -c $(CCFLAGS)
+CC		=	cc -c $(CCFLAGS)
 LINK		=	DrLink $(LINKFLAGS)
 
 #INCLUDE	=	L:
