@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Drawfile.c,v $
+	Revision 1.8  2000/01/11 13:45:48  AJW
+	Added some consts
+
 	Revision 1.7  2000/01/11 13:07:45  AJW
 	Added options and centering on page
 
@@ -84,7 +87,7 @@
 extern graphics graphicsdata;
 static drawfile_diagram *drawfile=NULL;
 
-void Drawfile_PlotRectangle2(int x,int y,int width,int height,int linethickness,unsigned int colour,Desk_bool filled)
+void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour,const Desk_bool filled)
 {
 	int *object;
 	const int sizeofpath=96;
@@ -117,17 +120,17 @@ void Drawfile_PlotRectangle2(int x,int y,int width,int height,int linethickness,
 	object[23]=0; /*End path*/
 }
 
-void Drawfile_PlotRectangle(int x,int y,int width,int height,int linethickness,unsigned int colour)
+void Drawfile_PlotRectangle(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
 {
 	Drawfile_PlotRectangle2(x,y,width,height,linethickness,colour,Desk_FALSE);
 }
 
-void Drawfile_PlotRectangleFilled(int x,int y,int width,int height,int linethickness,unsigned int colour)
+void Drawfile_PlotRectangleFilled(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour)
 {
 	Drawfile_PlotRectangle2(x,y,width,height,linethickness,colour,Desk_TRUE);
 }
 
-void Drawfile_PlotLine(int minx,int miny,int maxx,int maxy,int linethickness,unsigned int colour)
+void Drawfile_PlotLine(const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour)
 {
 	int *object;
 	const int sizeofpath=68;
@@ -236,9 +239,9 @@ void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 	object[21]=0; /*Bytes in undo buffer*/
 }
 
-void Drawfile_PlotText(int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
+void Drawfile_PlotText(const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
 {
-	int fontnumber=Drawfile_AddFont(font);
+	int fontnumber=Drawfile_AddFont((char *)font);
 	int *object;
 	int sizeofpath=52;
 	Desk_wimp_point *bbox;
@@ -264,7 +267,7 @@ void Drawfile_PlotText(int x,int y,int handle,char *font,int size,unsigned int b
 	strcpy(((char *)object)+52,text);
 }
 
-void Drawfile_Save(char *filename,layout *layout)
+void Drawfile_Save(const char *filename,layout *layout)
 {
 	Desk_wimp_rect box;
 	int paperwidth=21*70,paperheight=30*70; /*Get correct values*/
