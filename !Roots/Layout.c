@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.73 2002/08/01 15:55:26 ajw Exp $
+	$Id: Layout.c,v 1.74 2002/12/29 12:56:16 ajw Exp $
 
 */
 
@@ -454,7 +454,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.73 2002/08/01 15:55:26 ajw Exp $
+	$Id: Layout.c,v 1.74 2002/12/29 12:56:16 ajw Exp $
 
 */
 
@@ -1231,6 +1231,7 @@ static void Layout_SelectDragStart(windowdata *windowdata)
 	dragdata.oldmousex=mousex;
 	dragdata.oldmousey=mousey;
 	Desk_Error2_CheckOS(Desk_SWI(4,0,SWI_Wimp_DragBox,NULL,&dragblk,0x4B534154,0x3)); /*using RO4 features if present*/
+	Desk_Event_mask.data.null=0; /* Enable Null polls*/
 	Desk_Drag_SetHandlers(Layout_SelectDragPoll,Layout_SelectDragEnd,&dragdata);
 }
 
