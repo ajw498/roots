@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.16 2000/06/29 20:39:31 AJW Exp $
+	$Id: Config.c,v 1.17 2000/09/21 11:33:04 AJW Exp $
 
 */
 
@@ -107,7 +107,7 @@ static void Config_Default(void)
 	config.title=Desk_TRUE;
 	config.snapdistance=30;
 	config.scrollspeed=10;
-	config.scrolldistance=30;
+	config.scrolldistance=50;
 	config.autoincreasesize=Desk_TRUE;
 	config.autoincreasealways=Desk_FALSE;
 	config.fontblend=Desk_FALSE;

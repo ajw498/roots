@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.40 2000/09/20 21:26:47 AJW Exp $
+	$Id: Database.c,v 1.41 2000/09/21 11:33:06 AJW Exp $
 
 */
 
@@ -96,7 +96,7 @@ typedef struct marriage {
 typedef struct file {
 	int numberofelements;
 	int newpersonnumber;
-	char filetitle[40];
+	char filetitle[FIELDSIZE];
 	elementptr freeelement;
 } file;
 
@@ -148,8 +148,8 @@ elementptr Database_GetLinkedMarriages(int *index)
 
 void Database_SetTitle(char *title)
 {
-	strncpy(database[0].element.file.filetitle,title,39);
-	database[0].element.file.filetitle[39]='\0';
+	strncpy(database[0].element.file.filetitle,title,FIELDSIZE-1);
+	database[0].element.file.filetitle[FIELDSIZE-1]='\0';
 }
 
 void Database_SetNextNewPerson(int personnumber)
@@ -664,6 +664,20 @@ char *Database_GetFullName(elementptr person)
 		strcat(result,database[person].element.person.data.surname);
 	}
 	return result;
+}
+
+char *Database_GetPersonUserField(elementptr person,int num)
+{
+	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(person!=none);
+	return database[person].element.person.data.user[num];
+}
+
+char *Database_GetMarriageUserField(elementptr marriage,int num)
+{
+	AJWLib_Assert(database!=NULL);
+	AJWLib_Assert(marriage!=none);
+	return database[marriage].element.marriage.data.user[num];
 }
 
 static elementptr Database_GetFreeElement(void)
