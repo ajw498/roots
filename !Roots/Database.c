@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.35 2000/07/26 20:55:02 AJW Exp $
+	$Id: Database.c,v 1.36 2000/09/11 11:08:12 AJW Exp $
 
 */
 
@@ -724,6 +724,14 @@ void Database_SaveGEDCOM(FILE *file)
 	AJWLib_Assert(file!=NULL);
 	for (i=0;i<database[0].element.file.numberofelements;i++) {
 		switch (database[i].type) {
+			case element_FILE:
+				fprintf(file,"0 @F1@ _FILEINFO\n");
+				fprintf(file,"1 _TITLE %s\n",database[i].element.file.filetitle);
+				fprintf(file,"1 _NEXTNEWPERSON %d\n",database[i].element.file.newpersonnumber);
+				fprintf(file,"1 _USER1 %s\n",database[i].element.file.userdesc[0]);
+				fprintf(file,"1 _USER2 %s\n",database[i].element.file.userdesc[1]);
+				fprintf(file,"1 _USER3 %s\n",database[i].element.file.userdesc[2]);
+				break;
 			case element_PERSON:
 				fprintf(file,"0 @%d@ INDI\n",i);
 				fprintf(file,"1 NAME %s %s/%s/\n",database[i].element.person.data.forename,database[i].element.person.data.middlenames,database[i].element.person.data.surname);

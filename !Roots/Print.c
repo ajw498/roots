@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.5 2000/09/01 14:18:01 AJW Exp $
+	$Id: Print.c,v 1.6 2000/09/11 11:08:21 AJW Exp $
 
 */
 
@@ -184,7 +184,7 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 		Drawfile_Print(ref->layout);
 		for (pagey=data.pages.y-1;pagey>=0;pagey--) {
 			for (pagex=0;pagex<data.pages.x;pagex++) {
-				if (pagey*pagex>=minpage && pagey*pagex<=maxpage) {
+				if (((data.pages.y-1-pagey)*data.pages.x+pagex>=minpage) && ((data.pages.y-1-pagey)*data.pages.x+pagex<=maxpage)) {
 					rect.min.x=-10; /*So edges of output don't get clipped*/
 					rect.min.y=-10;
 					rect.max.x=rect.min.x+ref->pagesizeos.x+10;
@@ -192,6 +192,10 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 					Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
 					Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
 					while (more) {
+						cliprect.min.x-=100;
+						cliprect.max.x+=100;
+						cliprect.min.y-=100;
+						cliprect.max.x+=100;
 						Drawfile_Redraw(ref->scale,ref->offset.x-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect);
 						Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
 					}

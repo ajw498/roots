@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.36 2000/07/22 21:11:47 AJW Exp $
+	$Id: Graphics.c,v 1.37 2000/09/11 11:08:15 AJW Exp $
 
 */
 
@@ -745,6 +745,62 @@ void Graphics_Save(FILE *file)
 	size=strlen(currentstyle)+1;
 	AJWLib_File_fwrite(&size,sizeof(int),1,file);
 	AJWLib_File_fwrite(&currentstyle,sizeof(char),size,file);
+}
+
+void Graphics_SaveGEDCOM(FILE *file)
+{
+	int i;
+	
+	AJWLib_Assert(file!=NULL);
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	AJWLib_Assert(personfile!=NULL);
+	AJWLib_Assert(marriagefile!=NULL);
+	AJWLib_Assert(dimensionsfile!=NULL);
+	AJWLib_Assert(titlefile!=NULL);
+
+	fprintf(file,"0 @G1@ _GRAPHICS\n");
+	fprintf(file,"1 _PERSONFILE\n2 ");
+	for (i=0;personfile[i]!='\0';i++) {
+		if (personfile[i]=='\n') {
+			fprintf(file,"\n2 ");
+		} else {
+			fputc(personfile[i],file);
+		}
+	}
+	fputc('\n',file);
+
+	fprintf(file,"1 _MARRIAGEFILE\n2 ");
+	for (i=0;marriagefile[i]!='\0';i++) {
+		if (marriagefile[i]=='\n') {
+			fprintf(file,"\n2 ");
+		} else {
+			fputc(marriagefile[i],file);
+		}
+	}
+	fputc('\n',file);
+
+	fprintf(file,"1 _TITLEFILE\n2 ");
+	for (i=0;titlefile[i]!='\0';i++) {
+		if (titlefile[i]=='\n') {
+			fprintf(file,"\n2 ");
+		} else {
+			fputc(titlefile[i],file);
+		}
+	}
+	fputc('\n',file);
+
+	fprintf(file,"1 _DIMENSIONSFILE\n2 ");
+	for (i=0;dimensionsfile[i]!='\0';i++) {
+		if (dimensionsfile[i]=='\n') {
+			fprintf(file,"\n2 ");
+		} else {
+			fputc(dimensionsfile[i],file);
+		}
+	}
+	fputc('\n',file);
+
+	fprintf(file,"1 _CURRENTSTYLE %s\n",currentstyle);
 }
 
 void Graphics_RemoveStyle(void)

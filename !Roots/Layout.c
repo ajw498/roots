@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.36 2000/08/06 12:28:08 AJW Exp $
+	$Id: Layout.c,v 1.37 2000/09/11 11:08:18 AJW Exp $
 
 */
 
@@ -142,6 +142,14 @@ int Layout_FindMarriageXCoord(layout *layout,elementptr marriage)
 	int i;
 	AJWLib_Assert(layout!=NULL);
 	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) return layout->marriage[i].x;
+	return 0;
+}
+
+int Layout_FindMarriageYCoord(layout *layout,elementptr marriage)
+{
+	int i;
+	AJWLib_Assert(layout!=NULL);
+	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) return layout->marriage[i].y;
 	return 0;
 }
 
@@ -755,6 +763,27 @@ void Layout_Save(layout *layout,FILE *file)
 	AJWLib_File_fwrite(layout->marriage,sizeof(marriagelayout),layout->nummarriages,file);
 	AJWLib_File_fwrite(&(layout->numchildren),sizeof(layout->numchildren),1,file);
 	AJWLib_File_fwrite(layout->children,sizeof(childlinelayout),layout->numchildren,file);
+}
+
+void Layout_SaveGEDCOM(layout *layout,FILE *file)
+/*Save a GEDCOM layout to the given file ptr*/
+{
+	int i;
+	
+	AJWLib_Assert(layout!=NULL);
+	AJWLib_Assert(file!=NULL);
+
+	fprintf(file,"0 @L1@ _LAYOUT\n");
+	for (i=0;i<layout->numpeople;i++) {
+		fprintf(file,"1 _PERSON @%d@\n",layout->person[i].person);
+		fprintf(file,"2 _X %d\n",layout->person[i].x);
+		fprintf(file,"2 _Y %d\n",layout->person[i].y);
+	}
+	for (i=0;i<layout->nummarriages;i++) {
+		fprintf(file,"1 _MARRIAGE @%d@\n",layout->marriage[i].marriage);
+		fprintf(file,"2 _X %d\n",layout->marriage[i].x);
+		fprintf(file,"2 _Y %d\n",layout->marriage[i].y);
+	}
 }
 
 layout *Layout_Load(FILE *file)

@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.76 2000/07/26 20:55:08 AJW Exp $
+	$Id: Windows.c,v 1.77 2000/09/11 11:08:22 AJW Exp $
 
 */
 
@@ -1111,7 +1111,6 @@ void Windows_Load(FILE *file)
 	Windows_OpenWindow(data.type,data.person,data.generations,data.scale,&(data.coords));
 }
 
-
 layout *Windows_Save(FILE *file,int *index)
 {
 	int i=(*index)++;
@@ -1137,6 +1136,33 @@ layout *Windows_Save(FILE *file,int *index)
 		AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
 		AJWLib_File_fwrite(&size,sizeof(int),1,file);
 		AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
+		if (windows[i].type==wintype_NORMAL) return windows[i].layout;
+	}
+	return NULL;
+}
+
+layout *Windows_SaveGEDCOM(FILE *file,int *index)
+{
+	Desk_convert_block coords;
+	int i=(*index)++;
+
+	AJWLib_Assert(file!=NULL);
+	AJWLib_Assert(i>=0);
+	if (i>=MAXWINDOWS) {
+		*index=-1;
+		return NULL;
+	}
+
+	if (i==0) fprintf(file,"0 @W1@ _WINDOWS\n");
+
+	if (windows[i].handle) {
+		fprintf(file,"1 _TYPE %d\n",windows[i].type);
+		Desk_Window_GetCoords(windows[i].handle,&(coords));
+		fprintf(file,"1 _COORDS\n2 _SCREENRECT\n3 _MIN\n4 _X %d\n4 _Y %d\n3 _MAX\n4 _X %d\n4 _Y %d\n2 _SCROLL\n3 _X %d\n3 _Y %d\n",coords.screenrect.min.x,coords.screenrect.min.y,coords.screenrect.max.x,coords.screenrect.max.y,coords.scroll.x,coords.scroll.y);
+		fprintf(file,"1 _PERSON @%d@\n",windows[i].person);
+		fprintf(file,"1 _GENERATIONS %d\n",windows[i].generations);
+		fprintf(file,"1 _SCALE %d\n",windows[i].scale);
+
 		if (windows[i].type==wintype_NORMAL) return windows[i].layout;
 	}
 	return NULL;
