@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.2  1999/09/27 16:56:43  AJW
+	Added centering siblings under marriage when dragging
+
 	Revision 1.1  1999/09/27 15:33:01  AJW
 	Initial revision
 
@@ -129,7 +132,7 @@ typedef struct dragdata {
 	int personoffset;
 	windowdata *windowdata;
 	wimp_rect  coords;
-	int origmousex,oldmousex,oldoffset,oldmousey;
+	int origmousex,oldmousex,oldoffset,oldmousey,centeredunder;
 	BOOL plotted,marriage;
 } dragdata;
 
@@ -448,11 +451,10 @@ void Graphics_DragEnd(void *ref)
 
 void Graphics_GetOffset(dragdata *dragdata)
 {
-	int i;
+	int i,distance;
 	dragdata->oldoffset=0;
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
-		if (dragdata->windowdata->layout->person[i].y==dragdata->persony) {
-			int distance;
+		if (dragdata->windowdata->layout->person[i].y==dragdata->persony && !dragdata->windowdata->layout->person[i].selected) {
 			/*Look for right hand edge of person or marriage*/
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth());
 			if (!dragdata->marriage) distance-=Graphics_GapWidth();
@@ -475,8 +477,7 @@ void Graphics_GetOffset(dragdata *dragdata)
 	}
 	if (!dragdata->marriage) {
 		for (i=0;i<dragdata->windowdata->layout->nummarriages;i++) {
-			if (dragdata->windowdata->layout->marriage[i].y==dragdata->persony) {
-				int distance;
+			if (dragdata->windowdata->layout->marriage[i].y==dragdata->persony && !dragdata->windowdata->layout->marriage[i].selected) {
 				/*Look for right hand edge of marriage*/
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->marriage[i].x+Graphics_MarriageWidth());
 				if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
@@ -486,6 +487,9 @@ void Graphics_GetOffset(dragdata *dragdata)
 			}
 		}
 	}
+	/*Look for siblings centered under marriage*/
+	distance=dragdata->oldmousex-dragdata->centeredunder;
+	if (abs(distance)<SNAPDISTANCE) dragdata->oldoffset=-distance;
 }
 
 void Graphics_DragFn(void *ref)
@@ -563,10 +567,27 @@ void Graphics_StartDragNormal(elementptr person,int x,int y,windowdata *windowda
 	dragdata.plotted=FALSE;
 	if (!marriage) {
 		BOOL allsiblings=TRUE;
-		elementptr person2=person;
-		while ((person=Database_GetSiblingLtoR(person))!=none) if (!Layout_Selected(windowdata->layout,person)) allsiblings=FALSE;
-		do if (!Layout_Selected(windowdata->layout,person2)) allsiblings=FALSE; while ((person2=Database_GetSiblingRtoL(person2))!=none);
-		qwerty
+		elementptr person1=person,person2=person;
+		int x,rightx=-INFINITY,leftx=INFINITY;
+		while ((person1=Database_GetSiblingLtoR(person1))!=none) {
+			if (!Layout_Selected(windowdata->layout,person1)) allsiblings=FALSE;
+			if ((x=Layout_FindXCoord(windowdata->layout,person1))<leftx) leftx=x;
+			if (x>rightx) rightx=x;
+		}
+		do {
+			if (!Layout_Selected(windowdata->layout,person2)) allsiblings=FALSE;
+			if ((x=Layout_FindXCoord(windowdata->layout,person2))<leftx) leftx=x;
+			if (x>rightx) rightx=x;
+		} while ((person2=Database_GetSiblingRtoL(person2))!=none);
+		if (allsiblings) {
+			int centre=(rightx+leftx+Graphics_PersonWidth())/2;
+			int marriagepos=Layout_FindMarriageXCoord(windowdata->layout,Database_GetMarriage(Database_GetMother(person)))+Graphics_MarriageWidth()/2;
+			dragdata.centeredunder=marriagepos+(mousex-centre);
+		} else {
+			dragdata.centeredunder=INFINITY;
+		}
+	} else {
+		dragdata.centeredunder=INFINITY;
 	}
 	Wimp_DragBox(&dragblk);
 	Drag_SetHandlers(Graphics_DragFn,Graphics_DragEnd,&dragdata);
