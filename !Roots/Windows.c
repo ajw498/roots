@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.13  1999/10/24 18:38:22  AJW
+	Set title of windows
+
 	Revision 1.12  1999/10/24 18:15:39  AJW
 	Added extra field types
 
@@ -250,16 +253,16 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 					strcat(fieldtext,Database_GetPersonData(person)->dod);
 					break;
 */				case personfieldtype_BIRTHPLACE:
-					strcat(fieldtext,Database_GetPersonData(person)->birthplace);
+					strcat(fieldtext,Database_GetPersonData(person)->placeofbirth);
 					break;
 				case personfieldtype_USER1:
-					strcat(fieldtext,Database_GetPersonData(person)->user[0]);
+					strcat(fieldtext,Database_GetPersonData(person)->userdata[0]);
 					break;
 				case personfieldtype_USER2:
-					strcat(fieldtext,Database_GetPersonData(person)->user[1]);
+					strcat(fieldtext,Database_GetPersonData(person)->userdata[1]);
 					break;
 				case personfieldtype_USER3:
-					strcat(fieldtext,Database_GetPersonData(person)->user[2]);
+					strcat(fieldtext,Database_GetPersonData(person)->userdata[2]);
 					break;
 				default:
 					strcat(fieldtext,"Unimplemented");
@@ -943,6 +946,7 @@ void Graphics_Relayout(void)
 void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 {
 	int newwindow;
+	char str[256]="";
 	if (numwindows>MAXWINDOWS) {
 		Desk_Error2_HandleText("Too many windows");
 		return;
@@ -958,7 +962,8 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 	windows[newwindow].generations=generations;
 	switch (type) {
 		case wintype_NORMAL:
-#if DEBUG
+/*			Desk_Window_SetTitle(windows[newwindow].handle,Database_GetFilename());
+*/#if DEBUG
 Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
 Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
 windows[newwindow].layout=layouts;
@@ -968,9 +973,21 @@ Layout_LayoutNormal();
 #endif
 		break;
 		case wintype_DESCENDENTS:
+			Desk_Msgs_Lookup("Win.Desc:",str,255);
+			strcat(str," ");
+			strcat(str,Database_GetPersonData(person)->forename);
+			strcat(str," ");
+			strcat(str,Database_GetPersonData(person)->surname);
+			Desk_Window_SetTitle(windows[newwindow].handle,str);
 			windows[newwindow].layout=Layout_LayoutDescendents(person,generations);
 		break;
 		case wintype_ANCESTORS:
+			Desk_Msgs_Lookup("Win.Anc:",str,255);
+			strcat(str," ");
+			strcat(str,Database_GetPersonData(person)->forename);
+			strcat(str," ");
+			strcat(str,Database_GetPersonData(person)->surname);
+			Desk_Window_SetTitle(windows[newwindow].handle,str);
 #if DEBUG
 Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
 Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
@@ -981,6 +998,8 @@ Layout_LayoutAncestors(person,generations);
 #endif
 		break;
 		case wintype_UNLINKED:
+			Desk_Msgs_Lookup("Win.Unlkd:Unlinked",str,255);
+			Desk_Window_SetTitle(windows[newwindow].handle,str);
 			windows[newwindow].layout=Layout_LayoutUnlinked();
 		break;
 	}
