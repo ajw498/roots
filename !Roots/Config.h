@@ -21,5 +21,6 @@ Desk_bool Config_AutoIncreaseSize(void);
 
 Desk_bool Config_AutoIncreaseAlways(void);
 
+char *Config_UserDesc(int num);
 
 #endif
