@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.49 2000/10/21 15:07:16 AJW Exp $
+	$Id: Layout.c,v 1.50 2000/11/05 12:03:46 AJW Exp $
 
 */
 
@@ -223,7 +223,7 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 			if ((originx+((layout->transients[i].x+layout->transients[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->transients[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->transients[i].y+layout->transients[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotElement(layout->transients[i].element,scale,originx,originy,layout->transients[i].x,layout->transients[i].y,layout->transients[i].width,layout->transients[i].height,plotselection);
+						Graphics_PlotElement(layout,layout->transients[i].element,scale,originx,originy,layout->transients[i].x,layout->transients[i].y,layout->transients[i].width,layout->transients[i].height,plotselection);
 					}
 				}
 			}
@@ -234,7 +234,7 @@ void Layout_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_bo
 			if ((originx+((layout->person[i].x+layout->person[i].width+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->person[i].y-Graphics_GapWidth())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->person[i].y+layout->person[i].height+Graphics_GapWidth())*scale)/100)>cliprect->min.y) {
-						Graphics_PlotElement(layout->person[i].element,scale,originx,originy,layout->person[i].x,layout->person[i].y,layout->person[i].width,layout->person[i].height,plotselection);
+						Graphics_PlotElement(layout,layout->person[i].element,scale,originx,originy,layout->person[i].x,layout->person[i].y,layout->person[i].width,layout->person[i].height,plotselection);
 					}
 				}
 			}
@@ -269,7 +269,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.49 2000/10/21 15:07:16 AJW Exp $
+	$Id: Layout.c,v 1.50 2000/11/05 12:03:46 AJW Exp $
 
 */
 
