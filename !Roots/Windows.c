@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.10  1999/10/12 16:30:08  AJW
+	Added Debug code for Ancestor layout
+
 	Revision 1.9  1999/10/12 14:26:32  AJW
 	Modified to use Config
 
@@ -303,16 +306,16 @@ static Desk_bool Graphics_Redraw(Desk_event_pollblock *block,windowdata *windowd
 		int i=0;
 #if DEBUG
 Desk_ColourTrans_SetGCOL(0x00000000,0,0);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 Desk_ColourTrans_SetGCOL(0xFF000000,0,0);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 Desk_ColourTrans_SetGCOL(0x00FF0000,0,0);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 #endif
 		for (i=0;i<windowdata->layout->numchildren;i++) {
 			Graphics_PlotChildren(blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].leftx,blk.rect.min.x-blk.scroll.x+windowdata->layout->children[i].rightx,blk.rect.max.y-blk.scroll.y+windowdata->layout->children[i].y);
@@ -885,6 +888,9 @@ void Graphics_Relayout(void)
 				case wintype_DESCENDENTS:
 					windows[i].layout=Layout_LayoutDescendents(windows[i].person,windows[i].generations);
 					break;
+				case wintype_ANCESTORS:
+					windows[i].layout=Layout_LayoutAncestors(windows[i].person,windows[i].generations);
+					break;
 				case wintype_UNLINKED:
 					windows[i].layout=Layout_LayoutUnlinked();
 					break;
@@ -914,8 +920,8 @@ void Graphics_OpenWindow(wintype type,elementptr person,int generations)
 	switch (type) {
 		case wintype_NORMAL:
 #if DEBUG
-Desk_Event_Claim(event_CLICK,windows[newwindow].handle,event_ANY,Graphics_MouseClick,&windows[newwindow]);
-Desk_Event_Claim(event_REDRAW,windows[newwindow].handle,event_ANY,(event_handler)Graphics_Redraw,&windows[newwindow]);
+Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
+Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
 windows[newwindow].layout=layouts;
 Layout_LayoutNormal();
 #else
@@ -924,6 +930,16 @@ Layout_LayoutNormal();
 		break;
 		case wintype_DESCENDENTS:
 			windows[newwindow].layout=Layout_LayoutDescendents(person,generations);
+		break;
+		case wintype_ANCESTORS:
+#if DEBUG
+Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Graphics_MouseClick,&windows[newwindow]);
+Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Graphics_Redraw,&windows[newwindow]);
+windows[newwindow].layout=layouts;
+Layout_LayoutAncestors(person,generations);
+#else
+			windows[newwindow].layout=Layout_LayoutAncestors(person,generations);
+#endif
 		break;
 		case wintype_UNLINKED:
 			windows[newwindow].layout=Layout_LayoutUnlinked();
