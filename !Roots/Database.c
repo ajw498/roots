@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.50 2000/11/06 23:45:48 AJW Exp $
+	$Id: Database.c,v 1.51 2000/11/12 16:13:21 AJW Exp $
 
 */
 
@@ -438,19 +438,20 @@ Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end)
 	return Desk_FALSE;
 }
 
-void Database_Link(layout *layout,elementptr start,elementptr end)
+elementptr Database_Link(layout *layout,elementptr start,elementptr end)
 /*Link two elements together if possible*/
 {
-	if (!Database_LinkValid(layout,start,end)) return;
+	if (!Database_LinkValid(layout,start,end)) return none;
 	switch (Database_GetElementType(end)) {
 		case element_PERSON:
-			Database_Marry(start,end);
+			return Database_Marry(start,end);
 			break;
 
 		case element_MARRIAGE:
 			Database_AddChild(end,start);
 			break;
 	}
+	return none;
 }
 
 static void Database_FreeElement(elementptr element)

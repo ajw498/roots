@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.17 2000/09/21 11:33:04 AJW Exp $
+	$Id: Config.c,v 1.18 2000/11/12 16:13:19 AJW Exp $
 
 */
 
@@ -46,6 +46,7 @@
 #define config_FONTBLEND 16
 
 typedef struct configdata {
+	Desk_bool separatemarriages;
 	Desk_bool importgraphicsstyle;
 	Desk_bool snap;
 	Desk_bool title;
@@ -111,6 +112,12 @@ static void Config_Default(void)
 	config.autoincreasesize=Desk_TRUE;
 	config.autoincreasealways=Desk_FALSE;
 	config.fontblend=Desk_FALSE;
+	config.separatemarriages=Desk_TRUE;
+}
+
+Desk_bool Config_SeparateMarriages(void)
+{
+	return config.separatemarriages;
 }
 
 Desk_bool Config_ImportGraphicsStyle(void)

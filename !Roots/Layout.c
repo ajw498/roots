@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.52 2000/11/12 13:53:14 AJW Exp $
+	$Id: Layout.c,v 1.53 2000/11/12 16:13:25 AJW Exp $
 
 */
 
@@ -317,7 +317,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.52 2000/11/12 13:53:14 AJW Exp $
+	$Id: Layout.c,v 1.53 2000/11/12 16:13:25 AJW Exp $
 
 */
 
@@ -399,6 +399,7 @@ typedef enum ptrtype {
 
 typedef struct dragdata {
 	elementptr person;
+	int personwidth,personheight;
 	int origmousey;
 	int personoffset;
 	windowdata *windowdata;
@@ -554,8 +555,8 @@ static void Layout_PlotDragBox(dragdata *dragdata)
 	Desk_Wimp_UpdateWindow(&blk,&more);
 	while (more) {
 		Draw_EORRectangle(dragdata->windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->coords.min.x+dragdata->oldoffset,dragdata->oldmousey+dragdata->coords.min.y,dragdata->coords.max.x-dragdata->coords.min.x,dragdata->coords.max.y-dragdata->coords.min.y,0,EORCOLOUR);
-/*		Draw_EORRectangle(dragdata->windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,dragdata->oldmousey,dragdata->marriage ? Graphics_MarriageWidth() : Graphics_PersonWidth(),Graphics_PersonHeight(),0,EORCOLOURRED);
-*/		Desk_Wimp_GetRectangle(&blk,&more);
+		Draw_EORRectangle(dragdata->windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,dragdata->oldmousex+dragdata->oldoffset-dragdata->personoffset,dragdata->oldmousey,dragdata->personwidth,dragdata->personheight,0,EORCOLOURRED);
+		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 }
 
@@ -679,7 +680,10 @@ static void Windows_LinkDragEnd(void *ref)
 	Windows_UnselectAll(dragdata->windowdata);
 	if (elementlayout) {
 		Desk_Error2_Try {
-			Database_Link(dragdata->windowdata->layout,dragdata->person,elementlayout->element);
+			elementptr marriage;
+
+			marriage=Database_Link(dragdata->windowdata->layout,dragdata->person,elementlayout->element);
+			if (marriage) TreeLayout_AddMarriage(dragdata->windowdata->layout,marriage);
 		} Desk_Error2_Catch {
 			AJWLib_Error2_Report("%s");
 		} Desk_Error2_EndCatch
@@ -818,31 +822,31 @@ static void Windows_GetOffset(dragdata *dragdata)
 {
 	int i,distance;
 	dragdata->oldoffset=0;
-#if 0
+
 	if (!Config_Snap()) return;
 	for (i=0;i<dragdata->windowdata->layout->numpeople;i++) {
 		if (dragdata->windowdata->layout->person[i].y==dragdata->oldmousey && !Layout_GetSelect(dragdata->windowdata->layout->person[i].element)) {
 			/*Look for right hand edge of person or marriage*/
-			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth());
-			if (!dragdata->marriage) distance-=Graphics_GapWidth();
+			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+dragdata->windowdata->layout->person[i].width);
+			/*if (!dragdata->marriage)*/ distance-=Graphics_GapWidth();
 			if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			/*Look for second marriage on right*/
-			if (dragdata->marriage) {
+/*			if (dragdata->marriage) {
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth()+Graphics_SecondMarriageGap());
 				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
-			}
+			}*/
 			/*Look for left hand edge of person or marriage*/
 			distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x);
-			if (!dragdata->marriage) distance+=Graphics_GapWidth()+Graphics_PersonWidth(); else distance+=Graphics_MarriageWidth();
+			/*if (!dragdata->marriage)*/ distance+=Graphics_GapWidth()+dragdata->windowdata->layout->person[i].width; /*else distance+=Graphics_MarriageWidth();*/
 			if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			/*Look for second marriage on left*/
-			if (dragdata->marriage) {
+/*			if (dragdata->marriage) {
 				distance=(dragdata->oldmousex-dragdata->personoffset)-(dragdata->windowdata->layout->person[i].x-Graphics_MarriageWidth()-Graphics_SecondMarriageGap());
 				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
-			}
+			}*/
 		}
 	}
-	if (!dragdata->marriage) {
+/*	if (!dragdata->marriage) {*/
 		for (i=0;i<dragdata->windowdata->layout->numtransients;i++) {
 			if (dragdata->windowdata->layout->transients[i].y==dragdata->oldmousey && !Layout_GetSelect(dragdata->windowdata->layout->transients[i].element)) {
 				/*Look for right hand edge of marriage*/
@@ -853,11 +857,10 @@ static void Windows_GetOffset(dragdata *dragdata)
 				if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
 			}
 		}
-	}
+/*	}*/
 	/*Look for siblings centered under marriage and marriages centered over siblings*/
 	distance=dragdata->oldmousex-dragdata->centered;
 	if (abs(distance)<Config_SnapDistance()) dragdata->oldoffset=-distance;
-#endif
 }
 
 static void Layout_MoveDragPoll(void *ref)
@@ -938,6 +941,8 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 	dragblk.screenrect.max.y=0;
 	/*Set up structure used for updating drag*/
 	dragdata.person=person;
+	dragdata.personwidth=Layout_FindWidth(windowdata->layout,person);
+	dragdata.personheight=Layout_FindHeight(windowdata->layout,person);
 	dragdata.personoffset=mousex-x;
 	dragdata.windowdata=windowdata;
 	dragdata.origmousex=mousex;
@@ -949,8 +954,8 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 	dragdata.ptr=ptr_DEFAULT;
 	/*Set up the centered position*/
 	dragdata.centered=INFINITY;
-#if 0
-	if (!marriage) {
+
+/*	if (!marriage)*/ {
 		Desk_bool allsiblings=Desk_TRUE;
 		elementptr person1=person,person2=person;
 		int x,rightx=-INFINITY,leftx=INFINITY;
@@ -966,12 +971,14 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 		} while ((person2=Database_GetSiblingRtoL(person2))!=none);
 		if (allsiblings) {
 			int centre=(rightx+leftx+Graphics_PersonWidth())/2;
-			int marriagepos=Layout_FindMarriageXCoord(windowdata->layout,Database_GetMarriage(Database_GetMother(person)))+Graphics_MarriageWidth()/2;
+			elementptr marriage=Database_GetMarriage(Database_GetMother(person));
+			int marriagepos=INFINITY;
+			if (marriage) marriagepos=Layout_FindXCoord(windowdata->layout,marriage)+Layout_FindWidth(windowdata->layout,marriage)/2;
 			dragdata.centered=marriagepos+(mousex-centre);
 		} else {
 			dragdata.centered=INFINITY;
 		}
-	} else {
+	}/* else {
 		if (Database_GetRightChild(person)) {
 			int tempx,rightx=-INFINITY,leftx=INFINITY,centre,marriagepos;
 			elementptr person1=Database_GetRightChild(person);
@@ -985,8 +992,8 @@ static void Layout_MoveDragStart(elementptr person,int x,windowdata *windowdata)
 		} else {
 			dragdata.centered=INFINITY;
 		}
-	}
-#endif
+	}*/
+
 	Desk_Wimp_DragBox(&dragblk);
 	Desk_Drag_SetHandlers(Layout_MoveDragPoll,Layout_MoveDragEnd,&dragdata);
 }
@@ -1204,7 +1211,7 @@ layout *Layout_GetGEDCOMLayout(void)
 
 	for (i=0;i<gedcomlayout->numpeople;i++) {
 		if (gedcomlayout->person[i].width==0 && gedcomlayout->person[i].height==0) {
-			gedcomlayout->person[i].width=Graphics_PersonWidth();
+			gedcomlayout->person[i].width=Database_GetElementType(gedcomlayout->person[i].element)==element_MARRIAGE ? Graphics_MarriageWidth() : Graphics_PersonWidth();
 			gedcomlayout->person[i].height=Graphics_PersonHeight();
 		}
 	}
