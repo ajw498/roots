@@ -18,6 +18,9 @@ layout *Layout_GetGEDCOMLayout(void);
 void Layout_GEDCOMNewPerson(elementptr person);
 void Layout_GEDCOMNewPersonX(int pos);
 void Layout_GEDCOMNewPersonY(int pos);
+void Layout_GEDCOMNewPersonWidth(int width);
+void Layout_GEDCOMNewPersonHeight(int height);
+void Layout_GEDCOMNewPersonFlags(flags flags);
 
 #endif
 
