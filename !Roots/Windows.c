@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.74 2000/06/29 20:39:34 AJW Exp $
+	$Id: Windows.c,v 1.75 2000/07/22 19:04:51 AJW Exp $
 
 */
 
@@ -225,14 +225,13 @@ static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *wi
 	while (more) {
 #ifdef DEBUG
 		Desk_ColourTrans_SetGCOL(0x00000000,0,0);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
+		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
 		Desk_ColourTrans_SetGCOL(0x0000FF00,0,0);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x+2000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
+		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x-2000,blk.rect.max.y-blk.scroll.y-10000,10,20000);
 		Desk_ColourTrans_SetGCOL(0x00FF0000,0,0);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
-		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-3000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
+		Desk_GFX_RectangleFill(blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y-10000,10,20000);
 #endif
 		Graphics_Redraw(windowdata->layout,windowdata->scale,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,&(blk.cliprect),Desk_TRUE,Draw_PlotLine,Draw_PlotRectangle,Draw_PlotRectangleFilled,Draw_PlotText);
 		Desk_Wimp_GetRectangle(&blk,&more);

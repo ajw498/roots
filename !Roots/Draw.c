@@ -2,7 +2,7 @@
 	FT - Draw
 	© Alex Waugh 1999
 
-	$Id: Draw.c,v 1.10 2000/06/26 19:43:58 AJW Exp $
+	$Id: Draw.c,v 1.11 2000/07/22 19:04:49 AJW Exp $
 
 */
 
@@ -60,25 +60,23 @@ void Draw_PlotLine(int scale,int originx,int originy,int minx,int miny,int maxx,
 
 void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char *font,int size,unsigned int bgcolour,unsigned int fgcolour,char *text)
 {
-	int millix,milliy;
+	int millix,milliy,originmillix,originmilliy;
 	Desk_font_transformation fontmatrix;
 	int backgroundblend=0;
 	Desk_UNUSED(font);
 	Desk_UNUSED(size);
-	Desk_Font_ConvertToPoints(originx,originy,&millix,&milliy);
+	Desk_Font_ConvertToPoints(originx,originy,&originmillix,&originmilliy);
 	/*Font matrix is slightly different as coords are in millipoints, and x and y do not get scaled by font manager*/
 	fontmatrix.scale.xx=scale*((1<<16)/100);
 	fontmatrix.scale.xy=0;
 	fontmatrix.scale.yx=0;
 	fontmatrix.scale.yy=scale*((1<<16)/100);
-	fontmatrix.translate.x=millix;
-	fontmatrix.translate.y=milliy;
+	fontmatrix.translate.x=0; /*Puttting the origins here seems to cause positioning errrors on large trees*/
+	fontmatrix.translate.y=0;
 	Desk_SWI(4,0,SWI_ColourTrans_SetFontColours,0,bgcolour,fgcolour,14);
 	Desk_Font_ConvertToPoints(x,y,&millix,&milliy);
-	millix=(millix*scale)/100;
-	milliy=(milliy*scale)/100;
 	if (Config_FontBlend()) backgroundblend=1<<11;
-	Desk_Font_Paint3(handle,text,Desk_font_plot_TRANSMATRIX | Desk_font_plot_CURRENTHANDLE | backgroundblend,millix,milliy,NULL,&fontmatrix,0);
+	Desk_Font_Paint3(handle,text,Desk_font_plot_TRANSMATRIX | Desk_font_plot_CURRENTHANDLE | backgroundblend,(millix*scale)/100+originmillix,(milliy*scale)/100+originmilliy,NULL,&fontmatrix,0);
 }
 
 void Draw_EORRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
