@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.47 2000/10/16 11:45:03 AJW Exp $
+	$Id: Layout.c,v 1.48 2000/10/20 19:14:41 AJW Exp $
 
 */
 
@@ -204,9 +204,10 @@ Desk_wimp_rect Layout_FindExtent(layout *layout,Desk_bool selection)
 		}
 	}
 	if (box.min.x==INFINITY) {
+		int FIXME; /*Wrong default sizes*/
 		box.min.x=0;
 		box.min.y=0;
-		box.max.x=400; /*FIXME?*/
+		box.max.x=400;
 		box.max.y=200;
 	}
 	return box;
@@ -268,7 +269,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.47 2000/10/16 11:45:03 AJW Exp $
+	$Id: Layout.c,v 1.48 2000/10/20 19:14:41 AJW Exp $
 
 */
 
@@ -583,78 +584,57 @@ static void Layout_SelectDragEnd(void *ref)
 	}
 }
 
-static void Windows_LinkValid(void *ref,elementptr *person,elementptr *marriage)
-/* Check if the link drag would produce a valid link*/
+static elementlayout *Layout_FindElementAtCoords(layout *layout,int x,int y,Desk_bool *transient)
 {
-	Desk_mouse_block mouseblk;
-	Desk_convert_block blk;
-	dragdata *dragdata=ref;
-	int mousex,mousey,i;
+	int i;
 
-	*person=none;
-	*marriage=none;
-	Desk_Wimp_GetPointerInfo(&mouseblk);
-	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
-	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
-	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale;
-	/*See who we were dropped on*/
-	for (i=dragdata->windowdata->layout->numpeople-1;i>=0;i--) {
-		if (mousex>dragdata->windowdata->layout->person[i].x && mousex<dragdata->windowdata->layout->person[i].x+Graphics_PersonWidth()) {
-			if (mousey>dragdata->windowdata->layout->person[i].y && mousey<dragdata->windowdata->layout->person[i].y+Graphics_PersonHeight()) {
-				/*Check that the dragged person is not the same as the destination person*/
-				if (dragdata->person==dragdata->windowdata->layout->person[i].element) return;
-				/*Check that both people are in the same generation*/
-				if (dragdata->origmousey!=Layout_NearestGeneration(mousey)) return;
-				*person=dragdata->windowdata->layout->person[i].element;
-				return;
+	AJWLib_Assert(layout!=NULL);
+	if (transient) *transient=Desk_FALSE;
+	/*See if we clicked on a transient*/
+	/*Transients take priority over people, as they are generally smaller*/
+	for (i=layout->numtransients-1;i>=0;i--) {
+		if (x>=layout->transients[i].x && x<=layout->transients[i].x+layout->transients[i].width) {
+			if (y>=layout->transients[i].y && y<=layout->transients[i].y+layout->transients[i].height) {
+				if (transient) *transient=Desk_TRUE;
+				return layout->transients+i;
 			}
 		}
 	}
-	for (i=dragdata->windowdata->layout->numtransients-1;i>=0;i--) {
-		if (mousex>dragdata->windowdata->layout->transients[i].x && mousex<dragdata->windowdata->layout->transients[i].x+Graphics_MarriageWidth()) {
-			if (mousey>dragdata->windowdata->layout->transients[i].y && mousey<dragdata->windowdata->layout->transients[i].y+Graphics_PersonHeight()) {
-				/*Check that the person does not have parents already*/
-				if (Database_GetMother(dragdata->person)) return;
-				/*Check that the person is in the right generation*/
-				if (Layout_NearestGeneration((dragdata->origmousey)+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())!=Layout_NearestGeneration(mousey)) return;
-				*marriage=dragdata->windowdata->layout->transients[i].element;
-				return;
+	/*See if we clicked on a person*/
+	for (i=layout->numpeople-1;i>=0;i--) {
+		if (x>=layout->person[i].x && x<=layout->person[i].x+layout->person[i].width) {
+			if (y>=layout->person[i].y && y<=layout->person[i].y+layout->person[i].height) {
+				return layout->person+i;
 			}
 		}
 	}
+	return NULL;
 }
 
 static void Windows_LinkDragEnd(void *ref)
 /*A link drag has ended, so link the person if possible*/
 {
 	dragdata *dragdata=ref;
-	elementptr person,marriage;
+	Desk_mouse_block mouseblk;
+	Desk_convert_block blk;
+	elementlayout *elementlayout;
+	int mousex,mousey;
 
 	Layout_SetPointerShape("ptr_default",1);
-	Windows_LinkValid(ref,&person,&marriage);
-	if (person) {
+
+	Desk_Wimp_GetPointerInfo(&mouseblk);
+	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale;
+	elementlayout=Layout_FindElementAtCoords(dragdata->windowdata->layout,mousex,mousey,NULL);
+
+	Windows_UnselectAll(dragdata->windowdata);
+	if (elementlayout) {
 		Desk_Error2_Try {
-			volatile elementptr marriage;
-			marriage=Database_Marry(person,dragdata->person);
-/*			Desk_Error2_Try {
-				int startx,finishx,marriagex;
-*/				/*Marriage is put next to the person that the drag was started on*/
-				/*Find out if we need to put it to the left or right of the person*/
-/*				startx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->person);
-				finishx=Layout_FindXCoord(dragdata->windowdata->layout,person);
-				if (startx<finishx) marriagex=startx+Graphics_PersonWidth(); else marriagex=startx-Graphics_MarriageWidth();
-				Layout_AddMarriage(dragdata->windowdata->layout,marriage,marriagex,dragdata->origmousey,Graphics_MarriageWidth(),Graphics_PersonHeight(),0,0);
-				Windows_UnselectAll(dragdata->windowdata);
-			} Desk_Error2_Catch {
-				Database_RemoveMarriage(marriage);
-				Desk_Error2_ReThrow();
-			} Desk_Error2_EndCatch
-*/		} Desk_Error2_Catch {
+			Database_Link(dragdata->windowdata->layout,dragdata->person,elementlayout->element);
+		} Desk_Error2_Catch {
 			AJWLib_Error2_Report("%s");
 		} Desk_Error2_EndCatch
-	} else if (marriage) {
-		Database_AddChild(marriage,dragdata->person);
-		Windows_UnselectAll(dragdata->windowdata);
 	}
 }
 
@@ -750,14 +730,28 @@ static void Layout_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_boo
 static void Layout_LinkDragPoll(void *ref)
 /*A link drag is in progress, so set pointer shape*/
 {
+	Desk_mouse_block mouseblk;
+	Desk_convert_block blk;
 	dragdata *dragdata=ref;
-	elementptr person,marriage;
+	elementlayout *elementlayout;
+	int mousex,mousey;
 
 	Layout_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
-	Windows_LinkValid(dragdata,&person,&marriage);
-	if (person || marriage) {
-		if (dragdata->ptr!=ptr_LINK) Layout_SetPointerShape("ptr_link",2);
-		dragdata->ptr=ptr_LINK;
+
+	Desk_Wimp_GetPointerInfo(&mouseblk);
+	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
+	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.screenrect.max.y-blk.scroll.y))*100)/dragdata->windowdata->scale;
+	elementlayout=Layout_FindElementAtCoords(dragdata->windowdata->layout,mousex,mousey,NULL);
+
+	if (elementlayout) {
+		if (Database_LinkValid(dragdata->windowdata->layout,dragdata->person,elementlayout->element)) {
+			if (dragdata->ptr!=ptr_LINK) Layout_SetPointerShape("ptr_link",2);
+			dragdata->ptr=ptr_LINK;
+		} else {
+			if (dragdata->ptr!=ptr_NOLINK) Layout_SetPointerShape("ptr_nolink",2);
+			dragdata->ptr=ptr_NOLINK;
+		}
 	} else {
 		if (dragdata->ptr!=ptr_NOLINK) Layout_SetPointerShape("ptr_nolink",2);
 		dragdata->ptr=ptr_NOLINK;
@@ -1033,33 +1027,6 @@ static Desk_bool Layout_MenusDeleted(Desk_event_pollblock *block,void *ref)
 	return Desk_TRUE;
 }
 
-static elementlayout *Layout_FindElementAtCoords(layout *layout,int x,int y,Desk_bool *transient)
-{
-	int i;
-
-	AJWLib_Assert(layout!=NULL);
-	*transient=Desk_FALSE;
-	/*See if we clicked on a transient*/
-	/*Transients take priority over people, as they are generally smaller*/
-	for (i=layout->numtransients-1;i>=0;i--) {
-		if (x>=layout->transients[i].x && x<=layout->transients[i].x+layout->transients[i].width) {
-			if (y>=layout->transients[i].y && y<=layout->transients[i].y+layout->transients[i].height) {
-				*transient=Desk_TRUE;
-				return layout->transients+i;
-			}
-		}
-	}
-	/*See if we clicked on a person*/
-	for (i=layout->numpeople-1;i>=0;i--) {
-		if (x>=layout->person[i].x && x<=layout->person[i].x+layout->person[i].width) {
-			if (y>=layout->person[i].y && y<=layout->person[i].y+layout->person[i].height) {
-				return layout->person+i;
-			}
-		}
-	}
-	return NULL;
-}
-
 Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
@@ -1090,6 +1057,7 @@ Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 			if (elementlayout) {
 				if (elementlayout->flags.editable) Database_Edit(mousedata.element);
 			}
+			break;
 
 		case Desk_button_MENU:
 			selected=Layout_AnyoneSelected();
