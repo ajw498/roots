@@ -18,7 +18,7 @@ void Database_UnsetFlag(elementptr person);
 void Database_UnsetAllFlags(void);
 Desk_bool Database_GetFlag(elementptr person);
 elementtype Database_AnyoneFlagged(void);
-void Database_UnlinkSelected(layout *layout);
+void Database_UnlinkFromSiblingsAndParents(elementptr person,elementptr marriage);
 void Database_DeleteSelected(layout *layout);
 elementptr Database_GetMarriage(elementptr person);
 elementptr Database_GetMarriageLtoR(elementptr person);

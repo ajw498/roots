@@ -22,6 +22,7 @@ void Layout_GEDCOMNewPersonY(int pos);
 void Layout_GEDCOMNewPersonWidth(int width);
 void Layout_GEDCOMNewPersonHeight(int height);
 void Layout_GEDCOMNewPersonFlags(flags flags);
+void TreeLayout_CheckForUnlink(layout *layout,elementptr i);
 
 #endif
 

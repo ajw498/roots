@@ -2,7 +2,7 @@
 	Roots - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.52 2000/11/12 19:58:40 AJW Exp $
+	$Id: Database.c,v 1.53 2000/11/13 00:07:09 AJW Exp $
 
 */
 
@@ -185,7 +185,7 @@ Desk_bool Database_Married(elementptr person1,elementptr person2)
 Desk_bool Database_ElementValid(elementptr person)
 /*Check to see if a given elementptr is valid*/
 {
-	if (person>database[0].element.file.numberofelements) return Desk_FALSE;
+	if (person>=database[0].element.file.numberofelements) return Desk_FALSE;
 	if (person<0) return Desk_TRUE;
 	if (database[person].type==element_PERSON || database[person].type==element_MARRIAGE) return Desk_TRUE;
 	return Desk_FALSE;
@@ -441,7 +441,7 @@ void Database_LinkAllMarriages(void)
 }
 
 Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end)
-/*Check if a link from start to end would be valid*/ 
+/*Check if a link from start to end would be valid*/
 {
 	if (Database_GetElementType(start)!=element_PERSON) return Desk_FALSE;
 	switch (Database_GetElementType(end)) {
@@ -456,11 +456,8 @@ Desk_bool Database_LinkValid(layout *layout,elementptr start,elementptr end)
 		case element_MARRIAGE:
 			/*Check that the person does not have parents already*/
 			if (Database_GetMother(start)) return Desk_FALSE;
-			/*Check that the person is in the right generation*/
-			{
-				int FIXME;
-				/*if (Layout_NearestGeneration((dragdata->origmousey)+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())!=Layout_NearestGeneration(mousey)) return;*/
-			}
+			/*Check that the person is in the right generation (anything below the marriage is now ok*/
+			if (Layout_FindYCoord(layout,start)>Layout_FindYCoord(layout,end)) return Desk_FALSE;
 			return Desk_TRUE;
 			break;
 	}
@@ -577,50 +574,29 @@ void Database_RemoveMarriage(elementptr marriage)
 		child=temp;
 	}
 	Database_FreeElement(marriage);
+	Modules_ChangedStructure();
 }
 
-void Database_UnlinkSelected(layout *layout)
+void Database_UnlinkFromSiblingsAndParents(elementptr person,elementptr marriage)
 {
-	int i;
-	elementptr marriage;
-	AJWLib_Assert(database!=NULL);
-	for (i=1;i<database[0].element.file.numberofelements;i++) {
-		switch (database[i].type) {
-			case element_PERSON:
-				/*Get parents marriage*/
-				if ((marriage=Database_GetParentsMarriage(i))!=none) {
-					/*If selection differs from parents marriage then unlink from siblings and from parents*/
-					if (database[marriage].selected!=database[i].selected) {
-						/*Remove from siblings chain*/
-						if (database[i].element.person.siblingsltor) database[database[i].element.person.siblingsltor].element.person.siblingsrtol=database[i].element.person.siblingsrtol;
-						if (database[i].element.person.siblingsrtol) database[database[i].element.person.siblingsrtol].element.person.siblingsltor=database[i].element.person.siblingsltor;
-						/*Remove from parents marriage*/
-						if (database[marriage].element.marriage.leftchild==i) database[marriage].element.marriage.leftchild=database[i].element.person.siblingsltor;
-						if (database[marriage].element.marriage.rightchild==i) database[marriage].element.marriage.rightchild=database[i].element.person.siblingsrtol;
-						/*Remove parents*/
-						database[i].element.person.parentsmarriage=none;
-					}
-				}
-				break;
-			case element_MARRIAGE:
-				/*Remove marriage if both spouses and the marriage are not the same selection*/
-				if (database[database[i].element.marriage.principal].selected!=database[i].selected || database[database[i].element.marriage.spouse].selected!=database[i].selected) {
-/*					Layout_RemoveMarriage(layout,i);*/
-					Database_RemoveMarriage(i);
-					Modules_ChangedStructure();
-					break;
-				}
-			default:
-				break;
-		}
-	}
+	/*Remove from siblings chain*/
+	if (database[person].element.person.siblingsltor) database[database[person].element.person.siblingsltor].element.person.siblingsrtol=database[person].element.person.siblingsrtol;
+	if (database[person].element.person.siblingsrtol) database[database[person].element.person.siblingsrtol].element.person.siblingsltor=database[person].element.person.siblingsltor;
+	/*Remove from parents marriage*/
+	if (database[marriage].element.marriage.leftchild==person) database[marriage].element.marriage.leftchild=database[person].element.person.siblingsltor;
+	if (database[marriage].element.marriage.rightchild==person) database[marriage].element.marriage.rightchild=database[person].element.person.siblingsrtol;
+	/*Remove parents*/
+	database[person].element.person.parentsmarriage=none;
 }
 
 void Database_DeleteSelected(layout *layout)
 {
 	int i;
 	AJWLib_Assert(database!=NULL);
-	Database_UnlinkSelected(layout);
+	{
+		int FIXXME;
+		/*	Database_UnlinkSelected(layout);*/
+	}
 	for (i=1;i<database[0].element.file.numberofelements;i++) {
 		if (database[i].selected) {
 			switch (database[i].type) {
@@ -630,7 +606,7 @@ void Database_DeleteSelected(layout *layout)
 					Modules_ChangedStructure();
 					break;
 				case element_MARRIAGE:
-/*					Layout_RemoveMarriage(layout,i);*/
+					Layout_RemoveElement(layout,i); /*Ignored if element is not in layout*/
 					Database_FreeElement(i);
 					Modules_ChangedStructure();
 					break;
@@ -909,6 +885,7 @@ elementptr Database_Marry(elementptr linked,elementptr unlinked)
 			database[marriage2].element.marriage.previous=marriage;
 			if (database[marriage].element.marriage.previous) database[database[marriage].element.marriage.previous].element.marriage.next=marriage;
 		} else {
+			int fixme; /*Check that the two marriage chains are not actually the same chain, otherwise a circle is created*/
 			/*Both are married already*/
 			while (database[marriage2].element.marriage.next!=none) marriage2=database[marriage2].element.marriage.next;
 			while (database[marriage3].element.marriage.previous!=none) marriage3=database[marriage3].element.marriage.previous;
