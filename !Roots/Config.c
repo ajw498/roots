@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.15 2000/06/17 22:17:48 AJW Exp $
+	$Id: Config.c,v 1.16 2000/06/29 20:39:31 AJW Exp $
 
 */
 
@@ -171,7 +171,7 @@ static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 	config.autoincreasesize=Desk_Icon_GetSelect(configwin,config_AUTOINCREASE);
 	config.autoincreasealways=(Desk_bool)!Desk_Icon_GetSelect(configwin,config_AUTOINCREASEONLY);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(configwin);
-	Modules_ChangedLayout();
+	Modules_ChangedStructure();
 	return Desk_TRUE;
 }
 

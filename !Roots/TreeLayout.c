@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.33 2000/06/26 19:44:01 AJW Exp $
+	$Id: TreeLayout.c,v 1.34 2000/06/29 20:39:32 AJW Exp $
 
 */
 
@@ -599,9 +599,6 @@ layout *Layout_LayoutNormal(void)
 		if (Config_Title()) {
 			layout->title.x=0;
 			layout->title.y=0;
-		} else {
-			layout->title.x=INFINITY;
-			layout->title.y=INFINITY;
 		}
 /*		person=Database_GetLinked();
 */		while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
