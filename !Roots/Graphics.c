@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.45 2000/09/25 18:44:13 AJW Exp $
+	$Id: Graphics.c,v 1.46 2000/09/26 12:13:11 AJW Exp $
 
 */
 
@@ -65,7 +65,6 @@
 #define MARRIAGEWIDTH     "marriagewidth"
 #define SECONDMARRIAGEGAP "secondmarriagegap"
 #define WINDOWBORDER      "windowborder"
-#define GAPHEIGHTUNLINKED "gapheightunlinked"
 
 #define FILETITLE "filetitle"
 
@@ -169,7 +168,6 @@ typedef struct graphics {
 	int marriagewidth;
 	int secondmarriagegap;
 	int windowborder;
-	int gapheightunlinked;
 	int siblinglinethickness;
 	unsigned int siblinglinecolour;
 	int titleheight;
@@ -209,7 +207,6 @@ static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int line
 	else if (!strcmp(values[0],MARRIAGEWIDTH)) graphicsdata.marriagewidth=Graphics_ConvertToOS(values[1]);
 	else if (!strcmp(values[0],SECONDMARRIAGEGAP)) graphicsdata.secondmarriagegap=Graphics_ConvertToOS(values[1]);
 	else if (!strcmp(values[0],WINDOWBORDER)) graphicsdata.windowborder=Graphics_ConvertToOS(values[1]);
-	else if (!strcmp(values[0],GAPHEIGHTUNLINKED)) graphicsdata.gapheightunlinked=Graphics_ConvertToOS(values[1]);
 	else Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
 }
 
@@ -520,11 +517,6 @@ int Graphics_PersonWidth(void)
 	return graphicsdata.personwidth;
 }
 
-int Graphics_UnlinkedGapHeight(void)
-{
-	return graphicsdata.gapheightunlinked;
-}
-
 int Graphics_GapHeightAbove(void)
 {
 	return graphicsdata.gapheightabove;
@@ -623,7 +615,6 @@ static void Graphics_DefaultStyle(void)
 	graphicsdata.gapwidth=60;
 	graphicsdata.marriagewidth=100;
 	graphicsdata.windowborder=20;
-	graphicsdata.gapheightunlinked=30;
 	graphicsdata.siblinglinethickness=0;
 	graphicsdata.siblinglinecolour=0;
 	graphicsdata.titleheight=40;
@@ -1003,7 +994,6 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	AJWLib_Assert(layout!=NULL);
-	/*use the clip rect*/
 	Graphics_PlotLine=plotline;
 	Graphics_PlotRectangle=plotrect;
 	Graphics_PlotRectangleFilled=plotrectfilled;
@@ -1033,8 +1023,8 @@ void Graphics_Redraw(layout *layout,int scale,int originx,int originy,Desk_wimp_
 		}
 	}
 	for (i=0;i<layout->nummarriages;i++) {
-		if ((originx+((layout->marriage[i].x-Graphics_GapWidth())*scale)/100)<cliprect->max.x) {
-			if ((originx+((layout->marriage[i].x+Graphics_MarriageWidth()+Graphics_GapWidth())*scale)/100)>cliprect->min.x) {
+		if ((originx+((layout->marriage[i].x-Graphics_PersonWidth())*scale)/100)<cliprect->max.x) {
+			if ((originx+((layout->marriage[i].x+Graphics_MarriageWidth()+Graphics_PersonWidth())*scale)/100)>cliprect->min.x) {
 				if ((originy+((layout->marriage[i].y-Graphics_GapHeightBelow())*scale)/100)<cliprect->max.y) {
 					if ((originy+((layout->marriage[i].y+Graphics_PersonHeight()+Graphics_GapHeightAbove())*scale)/100)>cliprect->min.y) {
 						Graphics_PlotMarriage(scale,originx,originy,layout->marriage[i].x,layout->marriage[i].y,layout->marriage[i].marriage,plotselection ? Database_GetSelect(layout->marriage[i].marriage) : Desk_FALSE);
