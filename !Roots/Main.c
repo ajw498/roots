@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.9  2000/01/17 16:47:43  AJW
+	Altered Windows_OpenWindow calls
+
 	Revision 1.8  2000/01/14 19:43:04  AJW
 	Enabled file loading
 
@@ -96,8 +99,8 @@ Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
 {
 	if (block->data.mouse.button.data.select==1) {
-		Windows_OpenWindow(wintype_UNLINKED,none,0);
-		Windows_OpenWindow(wintype_NORMAL,none,0);
+		Windows_OpenWindow(wintype_UNLINKED,none,0,NULL);
+		Windows_OpenWindow(wintype_NORMAL,none,0,NULL);
 		return Desk_TRUE;
 	}
 #if DEBUG
