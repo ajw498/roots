@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.11  1999/10/11 22:27:16  AJW
+	Changed to use Error2
+
 	Revision 1.10  1999/10/10 20:54:40  AJW
 	Modified to use Desk
 
@@ -37,9 +40,10 @@
 */
 
 #include "Desk.Core.h"
-#include "Desk.Error.h"
-#include "Desk.Window.h" /*temp*/
-#include "Desk.Event.h" /*temp*/
+#include "Desk.Error2.h"
+#include "Desk.Window.h"
+#include "Desk.Event.h"
+#include "Desk.DeskMem.h"
 
 #include "AJWLib.Flex.h"
 
@@ -89,9 +93,10 @@ layout *Layout_LayoutUnlinked(void)
 #if DEBUG
 return layouts;
 #endif
-	layouts=malloc(sizeof(layout));
-	if (layouts==NULL) return NULL; /*REM ??*/
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->person),sizeof(personlayout));  /*errors*/
+	layouts=Desk_DeskMem_Malloc(sizeof(layout));
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->person),sizeof(personlayout));
+	/*Free layouts if there is a Flex error?*/
+	/*layouts as local var?*/
 	layouts->marriage=NULL;
 	layouts->children=NULL;
 	layouts->nummarriages=0;
@@ -99,7 +104,7 @@ return layouts;
 	layouts->numpeople=0;
 	person=Database_GetUnlinked(person);
 	while (person!=none) {
-		AJWLib_Flex_Extend((flex_ptr)&(layouts->person),sizeof(personlayout)*(layouts->numpeople+1)); /*errors*/
+		AJWLib_Flex_Extend((flex_ptr)&(layouts->person),sizeof(personlayout)*(layouts->numpeople+1));
 		layouts->person[layouts->numpeople].x=0;
 		layouts->person[layouts->numpeople].y=-(Graphics_UnlinkedGapHeight()+Graphics_PersonHeight())*(layouts->numpeople-1);
 		layouts->person[layouts->numpeople].person=person;
@@ -125,7 +130,7 @@ void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,Desk_bool 
 
 void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 {
-		AJWLib_Flex_Extend((flex_ptr)&(layout->person),sizeof(personlayout)*(layout->numpeople+1)); /*errors*/
+		AJWLib_Flex_Extend((flex_ptr)&(layout->person),sizeof(personlayout)*(layout->numpeople+1));
 		layout->person[layout->numpeople].x=x;
 		layout->person[layout->numpeople].y=y;
 		layout->person[layout->numpeople].person=person;
@@ -136,7 +141,7 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 
 void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
 {
-		AJWLib_Flex_Extend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(layout->nummarriages+1)); /*errors*/
+		AJWLib_Flex_Extend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(layout->nummarriages+1));
 		layout->marriage[layout->nummarriages].x=x;
 		layout->marriage[layout->nummarriages].y=y;
 		layout->marriage[layout->nummarriages].marriage=marriage;
@@ -177,7 +182,7 @@ void Layout_ExtendGeneration(int generation)
 {
 	int i;
 	if (generation<mingeneration) {
-		AJWLib_Flex_MidExtend((flex_ptr)&spaces,0,sizeof(line)*(mingeneration-generation)); /*errors*/
+		AJWLib_Flex_MidExtend((flex_ptr)&spaces,0,sizeof(line)*(mingeneration-generation));
 		for (i=0;i<mingeneration-generation;i++) {
 			spaces[i].minx=0;
 			spaces[i].maxx=0;
@@ -185,7 +190,7 @@ void Layout_ExtendGeneration(int generation)
 		mingeneration=generation;
 	}
 	if (generation>maxgeneration) {
-		AJWLib_Flex_Extend((flex_ptr)&spaces,sizeof(line)*(generation-mingeneration+1)); /*errors*/
+		AJWLib_Flex_Extend((flex_ptr)&spaces,sizeof(line)*(generation-mingeneration+1));
 		for (i=maxgeneration-mingeneration+1;i<generation-mingeneration+1;i++) {
 			spaces[i].minx=0;
 			spaces[i].maxx=0;
@@ -233,8 +238,8 @@ void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 void Layout_PlotPerson(elementptr person,int generation,Desk_bool lefttoright,Desk_bool child)
 {
 	elementptr marriage=Database_GetMarriage(person);
-	layouts->numpeople++;
-	AJWLib_Flex_Extend((flex_ptr)&(layouts->person),sizeof(personlayout)*(layouts->numpeople)); /*errors*/
+	AJWLib_Flex_Extend((flex_ptr)&(layouts->person),sizeof(personlayout)*(layouts->numpeople+1));
+	layouts->numpeople++; /*Only incremented if there was no error*/
 	if (lefttoright) {
 		if (marriage && Database_GetPrincipalFromMarriage(marriage)!=person) {
 			spaces[generation-mingeneration].maxx+=Graphics_MarriageWidth();
@@ -271,8 +276,8 @@ void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y,Desk_bool 
 	marriage=Database_GetMarriage(person);
 	if (marriage==none || Database_GetPrincipalFromMarriage(marriage)==person) return;
 	x-=Graphics_MarriageWidth();
+	AJWLib_Flex_Extend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(layout->nummarriages+1));
 	layout->nummarriages++;
-	AJWLib_Flex_Extend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(layout->nummarriages)); /*errors*/
 	layout->marriage[layout->nummarriages-1].x=x;
 	layout->marriage[layout->nummarriages-1].y=y;
 	layout->marriage[layout->nummarriages-1].marriage=marriage;
@@ -404,7 +409,7 @@ void Layout_RemovePerson(layout *layout,elementptr person)
 	int i;
 	for (i=0;i<layout->numpeople;i++) {
 		if (layout->person[i].person==person) {
-			AJWLib_Flex_MidExtend((flex_ptr)&(layout->person),sizeof(personlayout)*(i+1),-sizeof(personlayout));/*errors*/
+			AJWLib_Flex_MidExtend((flex_ptr)&(layout->person),sizeof(personlayout)*(i+1),-sizeof(personlayout));
 			layout->numpeople--;
 			return;
 		}
@@ -416,7 +421,7 @@ void Layout_RemoveMarriage(layout *layout,elementptr marriage)
 	int i;
 	for (i=0;i<layout->nummarriages;i++) {
 		if (layout->marriage[i].marriage==marriage) {
-			AJWLib_Flex_MidExtend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(i+1),-sizeof(marriagelayout));/*errors*/
+			AJWLib_Flex_MidExtend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(i+1),-sizeof(marriagelayout));
 			layout->nummarriages--;
 			return;
 		}
@@ -545,12 +550,12 @@ layout *Layout_LayoutNormal(void)
 static Desk_bool flag=Desk_TRUE;
 if (flag) {
 #else
-	layouts=malloc(sizeof(layout));
-	if (layouts==NULL) return NULL; /*REM ??*/
+	layouts=Desk_DeskMem_Malloc(sizeof(layout));
 #endif
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->person),1);  /*errors*/
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->marriage),1);  /*errors*/
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->children),1);  /*errors*/
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->person),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->marriage),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->children),1);
+	/*Free others if errors?*/
 #if DEBUG
 	flag=Desk_FALSE;
 } else {
@@ -559,7 +564,7 @@ if (flag) {
 	AJWLib_Flex_Extend((flex_ptr)&(layouts->children),1);
 }
 #endif
-	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));  /*errors*/
+	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
 	spaces[0].minx=0;
 	spaces[0].maxx=0;
 	mingeneration=0;
@@ -579,12 +584,12 @@ if (flag) {
 
 layout *Layout_LayoutDescendents(elementptr person,int generations)
 {
-	layouts=malloc(sizeof(layout));
-	if (layouts==NULL) return NULL; /*REM ??*/
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->person),1);  /*errors*/
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->marriage),1);  /*errors*/
-	AJWLib_Flex_Alloc((flex_ptr)&(layouts->children),1);  /*errors*/
-	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));  /*errors*/
+	layouts=Desk_DeskMem_Malloc(sizeof(layout));
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->person),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->marriage),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(layouts->children),1);
+	AJWLib_Flex_Alloc((flex_ptr)&(spaces),sizeof(line));
+	/*free others if an error occours?*/
 	spaces[0].minx=0;
 	spaces[0].maxx=0;
 	mingeneration=0;

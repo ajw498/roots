@@ -4,6 +4,9 @@
 	Started on 01-Apr-99 (Honest!)
 
 	$Log: Main.c,v $
+	Revision 1.4  1999/10/11 22:30:06  AJW
+	Changed to use Error2
+
 	Revision 1.3  1999/10/10 20:55:20  AJW
 	Modified to use Desk
 
@@ -39,7 +42,6 @@
 #include "AJWLib.Window.h"
 #include "AJWLib.Menu.h"
 #include "AJWLib.Msgs.h"
-#include "AJWLib.Handler.h"
 #include "AJWLib.Error2.h"
 #include "AJWLib.Flex.h"
 #include "AJWLib.DrawFile.h"
@@ -103,20 +105,18 @@ void IconBarMenuClick(int entry, void *r)
 
 int main(void)
 {
-
-/*	Error_RegisterSignals();*/
-	Desk_Error2_Init_JumpSig();
+	Desk_Error2_Init_JumpSig(); /*Just call handleallsignals here?*/
 	Desk_Error2_SetHandler(AJWLib_Error2_ReportFatal);
 	Desk_Resource_Initialise(DIRPREFIX);
 	Desk_Msgs_LoadFile("Messages");
 	Desk_Event_Initialise(AJWLib_Msgs_Lookup("Task.Name:"));
 	Desk_EventMsg_Initialise();
-	Desk_Screen_CacheModeInfo();      /*Errors*/
+	Desk_Screen_CacheModeInfo();
 	Desk_Template_Initialise();
 	Desk_EventMsg_Claim(Desk_message_MODECHANGE,Desk_event_ANY,Desk_Handler_ModeChange,NULL);
 	Desk_Event_Claim(Desk_event_CLOSE,Desk_event_ANY,Desk_event_ANY,Desk_Handler_CloseWindow,NULL);
 	Desk_Event_Claim(Desk_event_OPEN,Desk_event_ANY,Desk_event_ANY,Desk_Handler_OpenWindow,NULL);
-	Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,AJWLib_Handler_KeyPress,NULL);
+	Desk_Event_Claim(Desk_event_KEY,Desk_event_ANY,Desk_event_ANY,Desk_Handler_Key,NULL);
 	Desk_Event_Claim(Desk_event_REDRAW,Desk_event_ANY,Desk_event_ANY,Desk_Handler_HatchRedraw,NULL);
 	Desk_Icon_BarIcon(AJWLib_Msgs_TempLookup("Task.Icon:"),Desk_iconbar_RIGHT);
 	info=AJWLib_Window_CreateInfoWindowFromMsgs("Task.Name:","Task.Purpose:","©Alex Waugh 1999",VERSION);
@@ -129,6 +129,7 @@ int main(void)
 	AJWLib_Flex_InitDA("Task.Name:","DA.MaxSize:16");
 	Modules_Init();
 	while (Desk_TRUE) {
+		/*put in a try catch type error handling here?*/
 		Modules_ReflectChanges();
 		Desk_Event_Poll();
 	}
