@@ -3,7 +3,7 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.17 2000/10/20 19:37:33 AJW Exp $
+	$Id: Modules.c,v 1.18 2004/01/05 22:43:00 AJW Exp $
 
 */
 
@@ -21,6 +21,8 @@
 #include "Config.h"
 #include "Print.h"
 #include "Layout.h"
+#include "EditGraphics.h"
+
 
 
 static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayout=Desk_FALSE;
@@ -32,6 +34,7 @@ void Modules_Init(void)
 	Config_Init();
 	Print_Init();
 	Layout_Init();
+	EditGraphics_Init();
 }
 
 void Modules_ChangedStructure(void)
