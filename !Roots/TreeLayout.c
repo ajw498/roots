@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: TreeLayout.c,v $
+	Revision 1.2  1999/09/27 16:57:51  AJW
+	Added Layout_FindXCoord and Layout_FindMarriageXCoord
+
 	Revision 1.1  1999/09/27 15:33:10  AJW
 	Initial revision
 
@@ -90,6 +93,20 @@ BOOL Layout_Selected(layout *layout,elementptr person)
 	int i;
 	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) return layout->person[i].selected;
 	return FALSE;
+}
+
+int Layout_FindXCoord(layout *layout,elementptr person)
+{
+	int i;
+	for (i=0;i<layout->numpeople;i++) if (layout->person[i].person==person) return layout->person[i].x;
+	return 0;
+}
+
+int Layout_FindMarriageXCoord(layout *layout,elementptr marriage)
+{
+	int i;
+	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) return layout->marriage[i].x;
+	return 0;
 }
 
 void Layout_ExtendGeneration(int generation)
