@@ -3,6 +3,12 @@
 
 char *Config_GraphicsStyle(void);
 
+Desk_bool Config_SaveGraphicsStyle(void);
+
+Desk_bool Config_LoadGraphicsStyle(void);
+
+Desk_bool Config_ImportGraphicsStyle(void);
+
 Desk_bool Config_Snap(void);
 
 int Config_SnapDistance(void);

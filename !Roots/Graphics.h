@@ -28,8 +28,8 @@ typedef enum personfieldtype {
 
 typedef enum marriagefieldtype {
 	marriagefieldtype_PLACE=0,
-	marriagefieldtype_DATE
 	/*etc*/
+	marriagefieldtype_DATE
 } marriagefieldtype;
 
 typedef struct textproperties {
@@ -108,14 +108,6 @@ typedef struct graphics {
 typedef void (*plotfn)(const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour);
 typedef void (*plottextfn)(const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text);
 
-void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum);
-
-void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum);
-
-void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum);
-
-void Graphics_ReadFile(char *filename,void (*decodefn)(char *values[],int numvalues,int linenum));
-
 int Graphics_PersonHeight(void);
 
 int Graphics_PersonWidth(void);
@@ -138,6 +130,14 @@ void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *clipr
 
 void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected);
 
-void Graphics_Init(void);
+int Graphics_GetSize(void);
+
+void Graphics_Load(FILE *file);
+
+void Graphics_Save(FILE *file);
+
+void Graphics_RemoveStyle(void);
+
+void Graphics_LoadStyle(char *style);
 
 #endif

@@ -18,6 +18,8 @@ void File_LoadFile(char *filename);
 
 void File_New(void);
 
+void File_Remove(void);
+
 void File_Modified(void);
 
 Desk_bool File_GetModified(void);

@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.11 2000/02/20 23:03:15 uid1 Exp $
+	$Id: File.c,v 1.12 2000/02/21 23:58:38 uid1 Exp $
 
 */
 
@@ -66,7 +66,7 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	AJWLib_File_fwrite(fileid,1,4,file);
 	AJWLib_File_fwrite(&fileversion,4,1,file);
 	Database_Save(file);
-/*	Graphics_Save(file);*/
+	Graphics_Save(file);
 	while (nextwindow>=0) {
 		if ((layout=Windows_Save(file,&nextwindow))!=NULL) normallayout=layout;
 	}
@@ -81,6 +81,7 @@ void File_LoadFile(char *filename)
 	FILE *file=NULL;
 	char fileid[5];
 	layout *layout=NULL;
+	Desk_bool graphicsloaded=Desk_FALSE;
 	int fileversion;
 	file=AJWLib_File_fopen(filename,"rb");
 	AJWLib_File_fread(fileid,1,4,file);
@@ -117,6 +118,11 @@ void File_LoadFile(char *filename)
 				AJWLib_Assert(layout==NULL); /*Make this a proper error?*/
 				layout=Layout_Load(file);
 				break;
+			case tag_GRAPHICS:
+				AJWLib_Assert(graphicsloaded==Desk_FALSE);
+				graphicsloaded=Desk_TRUE;
+				Graphics_Load(file);
+				break;
 			default:
 				Desk_Error_Report(1,"Tag is %d",tag);
 				AJWLib_Assert(0);
@@ -126,6 +132,7 @@ void File_LoadFile(char *filename)
 	}
 	AJWLib_File_fclose(file);
 	Windows_LayoutNormal(layout);
+	if (!graphicsloaded) Graphics_LoadStyle(Config_GraphicsStyle());
 	strcpy(currentfilename,filename);
 	modified=Desk_FALSE;
 	Windows_FilenameChanged(currentfilename);
@@ -138,7 +145,18 @@ void File_New(void)
 	modified=Desk_FALSE;
 	strcpy(currentfilename,"Untitled");
 	strcpy(filedate,"Tomorrow"); /**/
+	Windows_FilenameChanged(currentfilename);
 	Database_New();
+	Graphics_LoadStyle(Config_GraphicsStyle());
+	Windows_OpenWindow(wintype_UNLINKED,none,0);
+	Windows_OpenWindow(wintype_NORMAL,none,0);
+	Windows_LayoutNormal(NULL);
+}
+
+void File_Remove(void)
+{
+	Database_Remove();
+	Graphics_RemoveStyle();
 }
 
 void File_Modified(void)
@@ -156,8 +174,9 @@ int File_GetSize(void)
 {
 	int size=4*sizeof(char)+sizeof(int);
 	size+=Database_GetSize();
-/*	size+=GraphicsConfig_GetSize();*/
+	size+=Graphics_GetSize();
 	size+=Windows_GetSize();
+	/*Do sizes include tags?*/
 	return size;
 }
 

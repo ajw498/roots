@@ -2,52 +2,9 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Log: Graphics.c,v $
-	Revision 1.13  2000/02/20 18:23:04  uid1
-	Changed plotting order so newest people are on top
-
-	Revision 1.12  2000/02/12 22:25:37  uid1
-	Renamed Graphics directory to Graphic to avoid CVS problems with Graphics.c .h
-	Altered Makefile to work with Reuben Thomas' make
-	
-	Revision 1.11  2000/01/14 13:50:10  AJW
-	Renamed Graphics.h to Windos.h etc
-	
-	Revision 1.10  2000/01/14 13:14:55  AJW
-	Changed to Graphics_
-	Added Graphics_Redraw etc.
-
-	Revision 1.9  2000/01/11 17:12:15  AJW
-	Uses newer version of AJWLib_File_*
-
-	Revision 1.8  2000/01/09 12:19:10  AJW
-	Added reading and stroing of font name and size
-
-	Revision 1.7  1999/10/25 16:09:28  AJW
-	Added centering of fields
-
-	Revision 1.6  1999/10/24 23:31:30  AJW
-	Added centred text fields
-
-	Revision 1.5  1999/10/24 18:01:43  AJW
-	Added extra field types
-
-	Revision 1.4  1999/10/12 14:32:05  AJW
-	Modified to use Config
-
-	Revision 1.3  1999/10/11 20:55:56  AJW
-	Modified to use Error2
-
-	Revision 1.2  1999/10/10 20:54:06  AJW
-	Modified to use Desk
-
-	Revision 1.1  1999/09/27 15:32:44  AJW
-	Initial revision
-
+	$Id: Graphics.c,v 1.14 2000/02/21 23:58:39 uid1 Exp $
 
 */
-
-/*	Includes  */
 
 #include "Desk.Window.h"
 #include "Desk.Error.h"
@@ -80,6 +37,7 @@
 #include "AJWLib.Font.h"
 #include "AJWLib.Draw.h"
 #include "AJWLib.DrawFile.h"
+#include "AJWLib.Assert.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -91,11 +49,13 @@
 #include "Config.h"
 #include "Layout.h"
 #include "Draw.h"
+#include "File.h"
 
 
 #define GRAPHICSDIR "<Roots$Dir>.Graphic"
 
 static graphics graphicsdata;
+static char currentstyle[256]="";
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
 static plottextfn Graphics_PlotText=NULL;
 
@@ -122,6 +82,8 @@ void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype=graphictype_INVALID;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE; /*Use a messages file?*/
 	else if (!strcmp(values[0],"childline")) graphictype=graphictype_CHILDLINE;
 	else if (!strcmp(values[0],"box")) graphictype=graphictype_RECTANGLE;
@@ -194,7 +156,6 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				size=(int)strtol(values[3],NULL,10);
 				strcpy(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.fontname,values[6]);
 				graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.size=size;
-				Desk_Font2_ClaimFont(&(graphicsdata.person[graphicsdata.numpersonobjects-1].details.textlabel.properties.font),values[6],16*size,16*size);
 			}
 			break;
 		case graphictype_CENTREDFIELD:
@@ -233,8 +194,6 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				size=(int)strtol(values[3],NULL,10);
 				strcpy(graphicsdata.personfields[field].textproperties.fontname,values[6]);
 				graphicsdata.personfields[field].textproperties.size=size;
-				Desk_Font2_ClaimFont(&(graphicsdata.personfields[field].textproperties.font),values[6],16*size,16*size);
-				/*errors - font not found*/
 			}
 			break;
 	}
@@ -319,7 +278,6 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.bgcolour=Graphics_RGBToPalette(values[5]);
 				strcpy(graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.text,values[7]);
 				size=(int)strtol(values[3],NULL,10);
-				Desk_Font2_ClaimFont(&(graphicsdata.marriage[graphicsdata.nummarriageobjects-1].details.textlabel.properties.font),values[6],16*size,16*size);
 			}
 			break;
 		case graphictype_FIELD:
@@ -334,27 +292,25 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 				if (!strcmp(values[7],"place")) field=marriagefieldtype_PLACE;
 				else if (!strcmp(values[7],"date")) field=marriagefieldtype_DATE;
 				else Desk_Error_Report(1,"Syntax error in marriage file, line %d",linenum); /*what is field?*/
-				graphicsdata.personfields[field].plot=Desk_TRUE;
-				graphicsdata.personfields[field].textproperties.x=(int)strtol(values[1],NULL,10);
-				graphicsdata.personfields[field].textproperties.y=(int)strtol(values[2],NULL,10);
-				graphicsdata.personfields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
-				graphicsdata.personfields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
+				graphicsdata.marriagefields[field].plot=Desk_TRUE;
+				graphicsdata.marriagefields[field].textproperties.x=(int)strtol(values[1],NULL,10);
+				graphicsdata.marriagefields[field].textproperties.y=(int)strtol(values[2],NULL,10);
+				graphicsdata.marriagefields[field].textproperties.colour=Graphics_RGBToPalette(values[4]);
+				graphicsdata.marriagefields[field].textproperties.bgcolour=Graphics_RGBToPalette(values[5]);
 				size=(int)strtol(values[3],NULL,10);
-				strcpy(graphicsdata.personfields[field].textproperties.fontname,values[6]);
-				graphicsdata.personfields[field].textproperties.size=size;
-				Desk_Font2_ClaimFont(&(graphicsdata.personfields[field].textproperties.font),values[6],16*size,16*size);
-				/*errors - font not found*/
+				strcpy(graphicsdata.marriagefields[field].textproperties.fontname,values[6]);
+				graphicsdata.marriagefields[field].textproperties.size=size;
 			}
 			break;
 	}
 }
 
-void Graphics_ReadFile(char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
+void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
 {
 	FILE *file;
 	char fullfilename[256];
 	int ch=0,line=0;
-	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,Config_GraphicsStyle(),filename);
+	sprintf(fullfilename,"%s.%s.%s",GRAPHICSDIR,style,filename);
 	file=AJWLib_File_fopen(fullfilename,"r");
 	while (ch!=EOF) {
 		char str[256];
@@ -428,9 +384,138 @@ int Graphics_WindowBorder(void)
 	return graphicsdata.windowborder;
 }
 
-void Graphics_Init(void)
+int Graphics_GetSize(void)
+{
+	int size=0;
+	if (graphicsdata.person!=NULL && graphicsdata.marriage!=NULL) {
+		size+=sizeof(tag)+sizeof(int);
+		size+=sizeof(graphicsdata);
+		size+=sizeof(object)*graphicsdata.numpersonobjects;
+		size+=sizeof(object)*graphicsdata.nummarriageobjects;
+		size+=sizeof(int);
+		size+=strlen(currentstyle);
+		size=(size+4) & ~3; /*Add null and round to a word boundary*/
+	}
+	return size;
+}
+
+void Graphics_ClaimFonts(void)
 {
 	int i;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	for (i=0;i<graphicsdata.numpersonobjects;i++) {
+		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
+			Desk_Font2_ClaimFont(&(graphicsdata.person[i].details.textlabel.properties.font),graphicsdata.person[i].details.textlabel.properties.fontname,16*graphicsdata.person[i].details.textlabel.properties.size,16*graphicsdata.person[i].details.textlabel.properties.size);
+		}
+	}
+	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
+		if (graphicsdata.personfields[i].plot) {
+			Desk_Font2_ClaimFont(&(graphicsdata.personfields[i].textproperties.font),graphicsdata.personfields[i].textproperties.fontname,16*graphicsdata.personfields[i].textproperties.size,16*graphicsdata.personfields[i].textproperties.size);
+			/*errors - font not found*/
+		}
+	}
+	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
+		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
+			Desk_Font2_ClaimFont(&(graphicsdata.marriage[i].details.textlabel.properties.font),graphicsdata.marriage[i].details.textlabel.properties.fontname,16*graphicsdata.marriage[i].details.textlabel.properties.size,16*graphicsdata.marriage[i].details.textlabel.properties.size);
+		}
+	}
+	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
+		if (graphicsdata.marriagefields[i].plot) {
+			Desk_Font2_ClaimFont(&(graphicsdata.marriagefields[i].textproperties.font),graphicsdata.marriagefields[i].textproperties.fontname,16*graphicsdata.marriagefields[i].textproperties.size,16*graphicsdata.marriagefields[i].textproperties.size);
+			/*errors - font not found*/
+		}
+	}
+}
+
+void Graphics_ReleaseFonts(void)
+{
+	int i;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	for (i=0;i<graphicsdata.numpersonobjects;i++) {
+		if (graphicsdata.person[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.person[i].type==graphictype_TEXTLABEL) {
+			Desk_Font2_ReleaseFont(&(graphicsdata.person[i].details.textlabel.properties.font));
+		}
+	}
+	for (i=personfieldtype_SURNAME;i<=personfieldtype_USER3;i++) {
+		if (graphicsdata.personfields[i].plot) {
+			Desk_Font2_ReleaseFont(&(graphicsdata.personfields[i].textproperties.font));
+		}
+	}
+	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
+		if (graphicsdata.marriage[i].type==graphictype_CENTREDTEXTLABEL || graphicsdata.marriage[i].type==graphictype_TEXTLABEL) {
+			Desk_Font2_ReleaseFont(&(graphicsdata.marriage[i].details.textlabel.properties.font));
+		}
+	}
+	for (i=marriagefieldtype_PLACE;i<=marriagefieldtype_DATE;i++) {
+		if (graphicsdata.personfields[i].plot) {
+			Desk_Font2_ReleaseFont(&(graphicsdata.marriagefields[i].textproperties.font));
+		}
+	}
+}
+
+void Graphics_Load(FILE *file)
+{
+	int size;
+	char filename[256];
+	AJWLib_Assert(file!=NULL);
+	AJWLib_Assert(graphicsdata.person==NULL);
+	AJWLib_Assert(graphicsdata.marriage==NULL);
+	AJWLib_File_fread(&graphicsdata,sizeof(graphics),1,file);
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),sizeof(object)*graphicsdata.numpersonobjects+1);
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),sizeof(object)*graphicsdata.nummarriageobjects+1);
+	AJWLib_File_fread(graphicsdata.person,sizeof(object),graphicsdata.numpersonobjects,file);
+	AJWLib_File_fread(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
+	AJWLib_File_fread(&size,sizeof(int),1,file);
+	AJWLib_File_fread(&currentstyle,sizeof(char),size,file);
+	sprintf(filename,"%s.%s",GRAPHICSDIR,currentstyle);
+	if (!Config_LoadGraphicsStyle() && Desk_File_IsDirectory(filename)) {
+		AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
+		AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
+		Graphics_LoadStyle(currentstyle);
+	} else {
+		Graphics_ClaimFonts();
+	}
+	/*Import style? ie save style into graphic dir if doesn't already exist*/
+}
+
+void Graphics_Save(FILE *file)
+{
+	tag tag=tag_GRAPHICS;
+	int size;
+	AJWLib_Assert(file!=NULL);
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	size=Graphics_GetSize();
+	AJWLib_File_fwrite(&tag,sizeof(tag),1,file);
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(&graphicsdata,sizeof(graphicsdata),1,file);
+	AJWLib_File_fwrite(graphicsdata.person,sizeof(object),graphicsdata.numpersonobjects,file);
+	AJWLib_File_fwrite(graphicsdata.marriage,sizeof(object),graphicsdata.nummarriageobjects,file);
+	size=strlen(currentstyle);
+	size=(size+4) & ~3; /*Add null and round to a word boundary*/
+	AJWLib_File_fwrite(&size,sizeof(int),1,file);
+	AJWLib_File_fwrite(&currentstyle,sizeof(char),size,file);
+}
+
+void Graphics_RemoveStyle(void)
+{
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	Graphics_ReleaseFonts();
+	graphicsdata.numpersonobjects=0;
+	graphicsdata.nummarriageobjects=0;
+	AJWLib_Flex_Free((flex_ptr)&(graphicsdata.person));
+	AJWLib_Flex_Free((flex_ptr)&(graphicsdata.marriage));
+}
+
+void Graphics_LoadStyle(char *style)
+{
+	int i;
+	AJWLib_Assert(graphicsdata.person==NULL);
+	AJWLib_Assert(graphicsdata.marriage==NULL);
+	AJWLib_Assert(style!=NULL);
 	graphicsdata.personwidth=200;
 	graphicsdata.personheight=100;
 	graphicsdata.gapheightabove=40;
@@ -442,20 +527,24 @@ void Graphics_Init(void)
 	graphicsdata.siblinglinethickness=0;
 	graphicsdata.siblinglinecolour=0;
 	graphicsdata.numpersonobjects=0;
-	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
 	graphicsdata.nummarriageobjects=0;
+	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.person),1);
 	AJWLib_Flex_Alloc((flex_ptr)&(graphicsdata.marriage),1);
 	for (i=0;i<NUMPERSONFIELDS;i++) graphicsdata.personfields[i].plot=Desk_FALSE;
 	for (i=0;i<NUMMARRIAGEFIELDS;i++) graphicsdata.marriagefields[i].plot=Desk_FALSE;
-	Graphics_ReadFile("Person",Graphics_StorePersonDetails);
-	Graphics_ReadFile("Dimensions",Graphics_StoreDimensionDetails);
-	Graphics_ReadFile("Marriage",Graphics_StoreMarriageDetails);
+	Graphics_ReadFile(style,"Person",Graphics_StorePersonDetails);
+	Graphics_ReadFile(style,"Dimensions",Graphics_StoreDimensionDetails);
+	Graphics_ReadFile(style,"Marriage",Graphics_StoreMarriageDetails);
+	strcpy(currentstyle,style);
+	Graphics_ClaimFonts();
 }
-
 
 void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected)
 {
 	int i;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	AJWLib_Assert(person>0);
 	for (i=0;i<graphicsdata.numpersonobjects;i++) {
 		int xcoord=0;
 		switch (graphicsdata.person[i].type) {
@@ -541,6 +630,9 @@ void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool
 void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
 {
 	int i;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	AJWLib_Assert(marriage>0);
 	for (i=0;i<graphicsdata.nummarriageobjects;i++) {
 		switch (graphicsdata.marriage[i].type) {
 			case graphictype_RECTANGLE:
@@ -580,12 +672,17 @@ void Graphics_PlotMarriage(int x,int y,elementptr marriage,Desk_bool childline,D
 
 void Graphics_PlotChildren(int leftx,int rightx,int y)
 {
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
 	Graphics_PlotLine(leftx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),rightx,y+Graphics_PersonHeight()+Graphics_GapHeightAbove(),graphicsdata.siblinglinethickness,graphicsdata.siblinglinecolour);
 }
 
 void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext)
 {
 	int i;
+	AJWLib_Assert(graphicsdata.person!=NULL);
+	AJWLib_Assert(graphicsdata.marriage!=NULL);
+	AJWLib_Assert(layout!=NULL);
 	/*use the clip rect*/
 	Graphics_PlotLine=plotline;
 	Graphics_PlotRectangle=plotrect;
