@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.43 2000/11/21 21:43:02 AJW Exp $
+	$Id: File.c,v 1.44 2000/11/21 22:12:30 AJW Exp $
 
 */
 
@@ -182,7 +182,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 
 	} else if (!Desk_stricmp(tag,"INDI")) {
 		if (prescan) return;
-		File_GetElementFromID(data,element_PERSON);
+		File_GetElementFromID(id,element_PERSON);
 
 	} else if (!Desk_stricmp(tag,"INDI.NAME")) {
 		char *ptr;
@@ -514,7 +514,7 @@ static void File_ParseLine(char *line,int *level,char **id,char **tag,char **dat
 		default:
 			*data=line;
 			/* Remove the terminating '\n'*/
-			while (*line!='\0' && *line!='\n') line++;
+			while (*line!='\0' && *line!='\n' && *line!='\r') line++;
 			*line='\0';
 	}
 }

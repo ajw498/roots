@@ -2,7 +2,7 @@
 	Roots - Shareware stuff
 	© Alex Waugh 1999
 
-	$Id: Shareware.c,v 1.1 2000/09/22 13:11:00 AJW Exp $
+	$Id: Shareware.c,v 1.2 2000/11/21 22:12:34 AJW Exp $
 	
 */
 
@@ -30,7 +30,10 @@ static unsigned int Shareware_CalcValue(char *user)
 {
 	unsigned int value=0x0AA00AA0;
 
-	while (*user) value= (value>>8) | (((value & 0xFF) ^ (*user++))<<24);
+	while (*user) {
+		if (*user!='\r') value= (value>>8) | (((value & 0xFF) ^ (*user))<<24);
+		user++;
+	}
 	value|=0x01000000;
 	value^=0x02000000;
 	return value;
