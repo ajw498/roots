@@ -5,6 +5,7 @@
 #include "LayoutStruct.h"
 
 
+void Database_OpenFileConfig(void);
 Desk_bool Database_ElementValid(elementptr person);
 Desk_bool Database_Married(elementptr person1,elementptr person2);
 char *Database_GetField(elementptr element,char *fieldname);

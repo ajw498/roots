@@ -45,7 +45,6 @@ void Windows_SetPerson(elementptr person);
 void Windows_SetGenerations(int val);
 void Windows_SetScale(int val);
 void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y);
-void Windows_OpenFileConfig(void);
 void Windows_GraphicsStylesMenu(Desk_menu_ptr *menuptr,char *dirname);
 
 #endif

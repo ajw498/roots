@@ -2,50 +2,50 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.111 2001/10/20 19:41:25 AJW Exp $
+	$Id: Windows.c,v 1.112 2002/07/27 14:45:20 ajw Exp $
 
 */
 
-#include "Desk.Window.h"
-#include "Desk.Error.h"
-#include "Desk.Error2.h"
-#include "Desk.SWI.h"
-#include "Desk.WimpSWIs.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.Drag.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.Screen.h"
-#include "Desk.GFX.h"
-#include "Desk.Save.h"
-#include "Desk.Kbd.h"
-#include "Desk.Keycodes.h"
-#include "Desk.Str.h"
-#include "Desk.Font2.h"
-#include "Desk.ColourTran.h"
+#include "Desk/Window.h"
+#include "Desk/Error.h"
+#include "Desk/Error2.h"
+#include "Desk/SWI.h"
+#include "Desk/WimpSWIs.h"
+#include "Desk/Event.h"
+#include "Desk/EventMsg.h"
+#include "Desk/Handler.h"
+#include "Desk/Hourglass.h"
+#include "Desk/Icon.h"
+#include "Desk/Menu.h"
+#include "Desk/Msgs.h"
+#include "Desk/Drag.h"
+#include "Desk/Resource.h"
+#include "Desk/Screen.h"
+#include "Desk/Template.h"
+#include "Desk/File.h"
+#include "Desk/Filing.h"
+#include "Desk/Sprite.h"
+#include "Desk/Screen.h"
+#include "Desk/GFX.h"
+#include "Desk/Save.h"
+#include "Desk/Kbd.h"
+#include "Desk/Keycodes.h"
+#include "Desk/Str.h"
+#include "Desk/Font2.h"
+#include "Desk/ColourTran.h"
 
-#include "AJWLib.Error2.h"
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Assert.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Icon.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.Font.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Str.h"
-#include "AJWLib.Draw.h"
-#include "AJWLib.DrawFile.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Assert.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Icon.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/Font.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Str.h"
+#include "AJWLib/Draw.h"
+#include "AJWLib/DrawFile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -157,8 +157,6 @@ static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomw
 static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu/*,selectmenu*/,fileconfigmenu=NULL;
 static elementptr newviewperson;
 static savedata nextloadwindowdata;
-
-Desk_window_handle fieldconfigwin;
 
 void Windows_ForceRedraw(void)
 {
@@ -698,81 +696,6 @@ Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 	return Desk_FALSE;
 }
 
-static Desk_bool Windows_FileConfigCancel(Desk_event_pollblock *block,void *ref)
-{
-	Desk_UNUSED(ref);
-	if (block->data.mouse.button.data.select) {
-		if (Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_OK),AJWLib_Msgs_TempLookup("Icon.Set:"))) Database_Remove();
-		Desk_Window_Hide(block->data.mouse.window);
-		return Desk_TRUE;
-	}
-	return Desk_FALSE;
-}
-
-static Desk_bool Windows_FileConfigOk(Desk_event_pollblock *block,void *ref)
-{
-	int i;
-
-	Desk_UNUSED(ref);
-	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		Database_SetPersonUserDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i));
-		Database_SetPersonGEDCOMDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i));
-	}
-	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		Database_SetMarriageUserDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i));
-		Database_SetMarriageGEDCOMDesc(i,Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i));
-	}
-	Config_SetJoinMarriages(Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_JOINMARRIAGES));
-	if (Desk_stricmp(Desk_Icon_GetTextPtr(fieldconfigwin,fieldconfig_OK),AJWLib_Msgs_TempLookup("Icon.Set:"))) {
-		Config_SetSeparateMarriages(NULL,Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES));
-		File_LoadGEDCOM(NULL,Desk_TRUE);
-		Desk_Window_Hide(block->data.mouse.window);
-	} else {
-		Config_SetSeparateMarriages(mousedata.window->layout,Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES));
-		File_Modified();
-		Modules_ChangedStructure();
-		if (block->data.mouse.button.data.select) Desk_Window_Hide(block->data.mouse.window);
-	}
-	return Desk_TRUE;
-}
-
-static Desk_bool Windows_FileConfigSaveAsDefault(Desk_event_pollblock *block,void *ref)
-{
-	if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	Windows_FileConfigOk(block,ref);
-	Config_SaveFileConfig();
-	return Desk_TRUE;
-}
-
-static Desk_bool Windows_FileConfigSeperateClick(Desk_event_pollblock *block,void *ref)
-{
-	Desk_UNUSED(ref);
-	if (block) if (block->data.mouse.button.data.menu) return Desk_FALSE;
-	Desk_Icon_SetShade(fieldconfigwin,fieldconfig_JOINMARRIAGES,Desk_Icon_GetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES));
-	return Desk_TRUE;
-}
-
-void Windows_OpenFileConfig(void)
-{
-	int i;
-
-	for (i=0;i<NUMBERPERSONUSERFIELDS;i++) {
-		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+2*i,Database_GetPersonUserDesc(i));
-		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERPERSONBASE+1+2*i,Database_GetPersonGEDCOMDesc(i));
-	}
-	for (i=0;i<NUMBERMARRIAGEUSERFIELDS;i++) {
-		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+2*i,Database_GetMarriageUserDesc(i));
-		Desk_Icon_SetText(fieldconfigwin,fieldconfig_USERMARRIAGEBASE+1+2*i,Database_GetMarriageGEDCOMDesc(i));
-	}
-	Desk_Icon_SetSelect(fieldconfigwin,fieldconfig_SEPARATEMARRIAGES,Config_SeparateMarriages());
-	Desk_Icon_SetSelect(fieldconfigwin,fieldconfig_JOINMARRIAGES,Config_JoinMarriages());
-	Windows_FileConfigSeperateClick(NULL,NULL);
-	Desk_Icon_SetText(fieldconfigwin,fieldconfig_OK,AJWLib_Msgs_TempLookup("Icon.Set:"));
-	Desk_Window_Show(fieldconfigwin,Desk_open_CENTERED);
-	Desk_Icon_SetCaret(fieldconfigwin,fieldconfig_USERPERSONBASE);
-}
-
 static void Windows_FileMenuClick(int entry,void *ref)
 {
 	Desk_UNUSED(ref);
@@ -781,7 +704,7 @@ static void Windows_FileMenuClick(int entry,void *ref)
 			AJWLib_Window_OpenTransient(savewin);
 			break;
 		case filemenu_CHOICES:
-			Windows_OpenFileConfig();
+			Database_OpenFileConfig();
 			break;
 		case filemenu_PRINT:
 			Print_OpenWindow(mousedata.window->layout);
@@ -999,12 +922,6 @@ void Windows_Init(void)
 	Desk_Menu_AddSubMenu(exportmenu,exportmenu_GEDCOM,(Desk_menu_ptr)savegedcomwin);
 	Desk_Save_InitSaveWindowHandler(savedrawwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,Windows_SaveDraw,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_DRAWFILE,NULL);
 	Desk_Save_InitSaveWindowHandler(savegedcomwin,Desk_TRUE,Desk_TRUE,Desk_FALSE,save_ICON,save_OK,save_CANCEL,save_FILENAME,File_SaveGEDCOM,NULL,NULL/*Need a result handler?*/,1024*10/*Filesize estimate?*/,Desk_filetype_TEXT,(void *)1);
-	fieldconfigwin=Desk_Window_Create("FieldConfig",Desk_template_TITLEMIN);
-	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_SAVEASDEFAULT,Windows_FileConfigSaveAsDefault,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_SEPARATEMARRIAGES,Windows_FileConfigSeperateClick,NULL);
-	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
-	AJWLib_Window_KeyHandler(fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
 }
 

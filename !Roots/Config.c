@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.24 2001/02/03 15:55:46 AJW Exp $
+	$Id: Config.c,v 1.25 2002/07/27 14:45:19 ajw Exp $
 
 */
 
@@ -107,7 +107,7 @@ static void Config_SetChoicesPath(void)
 void Config_SaveFileConfig(void)
 /*Save file config as the default*/
 {
-	FILE *file;
+	FILE *file,FIXME_NOW;
 
 	Desk_Error2_Try {
 		char buffer[256];
