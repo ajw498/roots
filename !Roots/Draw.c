@@ -2,7 +2,7 @@
 	FT - Draw
 	© Alex Waugh 1999
 
-	$Id: Draw.c,v 1.12 2001/02/04 13:32:46 AJW Exp $
+	$Id: Draw.c,v 1.13 2001/06/11 23:09:37 AJW Exp $
 
 */
 
@@ -63,8 +63,12 @@ void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char
 	int millix,milliy,originmillix,originmilliy;
 	Desk_font_transformation fontmatrix;
 	int backgroundblend=0;
-	Desk_UNUSED(font);
-	Desk_UNUSED(size);
+	Desk_bool lose=Desk_FALSE;
+
+	if (handle==0) {
+		Desk_Font_FindFont(&handle,font,size*16,size*16,0,0);
+		lose=Desk_TRUE;
+	}
 	Desk_Font_ConvertToPoints(originx,originy,&originmillix,&originmilliy);
 	/*Font matrix is slightly different as coords are in millipoints, and x and y do not get scaled by font manager*/
 	fontmatrix.scale.xx=scale*((1<<16)/100);
@@ -77,6 +81,7 @@ void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char
 	Desk_Font_ConvertToPoints(x,y,&millix,&milliy);
 	if (Config_FontBlend()) backgroundblend=1<<11;
 	Desk_Font_Paint3(handle,text,Desk_font_plot_TRANSMATRIX | Desk_font_plot_CURRENTHANDLE | backgroundblend,(millix*scale)/100+originmillix,(milliy*scale)/100+originmilliy,NULL,&fontmatrix,0);
+	if (lose) Desk_Font_LoseFont(handle);
 }
 
 void Draw_EORRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
