@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Layout.c,v $
+	Revision 1.17  2000/01/13 22:59:17  AJW
+	Added Layout_Save and GetSize
+
 	Revision 1.16  1999/10/30 19:18:03  AJW
 	Added calls to Modules_LayoutChanged
 
@@ -62,6 +65,7 @@
 #include "Desk.DeskMem.h"
 
 #include "AJWLib.Flex.h"
+#include "AJWLib.File.h"
 #include "AJWLib.Assert.h"
 
 #include <stdlib.h>
@@ -659,4 +663,23 @@ void Layout_Free(layout *layout)
 	AJWLib_Flex_Free((flex_ptr)&(layout->marriage));
 	AJWLib_Flex_Free((flex_ptr)&(layout->children));
 	Desk_DeskMem_Free(layout);
+}
+
+int Layout_GetSize(layout *layout)
+{
+	int size=0;
+	size+=layout->numpeople*sizeof(personlayout);
+	size+=layout->nummarriages*sizeof(marriagelayout);
+	size+=layout->numchildren*sizeof(childlinelayout);
+	return size;
+}
+
+void Layout_Save(layout *layout,FILE *file)
+{
+	AJWLib_File_fwrite(&(layout->numpeople),sizeof(layout->numpeople),1,file);
+	AJWLib_File_fwrite(layout->person,sizeof(personlayout),layout->numpeople,file);
+	AJWLib_File_fwrite(&(layout->nummarriages),sizeof(layout->nummarriages),1,file);
+	AJWLib_File_fwrite(layout->marriage,sizeof(marriagelayout),layout->nummarriages,file);
+	AJWLib_File_fwrite(&(layout->numchildren),sizeof(layout->numchildren),1,file);
+	AJWLib_File_fwrite(layout->children,sizeof(childlinelayout),layout->numchildren,file);
 }
