@@ -2,7 +2,7 @@
 	FT - Drawfile
 	© Alex Waugh 1999
 
-	$Id: Drawfile.c,v 1.13 2000/02/28 00:21:54 uid1 Exp $
+	$Id: Drawfile.c,v 1.14 2000/02/28 17:07:17 uid1 Exp $
 
 */
 
@@ -59,12 +59,11 @@
 	y=temp; \
 }
 
-extern graphics graphicsdata;
 static drawfile_diagram *drawfile=NULL;
 static char *fontarray[256];
 static int numberoffonts=0;
 
-void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour,const Desk_bool filled)
+static void Drawfile_PlotRectangle2(const int x,const int y,const int width,const int height,const int linethickness,const unsigned int colour,const Desk_bool filled)
 {
 	int *object;
 	const int sizeofpath=96;
@@ -158,7 +157,7 @@ static int Drawfile_AddFont(char *font)
 	return fontnumber;
 }
 
-void Drawfile_CreateTable(void)
+static void Drawfile_CreateTable(void)
 {
 	int sizeoftable=8;
 	int i;
@@ -183,7 +182,7 @@ void Drawfile_CreateTable(void)
 	}
 }
 
-void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
+static void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 {
 	const int sizeoftable=64+24;
 	int *object;
@@ -213,7 +212,7 @@ void Drawfile_CreateOptions(int papersize,Desk_bool landscape)
 	object[21]=0; /*Bytes in undo buffer*/
 }
 
-void Drawfile_PlotText(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
+static void Drawfile_PlotText(const int scale,const int originx,const int originy,const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text)
 {
 	int fontnumber=Drawfile_AddFont((char *)font);
 	int *object;

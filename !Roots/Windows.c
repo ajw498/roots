@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.55 2000/02/28 00:22:01 uid1 Exp $
+	$Id: Windows.c,v 1.56 2000/02/28 17:07:25 uid1 Exp $
 
 */
 
@@ -157,7 +157,7 @@ typedef struct dragdata {
 	Desk_bool plotted,marriage;
 } dragdata;
 
-#if DEBUG
+#ifdef DEBUG
 extern layout *debuglayout;
 #endif
 
@@ -168,12 +168,12 @@ static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu,selectmenu;
 static elementptr addparentsperson,addparentschild,newviewperson,menuoverperson;
 static windowdata *menuoverwindow;
 
-void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
+static void Windows_RedrawPerson(windowdata *windowdata,personlayout *person)
 {
 	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*person->x)/100-REDRAWOVERLAP,(windowdata->scale*person->y)/100-REDRAWOVERLAP,(windowdata->scale*(person->x+Graphics_PersonWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(person->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
 
-void Windows_RedrawMarriage(windowdata *windowdata,marriagelayout *marriage)
+static void Windows_RedrawMarriage(windowdata *windowdata,marriagelayout *marriage)
 {
 	Desk_Window_ForceRedraw(windowdata->handle,(windowdata->scale*marriage->x)/100-REDRAWOVERLAP,(windowdata->scale*marriage->y)/100-REDRAWOVERLAP,(windowdata->scale*(marriage->x+Graphics_MarriageWidth()))/100+REDRAWOVERLAP,(windowdata->scale*(marriage->y+Graphics_PersonHeight()))/100+REDRAWOVERLAP);
 }
@@ -194,7 +194,7 @@ static Desk_bool Windows_RedrawWindow(Desk_event_pollblock *block,windowdata *wi
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-#if DEBUG
+#ifdef DEBUG
 		Desk_ColourTrans_SetGCOL(0x00000000,0,0);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x+1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
 		AJWLib_Draw_PlotRectangleFilled(blk.rect.min.x-blk.scroll.x-1000,blk.rect.max.y-blk.scroll.y-10000,10,20000,&matrix);
@@ -215,6 +215,7 @@ static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 {
 	Desk_window_redrawblock blk;
 	Desk_bool more=Desk_FALSE;
+	Desk_UNUSED(ref);
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
@@ -226,9 +227,10 @@ static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 
 static Desk_bool Windows_AddParentsClick(Desk_event_pollblock *block,void *ref)
 {
-	int x=-INFINITY,i,y;
+	int x=-INFINITY,i,y=0;
 	elementptr person;
 	layout *layout=NULL;
+	Desk_UNUSED(ref);
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	Desk_Window_Hide(addparentswin);
 	Desk_Error2_TryCatch(Database_Marry(addparentschild,addparentsperson); , AJWLib_Error2_Report("%s"); return Desk_TRUE;)
@@ -1115,6 +1117,7 @@ void Windows_CloseAllWindows(void)
 static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *windowdata)
 {
 	int i,found=0;
+	Desk_UNUSED(block);
 	for (i=0;i<MAXWINDOWS;i++)
 		if (windows[i].handle!=0)
 			if (windows[i].type==wintype_NORMAL || windows[i].type==wintype_CLOSERELATIVES) found++;
@@ -1207,7 +1210,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 	switch (type) {
 		case wintype_NORMAL:
 			Desk_Window_SetTitle(windows[newwindow].handle,File_GetFilename());
-#if DEBUG
+#ifdef DEBUG
 			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
@@ -1227,7 +1230,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			strcat(str,Database_GetName(person));
 			Desk_Window_SetTitle(windows[newwindow].handle,str);
 			windows[newwindow].layout=NULL;
-#if DEBUG
+#ifdef DEBUG
 			Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_RedrawWindow,&windows[newwindow]);
 			windows[newwindow].layout=debuglayout;
 #endif
@@ -1252,6 +1255,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 static void Windows_MainMenuClick(int entry,void *ref)
 {
 	char buffer[10]="";
+	Desk_UNUSED(ref);
 	switch (entry) {
 		case mainmenu_NEWVIEW:
 			if (menuoverperson==none) {
@@ -1292,6 +1296,7 @@ static void Windows_MainMenuClick(int entry,void *ref)
 
 static Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.select) {
 		Desk_Window_Hide(block->data.mouse.window);
 		return Desk_TRUE;
@@ -1302,6 +1307,7 @@ static Desk_bool Windows_Cancel(Desk_event_pollblock *block,void *ref)
 static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 {
 	wintype wintype;
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	switch (Desk_Icon_WhichRadio(newviewwin,newview_NORMAL,newview_DESCENDENT)) {
 		case newview_NORMAL:
@@ -1319,6 +1325,9 @@ static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 		case newview_CLOSERELATIVES:
 			wintype=wintype_CLOSERELATIVES;
 			break;
+		default:
+			wintype=wintype_UNKNOWN;
+			AJWLib_Assert(0);
 	}
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(newviewwin);
 	Desk_Error2_TryCatch(Windows_OpenWindow(wintype,newviewperson,atoi(Desk_Icon_GetTextPtr(newviewwin,newview_GENERATIONS)),100,NULL);,AJWLib_Error2_Report("%s");)
@@ -1327,6 +1336,7 @@ static Desk_bool Windows_NewViewOk(Desk_event_pollblock *block,void *ref)
 
 static Desk_bool Windows_SaveDraw(char *filename,void *ref)
 {
+	Desk_UNUSED(ref);
 	Drawfile_Save(filename,menuoverwindow->layout);
 	return Desk_TRUE;
 }
@@ -1334,6 +1344,7 @@ static Desk_bool Windows_SaveDraw(char *filename,void *ref)
 static void Windows_PersonMenuClick(int entry,void *ref)
 {
 	elementptr mother,marriage,mothermarriage;
+	Desk_UNUSED(ref);
 	Desk_Error2_Try {
 		switch (entry) {
 			case personmenu_ADD:
@@ -1378,6 +1389,7 @@ static void Windows_PersonMenuClick(int entry,void *ref)
 
 static void Windows_SelectMenuClick(int entry,void *ref)
 {
+	Desk_UNUSED(ref);
 	switch (entry) {
 		case selectmenu_DESCENDENTS:
 			Layout_SelectDescendents(menuoverwindow->layout,menuoverperson);
@@ -1400,6 +1412,7 @@ static void Windows_SelectMenuClick(int entry,void *ref)
 
 static Desk_bool Windows_NewViewClick(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	switch (block->data.mouse.icon) {
 		case newview_UNLINKED:
 		case newview_NORMAL:
@@ -1430,6 +1443,7 @@ static Desk_bool Windows_ScaleClick(Desk_event_pollblock *block,void *ref)
 	int scale,xscale,yscale,xwindowborders,ywindowborders;
 	Desk_window_state stateblk;
 	Desk_window_outline outlineblk;
+	Desk_UNUSED(ref);
 	outlineblk.window=menuoverwindow->handle;
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	switch (block->data.mouse.icon) {

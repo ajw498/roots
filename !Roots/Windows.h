@@ -10,6 +10,7 @@
 #define EORCOLOURRED 0xFFFF0000
 
 typedef enum wintype {
+	wintype_UNKNOWN=0,
 	wintype_NORMAL,
 	wintype_UNLINKED,
 	wintype_DESCENDENTS,

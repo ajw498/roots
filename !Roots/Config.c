@@ -2,7 +2,7 @@
 	FT - Configuration
 	© Alex Waugh 1999
 
-	$Id: Config.c,v 1.9 2000/02/28 00:21:51 uid1 Exp $
+	$Id: Config.c,v 1.10 2000/02/28 17:07:14 uid1 Exp $
 
 */
 
@@ -65,8 +65,8 @@ typedef struct configdata {
 } configdata;
 
 configdata config={"Default",Desk_TRUE,Desk_TRUE,Desk_TRUE,30,10,30,Desk_TRUE,Desk_FALSE,{"Profession","Status","Other"}};
-Desk_window_handle configwin;
-Desk_menu_ptr configmenu;
+static Desk_window_handle configwin;
+static Desk_menu_ptr configmenu;
 
 char *Config_GraphicsStyle(void)
 {
@@ -122,6 +122,7 @@ char *Config_UserDesc(int num)
 
 static Desk_bool Config_Ok(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	Desk_Icon_GetText(configwin,config_DEFAULTSTYLE,config.graphicsstyle);
 	Desk_Icon_GetText(configwin,config_USER1,config.userdesc[0]);
@@ -177,6 +178,8 @@ static Desk_bool Config_SnapClick(Desk_event_pollblock *block,void *ref)
 {
 	Desk_caret_block caretblk;
 	Desk_bool shade=Desk_Icon_GetSelect(configwin,config_SNAP);
+	Desk_UNUSED(ref);
+	Desk_UNUSED(block);
 	Desk_Wimp_GetCaretPosition(&caretblk);
 	if (!shade && caretblk.window==configwin && caretblk.icon==config_SNAPDISTANCE) Desk_Icon_SetCaret(configwin,config_SCROLLSPEED);
 	Desk_Icon_SetShade(configwin,config_SNAPDISTANCE,!shade);
@@ -187,12 +190,15 @@ static Desk_bool Config_SnapClick(Desk_event_pollblock *block,void *ref)
 static Desk_bool Config_AutoIncreaseClick(Desk_event_pollblock *block,void *ref)
 {
 	Desk_bool shade=Desk_Icon_GetSelect(configwin,config_AUTOINCREASE);
+	Desk_UNUSED(ref);
+	Desk_UNUSED(block);
 	Desk_Icon_SetShade(configwin,config_AUTOINCREASEONLY,!shade);
 	return Desk_TRUE;
 }
 
 static void Config_MenuClick(int entry,void *ref)
 {
+	Desk_UNUSED(ref);
 	Desk_Icon_SetText(configwin,config_DEFAULTSTYLE,Desk_Menu_GetText(configmenu,entry));
 }
 
@@ -233,6 +239,7 @@ void Config_Open(void)
 
 static Desk_bool Config_Cancel(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.select) {
 		Desk_Window_Hide(configwin);
 		if (configmenu) {

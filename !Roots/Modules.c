@@ -3,7 +3,7 @@
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.11 2000/02/28 00:21:59 uid1 Exp $
+	$Id: Modules.c,v 1.12 2000/02/28 17:07:24 uid1 Exp $
 
 */
 
@@ -53,6 +53,7 @@ void Modules_ReflectChanges(void)
 
 void Modules_ChangedData(elementptr person)
 {
+	Desk_UNUSED(person);
 	changeddata=Desk_TRUE;
 	File_Modified();
 }

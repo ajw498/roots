@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.25 2000/02/28 00:21:57 uid1 Exp $
+	$Id: Layout.c,v 1.26 2000/02/28 17:07:21 uid1 Exp $
 
 */
 
@@ -39,7 +39,7 @@ typedef void (*callfn)(layout *layout,elementptr person,int,Desk_bool,Desk_bool)
 
 static line *spaces;
 static int mingeneration,maxgeneration;
-#if DEBUG
+#ifdef DEBUG
 layout *debuglayout=NULL;
 Desk_bool halt;
 #endif
@@ -234,7 +234,7 @@ static void Layout_PlotChildLine(layout *layout,elementptr person,int y)
 	}
 }
 
-void Layout_PlotPerson(layout *layout,elementptr person,int generation,Desk_bool lefttoright,Desk_bool child)
+static void Layout_PlotPerson(layout *layout,elementptr person,int generation,Desk_bool lefttoright,Desk_bool child)
 {
 	elementptr marriage;
 	AJWLib_Assert(layout!=NULL);
@@ -265,7 +265,7 @@ void Layout_PlotPerson(layout *layout,elementptr person,int generation,Desk_bool
 	layout->person[layout->numpeople-1].person=person;
 	if (child && Database_GetFather(person)) layout->person[layout->numpeople-1].child=Desk_TRUE; else layout->person[layout->numpeople-1].child=Desk_FALSE;
 	layout->person[layout->numpeople-1].selected=Desk_FALSE;
-#if DEBUG
+#ifdef DEBUG
 halt=Desk_TRUE;
 debuglayout=layout;
 while (halt) Desk_Event_Poll();
@@ -290,7 +290,7 @@ static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y,Des
 	layout->marriage[layout->nummarriages-1].selected=Desk_FALSE;
 }
 
-int Layout_FindChildCoords(layout *layout,elementptr marriage)
+static int Layout_FindChildCoords(layout *layout,elementptr marriage)
 {
 	elementptr leftchild,rightchild;
 	int i,leftx=0,rightx=0; /*a better method of error checking?*/
@@ -520,9 +520,10 @@ void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doa
 /*Traversing righttoleft is broken*/
 }
 
-void Layout_TraverseAncestorTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool doparents,int generation,callfn fn)
+static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool doparents,int generation,callfn fn)
 {
 	AJWLib_Assert(layout!=NULL);
+	Desk_UNUSED(doallsiblings);
 	if (person==none) return;
 	if (domarriage>=2)  Layout_TraverseAncestorTree(layout,Database_GetMarriageRtoL(person),3,0,Desk_TRUE,generation,fn);
 	if (domarriage==3 && Database_GetMarriageRtoL(person)!=none) return;
@@ -533,7 +534,7 @@ void Layout_TraverseAncestorTree(layout *layout,elementptr person,int domarriage
 */	if (doparents && (domarriage==2 || Database_GetMarriageRtoL(person)==none)) Layout_TraverseAncestorTree(layout,Database_GetMother(person),2,2,Desk_TRUE,generation-1,fn);
 }
 
-void Layout_TraverseDescendentTree(layout *layout,elementptr person,int domarriage,int generation,callfn fn)
+static void Layout_TraverseDescendentTree(layout *layout,elementptr person,int domarriage,int generation,callfn fn)
 {
 	AJWLib_Assert(layout!=NULL);
 	if (person==none) return;

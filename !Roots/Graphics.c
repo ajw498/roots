@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.21 2000/02/28 00:21:55 uid1 Exp $
+	$Id: Graphics.c,v 1.22 2000/02/28 17:07:19 uid1 Exp $
 
 */
 
@@ -57,6 +57,111 @@
 
 #define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7.087))
 
+
+#define NUMPERSONFIELDS 15
+#define NUMMARRIAGEFIELDS 3
+
+typedef enum personfieldtype {
+	personfieldtype_UNKNOWN=0,
+	personfieldtype_SURNAME=0,
+	personfieldtype_FORENAME,
+	personfieldtype_MIDDLENAMES,
+	personfieldtype_TITLE,
+	personfieldtype_FULLNAME,
+	personfieldtype_NAME,
+	personfieldtype_TITLEDNAME,
+	personfieldtype_TITLEDFULLNAME,
+	personfieldtype_SEX,
+	personfieldtype_DOB,
+	personfieldtype_DOD,
+	personfieldtype_BIRTHPLACE,
+	personfieldtype_USER1,
+	personfieldtype_USER2,
+	personfieldtype_USER3
+} personfieldtype;
+
+typedef enum marriagefieldtype {
+	marriagefieldtype_UNKNOWN=0,
+	marriagefieldtype_PLACE=0,
+	marriagefieldtype_DATE,
+	marriagefieldtype_DIVORCE
+} marriagefieldtype;
+
+typedef struct textproperties {
+	unsigned int colour;
+	unsigned int bgcolour;
+	int x;
+	int y;
+	char fontname[256];
+	int size;
+	Desk_font2_block *font;
+} textproperties;
+
+typedef struct lineboxproperties {
+	int x0;
+	int y0;
+	int x1;
+	int y1;
+	int colour;
+	int thickness;
+} lineboxproperties;
+
+typedef enum graphictype {
+	graphictype_LINE,
+	graphictype_CHILDLINE,
+	graphictype_SIBLINGLINE,
+	graphictype_RECTANGLE,
+	graphictype_FILLEDRECTANGLE,
+	graphictype_TEXTLABEL,
+	graphictype_CENTREDTEXTLABEL,
+	graphictype_FIELD,
+	graphictype_CENTREDFIELD,
+	graphictype_INVALID
+} graphictype;
+
+typedef struct textlabel {
+	textproperties properties;
+	char text[256];
+} textlabel;
+
+typedef union details {
+	textlabel textlabel;
+	lineboxproperties linebox;
+} details;
+
+typedef struct object {
+	graphictype type;
+	details details;
+} object;
+
+typedef struct fieldproperties {
+	Desk_bool plot;
+    graphictype type;
+	textproperties textproperties;
+} fieldproperties;
+
+typedef struct graphics {
+	int personwidth;
+	int personheight;
+	int gapheightabove;
+	int gapheightbelow;
+	int gapwidth;
+	int marriagewidth;
+	int secondmarriagegap;
+	int windowborder;
+	int gapheightunlinked;
+	int siblinglinethickness;
+	int siblinglinecolour;
+	int titleheight;
+	textproperties title;
+	int numpersonobjects;
+	object *person;
+	int nummarriageobjects;
+	object *marriage;
+	fieldproperties personfields[NUMPERSONFIELDS];
+	fieldproperties marriagefields[NUMMARRIAGEFIELDS];
+} graphics;
+
 static graphics graphicsdata;
 static char currentstyle[256]="";
 static plotfn Graphics_PlotLine=NULL,Graphics_PlotRectangle=NULL,Graphics_PlotRectangleFilled=NULL;
@@ -68,7 +173,7 @@ static unsigned int Graphics_RGBToPalette(char *str)
 	return (((colour & 0x00FF0000)>>8) | ((colour & 0x0000FF00)<<8) | ((colour & 0x000000FF)<<24));
 }
 
-void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
+static void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 {
 	if (!strcmp(values[0],"filetitle")) {
 		if (numvalues!=6) Desk_Msgs_Report(1,"Error.SynD:Syntax error %d",linenum);
@@ -92,7 +197,7 @@ void Graphics_StoreDimensionDetails(char *values[],int numvalues,int linenum)
 	}
 }
 
-void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
+static void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype=graphictype_INVALID;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -172,7 +277,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 			if (numvalues!=8) {
 				Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
 			} else {
-				personfieldtype field;
+				personfieldtype field=personfieldtype_UNKNOWN;
 				int size;
 				AJWLib_Str_LowerCase(values[7]);
 				if (!strcmp(values[7],"surname")) field=personfieldtype_SURNAME;
@@ -190,7 +295,10 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 				else if (!strcmp(values[7],"user1")) field=personfieldtype_USER1;
 				else if (!strcmp(values[7],"user2")) field=personfieldtype_USER2;
 				else if (!strcmp(values[7],"user3")) field=personfieldtype_USER3;
-				else Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
+				else {
+					Desk_Msgs_Report(1,"Error.SynP:Syntax error %d",linenum);
+					break;
+				}
 				graphicsdata.personfields[field].plot=Desk_TRUE;
 				graphicsdata.personfields[field].type=graphictype;
 				graphicsdata.personfields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
@@ -205,7 +313,7 @@ void Graphics_StorePersonDetails(char *values[],int numvalues,int linenum)
 	}
 }
 
-void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
+static void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 {
 	graphictype graphictype;
 	if (!strcmp(values[0],"line")) graphictype=graphictype_LINE;
@@ -286,13 +394,16 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 			if (numvalues!=8) {
 				Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
 			} else {
-				marriagefieldtype field;
+				marriagefieldtype field=marriagefieldtype_UNKNOWN;
 				int size;
 				AJWLib_Str_LowerCase(values[7]);
 				if (!strcmp(values[7],"place")) field=marriagefieldtype_PLACE;
 				else if (!strcmp(values[7],"date")) field=marriagefieldtype_DATE;
 				else if (!strcmp(values[7],"divorce")) field=marriagefieldtype_DIVORCE;
-				else Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
+				else {
+					Desk_Msgs_Report(1,"Error.SynM:Syntax error %d",linenum);
+					break;
+				}
 				graphicsdata.marriagefields[field].plot=Desk_TRUE;
 				graphicsdata.marriagefields[field].textproperties.x=Graphics_ConvertToOS(values[1]);
 				graphicsdata.marriagefields[field].textproperties.y=Graphics_ConvertToOS(values[2]);
@@ -306,7 +417,7 @@ void Graphics_StoreMarriageDetails(char *values[],int numvalues,int linenum)
 	}
 }
 
-void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
+static void Graphics_ReadFile(char *style,char *filename,void (*decodefn)(char *values[],int numvalues,int linenum))
 {
 	FILE *file=NULL;
 	char fullfilename[256];
@@ -391,6 +502,7 @@ int Graphics_WindowBorder(void)
 int Graphics_TitleHeight(void)
 {
 	return graphicsdata.titleheight;
+	return 0;
 }
 
 int Graphics_GetSize(void)
@@ -408,7 +520,7 @@ int Graphics_GetSize(void)
 	return size;
 }
 
-void Graphics_ClaimFonts(void)
+static void Graphics_ClaimFonts(void)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -441,7 +553,7 @@ void Graphics_ClaimFonts(void)
 	}
 }
 
-void Graphics_ReleaseFonts(void)
+static void Graphics_ReleaseFonts(void)
 {
 	int i;
 	Desk_Font2_ReleaseFont(&(graphicsdata.title.font));
@@ -649,7 +761,7 @@ void Graphics_PlotPerson(int scale,int originx,int originy,elementptr person,int
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_PersonWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
-void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
+static void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,elementptr marriage,Desk_bool childline,Desk_bool selected)
 {
 	int i;
 	AJWLib_Assert(graphicsdata.person!=NULL);
@@ -695,7 +807,7 @@ void Graphics_PlotMarriage(int scale,int originx,int originy,int x,int y,element
 	if (selected) Draw_EORRectangleFilled(scale,originx,originy,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),EORCOLOUR);
 }
 
-void Graphics_PlotChildren(int scale,int originx,int originy,int leftx,int rightx,int y)
+static void Graphics_PlotChildren(int scale,int originx,int originy,int leftx,int rightx,int y)
 {
 	AJWLib_Assert(graphicsdata.person!=NULL);
 	AJWLib_Assert(graphicsdata.marriage!=NULL);
