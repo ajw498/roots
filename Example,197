@@ -1,0 +1,299 @@
+0 HEAD
+1 SOUR Roots
+2 VERS 1.00 (3-Oct-00)
+2 CORP Alex Waugh
+3 ADDR http://www.ecs.soton.ac.uk/~ajw498/
+1 CHAR ASCII
+1 GEDC
+2 VERS 5.5
+2 FORM LINEAGE-LINKED
+0 @F1@ _FILEINFO
+1 _TITLE Bloggs Family Tree
+1 _NEXTNEWPERSON 10
+1 _PERSONUSER 0
+2 _DESC Date of birth
+2 _GEDCOM INDI.BIRT.DATE
+1 _PERSONUSER 1
+2 _DESC Place of birth
+2 _GEDCOM INDI.BIRT.PLAC
+1 _PERSONUSER 2
+2 _DESC Christening
+2 _GEDCOM INDI.CHR.DATE
+1 _PERSONUSER 3
+2 _DESC Date of death
+2 _GEDCOM INDI.DEAT.DATE
+1 _PERSONUSER 4
+2 _DESC Occupation
+2 _GEDCOM INDI.OCCU
+1 _PERSONUSER 5
+2 _DESC ID
+2 _GEDCOM INDI.IDNO
+1 _PERSONUSER 6
+2 _DESC Event
+2 _GEDCOM INDI.EVEN
+1 _PERSONUSER 7
+2 _DESC Notes
+2 _GEDCOM INDI.NOTE
+1 _PERSONUSER 8
+2 _DESC 
+2 _GEDCOM 
+1 _PERSONUSER 9
+2 _DESC 
+2 _GEDCOM 
+1 _MARRIAGEUSER 0
+2 _DESC Place
+2 _GEDCOM FAM.MARR.PLAC
+1 _MARRIAGEUSER 1
+2 _DESC Date
+2 _GEDCOM FAM.MARR.DATE
+1 _MARRIAGEUSER 2
+2 _DESC Divorce
+2 _GEDCOM FAM.DIV
+1 _MARRIAGEUSER 3
+2 _DESC Notes
+2 _GEDCOM FAM.NOTE
+1 _MARRIAGEUSER 4
+2 _DESC 
+2 _GEDCOM 
+0 @1@ INDI
+1 NAME Grandfather /Bloggs/
+1 SEX M
+1 BIRT
+2 DATE 23/7/1906
+1 FAMS @10@
+1 FAMS @8@
+0 @2@ INDI
+1 NAME Mother /Bloggs/
+1 SEX F
+1 BIRT
+2 DATE 29/10/56
+1 FAMS @12@
+0 @3@ INDI
+1 NAME Father /Bloggs/
+1 SEX M
+1 BIRT
+2 DATE 4/7/54
+1 FAMS @12@
+1 FAMC @8@
+0 @4@ INDI
+1 NAME Jenny /Bloggs/
+1 SEX F
+1 BIRT
+2 DATE 2/9/92
+1 FAMC @12@
+0 @5@ INDI
+1 NAME Jim /Bloggs/
+1 SEX M
+1 BIRT
+2 DATE 1/5/89
+1 FAMC @12@
+0 @6@ INDI
+1 NAME Fred /Bloggs/
+1 SEX M
+1 BIRT
+2 DATE 12/3/88
+1 FAMC @12@
+0 @7@ INDI
+1 NAME Grandmother /Bloggs/
+1 SEX F
+1 BIRT
+2 DATE 8/12/1908
+1 FAMS @8@
+0 @8@ FAM
+1 HUSB @1@
+1 WIFE @7@
+1 CHIL @3@
+0 @9@ INDI
+1 NAME Second wife /Bloggs/
+1 SEX F
+1 BIRT
+2 DATE 14/4/1921
+1 FAMS @10@
+0 @10@ FAM
+1 HUSB @1@
+1 WIFE @9@
+1 CHIL @11@
+0 @11@ INDI
+1 NAME Illegitimate /Bloggs/
+1 FAMC @10@
+0 @12@ FAM
+1 HUSB @3@
+1 WIFE @2@
+1 CHIL @6@
+1 CHIL @5@
+1 CHIL @4@
+0 @G1@ _GRAPHICS
+1 _PERSONFILE
+2 _LINE # Person file
+2 _LINE #
+2 _LINE # All measurements are in mm
+2 _LINE # Font sizes are in points
+2 _LINE # All names are case insensitive
+2 _LINE # Colours are in hexadecimal, in the form RRGGBB where RR is the red component,GG is the green
+2 _LINE # component and BB is the blue component.
+2 _LINE # e.g. 000000 is black, FFFFFF is white FF0000 is red, FFFF00 is yellow, etc
+2 _LINE #
+2 _LINE # Lines are any of the following
+2 _LINE #
+2 _LINE # Box,x,y,width,height,linewidth,RRGGBB
+2 _LINE #
+2 _LINE # FilledBox,x,y,width,height,RRGGBB
+2 _LINE #
+2 _LINE # Text,x,y,size,RRGGBB,RRGGBB (background),font,text
+2 _LINE #
+2 _LINE # CentredText,x,y,size,RRGGBB,RRGGBB (background),font,text
+2 _LINE #
+2 _LINE # Line,x,y,x1,y1,linewidth,RRGGBB
+2 _LINE #
+2 _LINE # ChildLine,x,y,x1,y1,linewidth,RRGGBB
+2 _LINE # This line is only plotted if the person has parents
+2 _LINE #
+2 _LINE # Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
+2 _LINE # or
+2 _LINE # CentredField,x,y,size,RRGGBB,RRGGBB (background),font,field name
+2 _LINE # Field name is any one of the following
+2 _LINE # Surname
+2 _LINE # Forename
+2 _LINE # Name  - forname and surname
+2 _LINE # Middlename
+2 _LINE # Fullname  - forname, middlenames then surname
+2 _LINE # Sex
+2 _LINE # Or any of the field descriptions from file choices, with all spaces removed
+2 _LINE # eg the description  Date Of Birth  would be a field name of  dateofbirth
+2 _LINE #
+2 _LINE # Any line can be preceded with M_,F_ or U_ and it will only be plotted if the persons sex matches
+2 _LINE 
+2 _LINE FilledBox,0,0,40,15,F5F5F5
+2 _LINE Box,0,0,40,15,0,000000
+2 _LINE ChildLine,20,15,20,25,0,000000
+2 _LINE CentredField,20,3,12,000000,FFFFFF,Trinity.Medium,DateOfBirth
+2 _LINE M_CentredField,20,9,12,0000FF,FFFFFF,Trinity.Medium,FullName
+2 _LINE F_CentredField,20,9,12,FF0000,FFFFFF,Trinity.Medium,FullName
+2 _LINE U_CentredField,20,9,12,00FF00,FFFFFF,Trinity.Medium,FullName
+2 _LINE 
+2 _LINE 
+1 _MARRIAGEFILE
+2 _LINE # Marriage file
+2 _LINE #
+2 _LINE # All measurements are in mm
+2 _LINE # Font sizes are in points
+2 _LINE # All names are case insensitive
+2 _LINE # Colours are in hexadecimal, in the form RRGGBB where RR is the red component,GG is the green
+2 _LINE # component and BB is the blue component.
+2 _LINE # e.g. 000000 is black, FFFFFF is white FF0000 is red, FFFF00 is yellow, etc
+2 _LINE #
+2 _LINE # Lines are any of the following
+2 _LINE #
+2 _LINE # Box,x,y,width,height,linewidth,RRGGBB
+2 _LINE #
+2 _LINE # FilledBox,x,y,width,height,RRGGBB
+2 _LINE #
+2 _LINE # Text,x,y,size,RRGGBB,RRGGBB (background),font,text
+2 _LINE #
+2 _LINE # CentredText,x,y,size,RRGGBB,RRGGBB (background),font,text
+2 _LINE #
+2 _LINE # Line,x,y,x1,y1,linewidth,RRGGBB
+2 _LINE #
+2 _LINE # ChildLine,x,y,x1,y1,linewidth,RRGGBB
+2 _LINE # This line is only plotted if the marriage has any children
+2 _LINE #
+2 _LINE # SiblingLine,thickness,RRGGBB
+2 _LINE # This is the line that joins siblings together
+2 _LINE #
+2 _LINE # Field,x,y,size,RRGGBB,RRGGBB (background),font,field name
+2 _LINE # or
+2 _LINE # CentredField,x,y,size,RRGGBB,RRGGBB (background),font,field name
+2 _LINE # Field name is any of the field descriptions from file choices, with all spaces removed
+2 _LINE # eg the description  Date Of Marriage  would be a field name of  dateofmarriage
+2 _LINE 
+2 _LINE 
+2 _LINE Line,0,5,12,5,0,000000
+2 _LINE Line,0,10,12,10,0,000000
+2 _LINE ChildLine,6,-10,6,5,0,000000
+2 _LINE SiblingLine,0,000000
+2 _LINE 
+2 _LINE 
+1 _TITLEFILE
+2 _LINE # Title file
+2 _LINE #
+2 _LINE # Filetitle,height in mm,font size,colour RRGGBB,background colour RRGGBB,font
+2 _LINE 
+2 _LINE FileTitle,15,24,000000,FFFFFF,Homerton.Bold.Oblique
+2 _LINE 
+1 _DIMENSIONSFILE
+2 _LINE # Dimensions file
+2 _LINE #
+2 _LINE # All dimensions are in mm
+2 _LINE 
+2 _LINE # Width of a person
+2 _LINE PersonWidth,40
+2 _LINE # Height of a person
+2 _LINE PersonHeight,15
+2 _LINE # Height of gap from top of person to line joining siblings
+2 _LINE GapHeightAbove,10
+2 _LINE # Height of gap from bottom of person to line joining siblings
+2 _LINE GapHeightBelow,10
+2 _LINE # Minimum width of gap between people
+2 _LINE GapWidth,15
+2 _LINE # Width of gap between a married couple
+2 _LINE MarriageWidth,12
+2 _LINE # Minimum width between a second spouse and the first
+2 _LINE SecondMarriageGap,3
+2 _LINE # Width of blank space to leave around outside of each window
+2 _LINE WindowBorder,4
+2 _LINE 
+1 _CURRENTSTYLE WithDOB
+0 @W1@ _WINDOWS
+1 _COORDS
+2 _SCREENRECT
+3 _MIN
+4 _X 120
+4 _Y 320
+3 _MAX
+4 _X 1408
+4 _Y 1076
+2 _SCROLL
+3 _X 62
+3 _Y 238
+1 _PERSON @0@
+1 _GENERATIONS 0
+1 _SCALE 100
+1 _TYPE 1
+0 @L1@ _LAYOUT
+1 _PERSON @1@
+2 _X 475
+2 _Y 0
+1 _PERSON @2@
+2 _X 657
+2 _Y -245
+1 _PERSON @3@
+2 _X 293
+2 _Y -245
+1 _PERSON @4@
+2 _X 860
+2 _Y -490
+1 _PERSON @5@
+2 _X 475
+2 _Y -490
+1 _PERSON @6@
+2 _X 90
+2 _Y -490
+1 _PERSON @7@
+2 _X 111
+2 _Y 0
+1 _PERSON @9@
+2 _X 860
+2 _Y 0
+1 _PERSON @11@
+2 _X 1042
+2 _Y -245
+1 _MARRIAGE @8@
+2 _X 391
+2 _Y 0
+1 _MARRIAGE @10@
+2 _X 776
+2 _Y 0
+1 _MARRIAGE @12@
+2 _X 573
+2 _Y -245
+0 TRLR
