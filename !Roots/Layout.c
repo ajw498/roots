@@ -2,7 +2,7 @@
 	FT - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.26 2000/02/28 17:07:21 uid1 Exp $
+	$Id: Layout.c,v 1.27 2000/02/28 17:21:08 uid1 Exp $
 
 */
 
@@ -100,7 +100,7 @@ void Layout_AlterMarriageChildline(layout *layout,elementptr marriage,Desk_bool 
 	for (i=0;i<layout->nummarriages;i++) if (layout->marriage[i].marriage==marriage) layout->marriage[i].childline=on;
 }
 
-static void Layout_AddTitle(layout *layout)
+void Layout_LayoutTitle(layout *layout)
 {
 	Desk_wimp_rect bbox;
 	AJWLib_Assert(layout!=NULL);
@@ -122,7 +122,6 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 	layout->person[layout->numpeople].child=(Database_GetMother(person)==none ? Desk_FALSE : Desk_TRUE);
 	layout->person[layout->numpeople].selected=Desk_FALSE;
 	layout->numpeople++;
-	Layout_AddTitle(layout);
 	Modules_ChangedLayout();
 }
 
@@ -137,7 +136,6 @@ void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
 	layout->marriage[layout->nummarriages].childline=(Database_GetLeftChild(marriage)==none ? Desk_FALSE : Desk_TRUE);
 	layout->marriage[layout->nummarriages].selected=Desk_FALSE;
 	layout->nummarriages++;
-	Layout_AddTitle(layout);
 	Modules_ChangedLayout();
 }
 
@@ -427,7 +425,6 @@ void Layout_RemovePerson(layout *layout,elementptr person)
 		if (layout->person[i].person==person) {
 			AJWLib_Flex_MidExtend((flex_ptr)&(layout->person),sizeof(personlayout)*(i+1),-sizeof(personlayout));
 			layout->numpeople--;
-			Layout_AddTitle(layout);
 			Modules_ChangedLayout();
 			return;
 		}
@@ -443,7 +440,6 @@ void Layout_RemoveMarriage(layout *layout,elementptr marriage)
 		if (layout->marriage[i].marriage==marriage) {
 			AJWLib_Flex_MidExtend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(i+1),-sizeof(marriagelayout));
 			layout->nummarriages--;
-			Layout_AddTitle(layout);
 			Modules_ChangedLayout();
 			return;
 		}
@@ -631,10 +627,10 @@ layout *Layout_LayoutNormal(void)
 		while (Database_GetFather(person)!=none) person=Database_GetFather(person); /*This should not be nessercery?*/
 		firstplot=2;
 		Layout_TraverseTree(layout,person,2,2,Desk_TRUE,Desk_TRUE,Desk_TRUE,0,Layout_Plot);
+		AJWLib_Flex_Free((flex_ptr)&spaces);
 		Layout_LayoutMarriages(layout);
 		Layout_LayoutLines(layout);
-		AJWLib_Flex_Free((flex_ptr)&spaces);
-		Layout_AddTitle(layout);
+		Layout_LayoutTitle(layout);
 	} Desk_Error2_Catch {
 		if (spaces) AJWLib_Flex_Free((flex_ptr)&spaces);
 		if (layout->person) AJWLib_Flex_Free((flex_ptr)&(layout->person));
