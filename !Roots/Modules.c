@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Modules.c,v $
+	Revision 1.6  2000/01/14 13:47:05  AJW
+	Changed GConfig.h etc
+
 	Revision 1.5  2000/01/14 13:08:50  AJW
 	Changed Graphics_ to Windows_
 
@@ -28,7 +31,7 @@
 #include "Modules.h"
 #include "Database.h"
 #include "Graphics.h"
-#include "GConfig.h"
+#include "Windows.h"
 #include "File.h"
 
 static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayout=Desk_FALSE;
