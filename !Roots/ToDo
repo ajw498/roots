@@ -27,3 +27,5 @@ BUG: if you select two people who are married, but not their marriage (in separa
 
 
 Ctrl-X in writeable icon seems to mess things up - does it replace 0 terminator with CR?
+
+Load up a tree in default style, Remove all free memory, change to dropshadow style. Roots quits silently (is lua doing this?)
