@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: File.c,v $
+	Revision 1.9  2000/01/17 16:58:13  AJW
+	Enabled calling of Windows_Load
+
 	Revision 1.8  2000/01/14 19:42:48  AJW
 	Added File_LoadFile
 
@@ -120,7 +123,7 @@ void File_LoadFile(char *filename)
 	}
 	Database_Load(file);
 /*	Graphics_Load(file);*/
-/*	Windows_Load(file);*/
+	Windows_Load(file);
 	AJWLib_File_fclose(file);
 	/*Error handling*/
 }
