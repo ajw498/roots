@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.78 2000/09/13 21:15:51 AJW Exp $
+	$Id: Windows.c,v 1.79 2000/09/14 11:39:09 AJW Exp $
 
 */
 
@@ -10,6 +10,7 @@
 #include "Desk.Error.h"
 #include "Desk.Error2.h"
 #include "Desk.SWI.h"
+#include "Desk.WimpSWIs.h"
 #include "Desk.Event.h"
 #include "Desk.EventMsg.h"
 #include "Desk.Handler.h"
@@ -27,6 +28,7 @@
 #include "Desk.Screen.h"
 #include "Desk.GFX.h"
 #include "Desk.Save.h"
+#include "Desk.Kbd.h"
 #include "Desk.Str.h"
 #include "Desk.Font2.h"
 #include "Desk.ColourTran.h"
@@ -141,6 +143,11 @@
 #define fileconfig_OK 8
 #define fileconfig_CANCEL 9
 
+#define SWI_Wimp_SpriteOp 0x400E9
+
+#define Windows_SetPointerShape(name,num) Desk_Error2_CheckOS(Desk_SWI(8,0,SWI_Wimp_SpriteOp,36,NULL,name,num | 0x20,8,8,0,NULL))
+
+
 typedef struct windowdata {
 	Desk_window_handle handle;
 	wintype type;
@@ -165,6 +172,13 @@ typedef enum dragtype {
 	drag_LINK
 } dragtype;
 
+typedef enum ptrtype {
+	ptr_DEFAULT,
+	ptr_LINK,
+	ptr_NOLINK,
+	ptr_UNLINK
+} ptrtype;
+
 typedef struct dragdata {
 	elementptr person;
 	int origmousey;
@@ -174,6 +188,7 @@ typedef struct dragdata {
 	int origmousex,oldmousex,oldoffset,oldmousey,centered;
 	Desk_bool plotted,marriage;
 	dragtype type;
+	ptrtype ptr;
 } dragdata;
 
 typedef struct mouseclickdata {
@@ -395,6 +410,8 @@ static void Windows_DragEnd(void *ref)
 	Desk_convert_block blk;
 	dragdata *dragdata=ref;
 	int window=-1,i;
+
+	Windows_SetPointerShape("ptr_DEFAULT",1);
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	/*Find destination window*/
 	for (i=0;i<MAXWINDOWS;i++) if (mouseblk.window==windows[i].handle) window=i;
@@ -457,13 +474,16 @@ static void Windows_SelectDragEnd(void *ref)
 	}
 }
 
-static void Windows_LinkDragEnd(void *ref)
-/*A link drag has ended, so link the person if possible*/
+static void Windows_LinkValid(void *ref,elementptr *person,elementptr *marriage)
+/* Check if the link drag would produce a valid link*/
 {
 	Desk_mouse_block mouseblk;
 	Desk_convert_block blk;
 	dragdata *dragdata=ref;
 	int mousex,mousey,i;
+
+	*person=none;
+	*marriage=none;
 	Desk_Wimp_GetPointerInfo(&mouseblk);
 	Desk_Window_GetCoords(dragdata->windowdata->handle,&blk);
 	mousex=((mouseblk.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/dragdata->windowdata->scale;
@@ -476,25 +496,7 @@ static void Windows_LinkDragEnd(void *ref)
 				if (dragdata->person==dragdata->windowdata->layout->person[i].person) return;
 				/*Check that both people are in the same generation*/
 				if (dragdata->origmousey!=Layout_NearestGeneration(mousey)) return;
-				Desk_Error2_Try {
-					volatile elementptr marriage;
-					marriage=Database_Marry(dragdata->windowdata->layout->person[i].person,dragdata->person);
-					Desk_Error2_Try {
-						int startx,finishx,marriagex;
-						/*Marriage is put next to the person that the drag was started on*/
-						/*Find out if we need to put it to the left or right of the person*/
-						startx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->person);
-						finishx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->windowdata->layout->person[i].person);
-						if (startx<finishx) marriagex=startx+Graphics_PersonWidth(); else marriagex=startx-Graphics_MarriageWidth();
-						Layout_AddMarriage(dragdata->windowdata->layout,marriage,marriagex,dragdata->origmousey);
-						Windows_UnselectAll(dragdata->windowdata);
-					} Desk_Error2_Catch {
-						Database_RemoveMarriage(marriage);
-						Desk_Error2_ReThrow();
-					} Desk_Error2_EndCatch
-				} Desk_Error2_Catch {
-					AJWLib_Error2_Report("%s");
-				} Desk_Error2_EndCatch
+				*person=dragdata->windowdata->layout->person[i].person;
 				return;
 			}
 		}
@@ -506,11 +508,150 @@ static void Windows_LinkDragEnd(void *ref)
 				if (Database_GetMother(dragdata->person)) return;
 				/*Check that the person is in the right generation*/
 				if (Layout_NearestGeneration((dragdata->origmousey)+Graphics_PersonHeight()+Graphics_GapHeightAbove()+Graphics_GapHeightBelow())!=Layout_NearestGeneration(mousey)) return;
-				Database_AddChild(dragdata->windowdata->layout->marriage[i].marriage,dragdata->person);
-				Windows_UnselectAll(dragdata->windowdata);
-				break;
+				*marriage=dragdata->windowdata->layout->marriage[i].marriage;
+				return;
 			}
 		}
+	}
+}
+
+static void Windows_LinkDragEnd(void *ref)
+/*A link drag has ended, so link the person if possible*/
+{
+	dragdata *dragdata=ref;
+	elementptr person,marriage;
+
+	Windows_SetPointerShape("ptr_default",1);
+	Windows_LinkValid(ref,&person,&marriage);
+	if (person) {
+		Desk_Error2_Try {
+			volatile elementptr marriage;
+			marriage=Database_Marry(person,dragdata->person);
+			Desk_Error2_Try {
+				int startx,finishx,marriagex;
+				/*Marriage is put next to the person that the drag was started on*/
+				/*Find out if we need to put it to the left or right of the person*/
+				startx=Layout_FindXCoord(dragdata->windowdata->layout,dragdata->person);
+				finishx=Layout_FindXCoord(dragdata->windowdata->layout,person);
+				if (startx<finishx) marriagex=startx+Graphics_PersonWidth(); else marriagex=startx-Graphics_MarriageWidth();
+				Layout_AddMarriage(dragdata->windowdata->layout,marriage,marriagex,dragdata->origmousey);
+				Windows_UnselectAll(dragdata->windowdata);
+			} Desk_Error2_Catch {
+				Database_RemoveMarriage(marriage);
+				Desk_Error2_ReThrow();
+			} Desk_Error2_EndCatch
+		} Desk_Error2_Catch {
+			AJWLib_Error2_Report("%s");
+		} Desk_Error2_EndCatch
+	} else if (marriage) {
+		Database_AddChild(marriage,dragdata->person);
+		Windows_UnselectAll(dragdata->windowdata);
+	}
+}
+
+static void Windows_AutoScroll(dragdata *dragdata,Desk_bool increasesize,Desk_bool plotbox)
+/* Auto scroll the window when dragging, increaing the window size if asked*/
+{
+	Desk_mouse_block mouseblk;
+	Desk_window_state blk;
+	Desk_window_info infoblk;
+	int mousex,mousey;
+
+	Desk_Wimp_GetPointerInfo(&mouseblk);
+	Desk_Wimp_GetWindowState(dragdata->windowdata->handle,&blk);
+	Desk_Window_GetInfo3(dragdata->windowdata->handle,&infoblk);
+	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/dragdata->windowdata->scale;
+	mousey=((mouseblk.pos.y-(blk.openblock.screenrect.max.y-blk.openblock.scroll.y))*100)/dragdata->windowdata->scale;
+
+	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<Config_ScrollDistance()) {
+		/*We are near left edge of window*/
+		if (plotbox) {
+			Windows_PlotDragBox(dragdata);
+			dragdata->plotted=Desk_FALSE;
+		}
+		if (increasesize && infoblk.block.scroll.x<=infoblk.block.workarearect.min.x) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.min.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
+		blk.openblock.scroll.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
+		Desk_Wimp_OpenWindow(&blk.openblock);
+		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
+		dragdata->oldmousex=mousex;
+	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<Config_ScrollDistance()) {
+		/*We are near right edge of window*/
+		if (plotbox) {
+			Windows_PlotDragBox(dragdata);
+			dragdata->plotted=Desk_FALSE;
+		}
+		if (increasesize && infoblk.block.scroll.x-infoblk.block.workarearect.min.x+(infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x)>=infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.max.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
+		blk.openblock.scroll.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
+		Desk_Wimp_OpenWindow(&blk.openblock);
+		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
+		dragdata->oldmousex=mousex;
+	} else if (mouseblk.pos.y-blk.openblock.screenrect.min.y<Config_ScrollDistance()) {
+		/*We are near bottom edge of window*/
+		if (plotbox) {
+			Windows_PlotDragBox(dragdata);
+			dragdata->plotted=Desk_FALSE;
+		}
+		if (increasesize && -(infoblk.block.scroll.y-infoblk.block.workarearect.max.y-(infoblk.block.screenrect.max.y-infoblk.block.screenrect.min.y))>=infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.min.y-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.y-blk.openblock.screenrect.min.y)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
+		blk.openblock.scroll.y-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.y-blk.openblock.screenrect.min.y)))/20;
+		Desk_Wimp_OpenWindow(&blk.openblock);
+		mousey=mouseblk.pos.y-(blk.openblock.screenrect.min.y-blk.openblock.scroll.y);
+		dragdata->oldmousey=Layout_NearestGeneration(mousey);
+	} else if (blk.openblock.screenrect.max.y-mouseblk.pos.y<Config_ScrollDistance()) {
+		/*We are near top edge of window*/
+		if (plotbox) {
+			Windows_PlotDragBox(dragdata);
+			dragdata->plotted=Desk_FALSE;
+		}
+		if (increasesize && infoblk.block.scroll.y>=infoblk.block.workarearect.max.y) {
+			/*Increase window size*/
+			Desk_wimp_box extent;
+			extent=infoblk.block.workarearect;
+			extent.max.y+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.y-mouseblk.pos.y)))/20;
+			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
+		}
+		/*Scroll window*/
+		blk.openblock.scroll.y+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.y-mouseblk.pos.y)))/20;
+		Desk_Wimp_OpenWindow(&blk.openblock);
+		mousey=mouseblk.pos.y-(blk.openblock.screenrect.min.y-blk.openblock.scroll.y);
+		dragdata->oldmousey=Layout_NearestGeneration(mousey);
+	}
+}
+
+static void Windows_LinkDragFn(void *ref)
+/*A link drag is in progress, so set pointer shape*/
+{
+	dragdata *dragdata=ref;
+	elementptr person,marriage;
+
+	Windows_AutoScroll(dragdata,Desk_FALSE,Desk_FALSE);
+	Windows_LinkValid(ref,&person,&marriage);
+	if (person || marriage) {
+		if (dragdata->ptr!=ptr_LINK) Windows_SetPointerShape("ptr_link",2);
+		dragdata->ptr=ptr_LINK;
+	} else {
+		if (dragdata->ptr!=ptr_NOLINK) Windows_SetPointerShape("ptr_nolink",2);
+		dragdata->ptr=ptr_NOLINK;
 	}
 }
 
@@ -566,6 +707,7 @@ static void Windows_DragFn(void *ref)
 	Desk_window_state blk;
 	Desk_window_info infoblk;
 	int mousex,mousey;
+
 	if (dragdata->windowdata->type!=wintype_NORMAL) return;
 	if (!dragdata->plotted) {
 		/*Plot drag box if not already plotted*/
@@ -578,6 +720,13 @@ static void Windows_DragFn(void *ref)
 	Desk_Window_GetInfo3(dragdata->windowdata->handle,&infoblk);
 	mousex=((mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x))*100)/dragdata->windowdata->scale;
 	mousey=((mouseblk.pos.y-(blk.openblock.screenrect.max.y-blk.openblock.scroll.y))*100)/dragdata->windowdata->scale;
+	if (Layout_NearestGeneration(mousey)!=dragdata->origmousey) {
+		if (dragdata->ptr!=ptr_UNLINK) Windows_SetPointerShape("ptr_unlink",2);
+		dragdata->ptr=ptr_UNLINK;
+	} else {
+		if (dragdata->ptr!=ptr_DEFAULT) Windows_SetPointerShape("ptr_default",1);
+		dragdata->ptr=ptr_DEFAULT;
+	}
 	if (mousex!=dragdata->oldmousex || Layout_NearestGeneration(mousey)!=dragdata->oldmousey) {
 		/*Unplot drag box if it has moved*/
 		Windows_PlotDragBox(dragdata);
@@ -587,74 +736,10 @@ static void Windows_DragFn(void *ref)
 		/*Replot it in new position*/
 		Windows_PlotDragBox(dragdata);
 	}
-	if (mouseblk.pos.x-blk.openblock.screenrect.min.x<Config_ScrollDistance()) {
-		/*We are near left edge of window*/
-		Windows_PlotDragBox(dragdata);
-		dragdata->plotted=Desk_FALSE;
-		if (infoblk.block.scroll.x<=infoblk.block.workarearect.min.x) {
-			/*Increase window size*/
-			Desk_wimp_box extent;
-			extent=infoblk.block.workarearect;
-			extent.min.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
-			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
-		}
-		/*Scroll window*/
-		blk.openblock.scroll.x-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.x-blk.openblock.screenrect.min.x)))/20;
-		Desk_Wimp_OpenWindow(&blk.openblock);
-		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
-		dragdata->oldmousex=mousex;
-	} else if (blk.openblock.screenrect.max.x-mouseblk.pos.x<Config_ScrollDistance()) {
-		/*We are near right edge of window*/
-		Windows_PlotDragBox(dragdata);
-		dragdata->plotted=Desk_FALSE;
-		if (infoblk.block.scroll.x-infoblk.block.workarearect.min.x+(infoblk.block.screenrect.max.x-infoblk.block.screenrect.min.x)>=infoblk.block.workarearect.max.x-infoblk.block.workarearect.min.x) {
-			/*Increase window size*/
-			Desk_wimp_box extent;
-			extent=infoblk.block.workarearect;
-			extent.max.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
-			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
-		}
-		/*Scroll window*/
-		blk.openblock.scroll.x+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.x-mouseblk.pos.x)))/20;
-		Desk_Wimp_OpenWindow(&blk.openblock);
-		mousex=mouseblk.pos.x-(blk.openblock.screenrect.min.x-blk.openblock.scroll.x);
-		dragdata->oldmousex=mousex;
-	} else if (mouseblk.pos.y-blk.openblock.screenrect.min.y<Config_ScrollDistance()) {
-		/*We are near bottom edge of window*/
-		Windows_PlotDragBox(dragdata);
-		dragdata->plotted=Desk_FALSE;
-		if (-(infoblk.block.scroll.y-infoblk.block.workarearect.max.y-(infoblk.block.screenrect.max.y-infoblk.block.screenrect.min.y))>=infoblk.block.workarearect.max.y-infoblk.block.workarearect.min.y) {
-			/*Increase window size*/
-			Desk_wimp_box extent;
-			extent=infoblk.block.workarearect;
-			extent.min.y-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.y-blk.openblock.screenrect.min.y)))/20;
-			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
-		}
-		/*Scroll window*/
-		blk.openblock.scroll.y-=(Config_ScrollSpeed()*(Config_ScrollDistance()-(mouseblk.pos.y-blk.openblock.screenrect.min.y)))/20;
-		Desk_Wimp_OpenWindow(&blk.openblock);
-		mousey=mouseblk.pos.y-(blk.openblock.screenrect.min.y-blk.openblock.scroll.y);
-		dragdata->oldmousey=Layout_NearestGeneration(mousey);
-	} else if (blk.openblock.screenrect.max.y-mouseblk.pos.y<Config_ScrollDistance()) {
-		/*We are near top edge of window*/
-		Windows_PlotDragBox(dragdata);
-		dragdata->plotted=Desk_FALSE;
-		if (infoblk.block.scroll.y>=infoblk.block.workarearect.max.y) {
-			/*Increase window size*/
-			Desk_wimp_box extent;
-			extent=infoblk.block.workarearect;
-			extent.max.y+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.y-mouseblk.pos.y)))/20;
-			Desk_Wimp_SetExtent(dragdata->windowdata->handle,&extent);
-		}
-		/*Scroll window*/
-		blk.openblock.scroll.y+=(Config_ScrollSpeed()*(Config_ScrollDistance()-(blk.openblock.screenrect.max.y-mouseblk.pos.y)))/20;
-		Desk_Wimp_OpenWindow(&blk.openblock);
-		mousey=mouseblk.pos.y-(blk.openblock.screenrect.min.y-blk.openblock.scroll.y);
-		dragdata->oldmousex=Layout_NearestGeneration(mousey);
-	}
+	Windows_AutoScroll(dragdata,Desk_TRUE,Desk_TRUE);
 }
 
-static void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *windowdata,Desk_bool marriage)
+static void Windows_StartDragNormal(elementptr person,int x,windowdata *windowdata,Desk_bool marriage)
 {
 	static dragdata dragdata;
 	Desk_drag_block dragblk;
@@ -689,6 +774,7 @@ static void Windows_StartDragNormal(elementptr person,int x,int y,windowdata *wi
 	dragdata.oldoffset=0;
 	dragdata.marriage=marriage;
 	dragdata.plotted=Desk_FALSE;
+	dragdata.ptr=ptr_DEFAULT;
 	if (!marriage) {
 		Desk_bool allsiblings=Desk_TRUE;
 		elementptr person1=person,person2=person;
@@ -778,6 +864,7 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	if (blk.screenrect.min.y<0) dragblk.parent.min.y=0; else dragblk.parent.min.y=blk.screenrect.min.y;
 	if (blk.screenrect.max.y>Desk_screen_size.y) dragblk.parent.max.y=Desk_screen_size.y; else dragblk.parent.max.y=blk.screenrect.max.y;
 	dragdata.type=drag_LINK;
+	dragdata.ptr=ptr_DEFAULT;
 	dragdata.windowdata=windowdata;
 	dragdata.person=person;
 	dragdata.origmousex=mousex;
@@ -790,7 +877,7 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 		if (windowdata->layout->person[i].person==person) Windows_RedrawPerson(windowdata,windowdata->layout->person+i);
 	}
 	Desk_Wimp_DragBox(&dragblk);
-	Desk_Drag_SetHandlers(NULL,Windows_LinkDragEnd,&dragdata);
+	Desk_Drag_SetHandlers(Windows_LinkDragFn,Windows_LinkDragEnd,&dragdata);
 }
 
 static void Windows_StyleMenuClick(int entry,void *ref)
@@ -1032,10 +1119,14 @@ static Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 				case Desk_button_DRAGSELECT:
 					switch (mousedata.type) {
 						case element_PERSON:
-							Windows_StartDragNormal(windowdata->layout->person[mousedata.layoutptr].person,windowdata->layout->person[mousedata.layoutptr].x,windowdata->layout->person[mousedata.layoutptr].y,windowdata,Desk_FALSE);
+							if (Desk_Kbd_KeyDown(Desk_inkey_SHIFT)) {
+								Windows_StartDragLink(windowdata,mousedata.element);
+							} else {
+								Windows_StartDragNormal(windowdata->layout->person[mousedata.layoutptr].person,windowdata->layout->person[mousedata.layoutptr].x,windowdata,Desk_FALSE);
+							}
 							break;
 						case element_MARRIAGE:
-							Windows_StartDragNormal(windowdata->layout->marriage[mousedata.layoutptr].marriage,windowdata->layout->marriage[mousedata.layoutptr].x,windowdata->layout->marriage[mousedata.layoutptr].y,windowdata,Desk_TRUE);
+							Windows_StartDragNormal(windowdata->layout->marriage[mousedata.layoutptr].marriage,windowdata->layout->marriage[mousedata.layoutptr].x,windowdata,Desk_TRUE);
 							break;
 						default:
 							Windows_UnselectAll(windowdata);
