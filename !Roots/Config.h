@@ -14,6 +14,8 @@ Desk_bool Config_Title(void);
 
 Desk_bool Config_Snap(void);
 
+Desk_bool Config_FontBlend(void);
+
 int Config_SnapDistance(void);
 
 int Config_ScrollSpeed(void);

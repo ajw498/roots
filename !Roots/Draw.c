@@ -2,7 +2,7 @@
 	FT - Draw
 	© Alex Waugh 1999
 
-	$Id: Draw.c,v 1.8 2000/06/17 21:25:45 AJW Exp $
+	$Id: Draw.c,v 1.9 2000/06/17 22:17:50 AJW Exp $
 
 */
 
@@ -14,6 +14,7 @@
 #include "AJWLib.Draw.h"
 #include "AJWLib.Assert.h"
 
+#include "Config.h"
 #include "Draw.h"
 
 #include <stdlib.h>
@@ -61,6 +62,7 @@ void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char
 {
 	int millix,milliy;
 	Desk_font_transformation fontmatrix;
+	int backgroundblend=0;
 	Desk_UNUSED(font);
 	Desk_UNUSED(size);
 	Desk_Font_ConvertToPoints(originx,originy,&millix,&milliy);
@@ -75,8 +77,8 @@ void Draw_PlotText(int scale,int originx,int originy,int x,int y,int handle,char
 	Desk_Font_ConvertToPoints(x,y,&millix,&milliy);
 	millix=(millix*scale)/100;
 	milliy=(milliy*scale)/100;
-	/*Background blending?*/
-	Desk_Font_Paint3(handle,text,Desk_font_plot_TRANSMATRIX | Desk_font_plot_CURRENTHANDLE,millix,milliy,NULL,&fontmatrix,0);
+	if (Config_FontBlend()) backgroundblend=1<<11;
+	Desk_Font_Paint3(handle,text,Desk_font_plot_TRANSMATRIX | Desk_font_plot_CURRENTHANDLE | backgroundblend,millix,milliy,NULL,&fontmatrix,0);
 }
 
 void Draw_EORRectangle(int scale,int originx,int originy,int x,int y,int width,int height,int linethickness,unsigned int colour)
