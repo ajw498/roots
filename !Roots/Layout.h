@@ -1,8 +1,6 @@
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
-#define DEBUG 0
-
 typedef struct personlayout {
 	int x;
 	int y;

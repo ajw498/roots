@@ -32,7 +32,7 @@ INCLUDE	=	C:
 
 TARGET		=	!RunImage
 
-CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2
+CCFLAGS		=	$(CCEXTRA) -throwback -strict -g -I$(INCLUDE) -DAJWLIB_ASSERT_ERROR2 -fah
 LINKFLAGS	=	$(LINKEXTRA) -d
 
 CC		=	cc -c $(CCFLAGS)

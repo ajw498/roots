@@ -3,7 +3,7 @@
 	© Alex Waugh 1999
 	Started on 01-Apr-99 (Honest!)
 
-	$Id: Main.c,v 1.14 2000/02/28 00:21:50 uid1 Exp $
+	$Id: Main.c,v 1.15 2000/02/28 17:07:13 uid1 Exp $
 	
 */
 
@@ -51,16 +51,17 @@
 #define iconbarmenu_QUIT 2
 
 
-Desk_window_handle info;
-Desk_menu_ptr iconbarmenu;
-char *taskname=NULL,*errbad=NULL;
+static Desk_window_handle info;
+static Desk_menu_ptr iconbarmenu;
+static char *taskname=NULL,*errbad=NULL;
 
-#if DEBUG
+#ifdef DEBUG
 extern Desk_bool halt;
 #endif
 
-static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
+static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *ref)
 {
+	Desk_UNUSED(ref);
 	if (Database_GetSize()) {
 		Desk_Msgs_Report(1,"Error.NoLoad:Another file already loaded");
 	} else {
@@ -69,20 +70,22 @@ static Desk_bool ReceiveDrag(Desk_event_pollblock *block, void *r)
 	return Desk_TRUE;
 }
 
-static Desk_bool IconBarClick(Desk_event_pollblock *block, void *r)
+static Desk_bool IconBarClick(Desk_event_pollblock *block, void *ref)
 {
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.select==1) {
 		if (!Windows_BringToFront()) File_New();
 		return Desk_TRUE;
 	}
-#if DEBUG
+#ifdef DEBUG
 	if (block->data.mouse.button.data.adjust==1) halt=Desk_FALSE;
 #endif
 	return Desk_FALSE;
 }
 
-static void IconBarMenuClick(int entry, void *r)
+static void IconBarMenuClick(int entry, void *ref)
 {
+	Desk_UNUSED(ref);
 	switch (entry) {
 		case iconbarmenu_CHOICES:
 			Config_Open();

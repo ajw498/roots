@@ -2,14 +2,11 @@
 	FT - Reports
 	© Alex Waugh 1999
 
-	$Log: Reports.c,v $
-	Revision 1.1  1999/09/27 15:33:29  AJW
-	Initial revision
-
+	$Id: Reports.c,v 1.2 2000/02/28 17:07:24 uid1 Exp $
 
 */
 
-void voidfunc2(void)
+static void voidfunc(void)
 {
 	/*Avoid compiler warnings*/
 }

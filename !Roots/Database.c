@@ -2,7 +2,7 @@
 	FT - Database
 	© Alex Waugh 1999
 
-	$Id: Database.c,v 1.24 2000/02/28 00:21:52 uid1 Exp $
+	$Id: Database.c,v 1.25 2000/02/28 17:07:15 uid1 Exp $
 
 */
 
@@ -81,7 +81,7 @@
 static databaseelement *database=NULL;
 static elementptr editingperson=none,editingmarriage=none;
 static Desk_window_handle editpersonwin,editmarriagewin,edittitlewin;
-Desk_menu_ptr sexmenu,titlemenu;
+static Desk_menu_ptr sexmenu/*,titlemenu*/;
 
 Desk_bool Database_IsUnlinked(elementptr person)
 {
@@ -531,6 +531,7 @@ void Database_EditTitle(void)
 
 static Desk_bool Database_OkEditTitleWindow(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	if (block->data.mouse.button.data.menu) return Desk_FALSE;
 	Desk_Icon_GetText(edittitlewin,edittitleicon_TEXT,database[0].element.file.filetitle);
 	if (block->data.mouse.button.data.select) Desk_Window_Hide(edittitlewin);
@@ -540,6 +541,7 @@ static Desk_bool Database_OkEditTitleWindow(Desk_event_pollblock *block,void *re
 
 static Desk_bool Database_CancelEditTitleWindow(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	Desk_Window_Hide(edittitlewin);
 	return Desk_TRUE;
@@ -547,6 +549,7 @@ static Desk_bool Database_CancelEditTitleWindow(Desk_event_pollblock *block,void
 
 static Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	editingperson=none;
@@ -556,6 +559,7 @@ static Desk_bool Database_CancelEditWindow(Desk_event_pollblock *block,void *ref
 
 static Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingperson==none) return Desk_FALSE;
 	Desk_Icon_GetText(editpersonwin,editpersonicon_SURNAME,database[editingperson].element.person.data.surname);
@@ -582,6 +586,7 @@ static Desk_bool Database_OkEditWindow(Desk_event_pollblock *block,void *ref)
 
 static Desk_bool Database_CancelEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	if (!block->data.mouse.button.data.select) return Desk_FALSE;
 	editingmarriage=none;
@@ -591,6 +596,7 @@ static Desk_bool Database_CancelEditMarriageWindow(Desk_event_pollblock *block,v
 
 static Desk_bool Database_OkEditMarriageWindow(Desk_event_pollblock *block,void *ref)
 {
+	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	if (block->data.mouse.button.data.menu || editingmarriage==none) return Desk_FALSE;
 	Desk_Icon_GetText(editmarriagewin,editmarriageicon_PLACE,database[editingmarriage].element.marriage.data.place);
@@ -656,6 +662,7 @@ void Database_Add(void)
 
 static void Database_SexMenuClick(int entry,void *ref)
 {
+	Desk_UNUSED(ref);
 	AJWLib_Assert(database!=NULL);
 	Desk_Icon_SetText(editpersonwin,editpersonicon_SEX,Desk_Menu_GetText(sexmenu,entry));
 }

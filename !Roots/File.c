@@ -2,7 +2,7 @@
 	FT - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.16 2000/02/28 00:21:55 uid1 Exp $
+	$Id: File.c,v 1.17 2000/02/28 17:07:18 uid1 Exp $
 
 */
 
@@ -37,7 +37,7 @@
 static char currentfilename[256],oldfilename[256],filedate[256];
 static Desk_bool modified=Desk_FALSE,oldmodified;
 
-void File_GetCurrentTime(void)
+static void File_GetCurrentTime(void)
 {
 	char *buffer[5];
 	*((int *)buffer)=3;
@@ -52,6 +52,7 @@ Desk_bool File_SaveFile(char *filename,void *ref)
 	int fileversion=FILEVERSION;
 	layout *normallayout=NULL,*layout=NULL;
 	int nextwindow=0;
+	Desk_UNUSED(ref);
 	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"wb");,AJWLib_Error2_ReportMsgs("Error.Save:%s"); return Desk_TRUE;)
 	/*file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
@@ -218,6 +219,7 @@ char *File_GetDate(void)
 
 void File_Result(Desk_save_result result,void *ref)
 {
+	Desk_UNUSED(ref);
 	switch (result) {
 		case Desk_save_SAVEOK:
 			break;
