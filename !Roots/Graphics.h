@@ -36,6 +36,8 @@ typedef struct textproperties {
 	unsigned int bgcolour;
 	int x;
 	int y;
+	char fontname[256];
+	int size;
 	Desk_font2_block *font;
 } textproperties;
 
