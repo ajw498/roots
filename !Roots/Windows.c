@@ -2,7 +2,7 @@
 	FT - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.48 2000/02/26 00:05:47 uid1 Exp $
+	$Id: Windows.c,v 1.49 2000/02/26 17:11:25 uid1 Exp $
 
 */
 
@@ -207,7 +207,7 @@ static Desk_bool Windows_RedrawAddParents(Desk_event_pollblock *block,void *ref)
 	blk.window=block->data.openblock.window;
 	Desk_Wimp_RedrawWindow(&blk,&more);
 	while (more) {
-		Graphics_PlotPerson(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,addparentsperson,332,16-Graphics_PersonHeight(),Desk_FALSE,Desk_FALSE);
+		Graphics_PlotPerson(100,blk.rect.min.x-blk.scroll.x,blk.rect.max.y-blk.scroll.y,addparentsperson,332,-16-Graphics_PersonHeight(),Desk_FALSE,Desk_FALSE);
 		Desk_Wimp_GetRectangle(&blk,&more);
 	}
 	return Desk_TRUE;
