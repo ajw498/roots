@@ -38,6 +38,8 @@ void Graphics_Load(FILE *file);
 
 void Graphics_Save(FILE *file);
 
+void Graphics_DeclareFonts(void);
+
 void Graphics_RemoveStyle(void);
 
 void Graphics_LoadStyle(char *style);
