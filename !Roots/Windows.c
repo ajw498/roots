@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.21  1999/10/27 16:48:08  AJW
+	Calls Database_Info to set info win when needed
+
 	Revision 1.20  1999/10/27 16:10:49  AJW
 	Now frees memeory when re laying out
 
@@ -1277,6 +1280,13 @@ Desk_bool SaveHandler(char *filename,Desk_bool safe,Desk_bool selection,void *re
 	return Desk_TRUE;
 }
 
+Desk_bool Graphics_OpenInfo(Desk_event_pollblock *block,void *ref)
+{
+	Database_Info(block->data.message.data.menuwarn.id);
+	Desk_Wimp_CreateSubMenu((Desk_menu_ptr)block->data.message.data.menuwarn.id,block->data.message.data.menuwarn.openpos.x,block->data.message.data.menuwarn.openpos.y);
+	return Desk_TRUE;
+}
+
 void Graphics_Init(void)
 {
 	int i;
@@ -1318,10 +1328,11 @@ void Graphics_Init(void)
 	Desk_Icon_Shade(newviewwin,newview_DESCENDENTPERSON);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVES);
 	Desk_Icon_Shade(newviewwin,newview_CLOSERELATIVESPERSON);
-/*	Desk_Menu_Warn(filemenu,filemenu_INFO,Desk_TRUE,Database_GetInfo,...);
-*/	{
+	Desk_Menu_Warn(filemenu,filemenu_INFO,Desk_TRUE,Graphics_OpenInfo,NULL);
+	{
 /*		Desk_window_handle savewin=Save_CreateWindow(0xFFF,Desk_FALSE,1024,Desk_TRUE,SaveHandler,NULL,NULL);
 		Desk_Menu_AddSubMenu(filemenu,filemenu_SAVE,(Desk_menu_ptr)savewin);
-*/	}
+*/		AJWLib_Menu_Shade(filemenu,filemenu_SAVE);
+	}
 }
 
