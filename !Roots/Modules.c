@@ -1,9 +1,9 @@
 /*
-	FT - Modules
+	Roots - Modules
 	Interaction between different modules
 	© Alex Waugh 1999
 
-	$Id: Modules.c,v 1.15 2000/06/22 19:07:41 AJW Exp $
+	$Id: Modules.c,v 1.16 2000/10/14 16:32:11 AJW Exp $
 
 */
 
@@ -16,6 +16,7 @@
 #include "File.h"
 #include "Config.h"
 #include "Print.h"
+#include "Layout.h"
 
 static Desk_bool changedstructure=Desk_FALSE,changeddata=Desk_FALSE,changedlayout=Desk_FALSE;
 
@@ -25,6 +26,7 @@ void Modules_Init(void)
 	Windows_Init();
 	Config_Init();
 	Print_Init();
+	Layout_Init();
 }
 
 void Modules_ChangedStructure(void)

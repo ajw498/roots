@@ -2,7 +2,7 @@
 	Roots - Layout routines
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.43 2000/10/14 15:55:27 AJW Exp $
+	$Id: Layout.c,v 1.44 2000/10/14 16:32:08 AJW Exp $
 
 */
 
@@ -233,7 +233,7 @@ void Layout_Free(layout *layout)
 	Roots - Layout related windows
 	© Alex Waugh 1999
 
-	$Id: Layout.c,v 1.43 2000/10/14 15:55:27 AJW Exp $
+	$Id: Layout.c,v 1.44 2000/10/14 16:32:08 AJW Exp $
 
 */
 
@@ -306,32 +306,6 @@ typedef enum ptrtype {
 	ptr_NOLINK,
 	ptr_UNLINK
 } ptrtype;
-#define mainmenu_FILE 0
-#define mainmenu_PERSON 1
-#define mainmenu_ADDPERSON 2
-#define mainmenu_SELECT 9 /*3*/
-#define mainmenu_GRAPHICSSTYLE 3 /*4*/
-#define mainmenu_NEWVIEW 10 /*5*/
-#define mainmenu_SCALE 4 /*6*/
-#define mainmenu_SEARCH 7
-#define mainmenu_REPORTS 8
-
-#define filemenu_INFO 0
-#define filemenu_SAVE 1
-#define filemenu_EXPORT 2
-#define filemenu_CHOICES 3
-#define filemenu_PRINT 4
-
-#define exportmenu_GEDCOM 0
-#define exportmenu_DRAW 1
-
-#define personmenu_EDIT 0
-#define personmenu_DELETE 1
-
-#define selectmenu_DESCENDENTS 0
-#define selectmenu_ANCESTORS 1
-#define selectmenu_SIBLINGS 2
-#define selectmenu_SPOUSES 3
 
 #define REDRAWOVERLAP 4
 
@@ -351,22 +325,9 @@ typedef struct dragdata {
 	ptrtype ptr;
 } dragdata;
 
-typedef struct mouseclickdata {
-	windowdata *window;
-	elementptr element;
-	Desk_wimp_point pos;
-	elementtype type;
-	int layoutptr;
-} mouseclickdata;
+mouseclickdata mousedata;
 
-/*static*/ mouseclickdata mousedata;
-Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref);
-
-extern Desk_sprite_area ptrsprites;
-extern Desk_bool menusdeletedvalid;
-/*extern Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin;*/
-extern Desk_menu_ptr mainmenu,/*filemenu,exportmenu,*/personmenu/*,selectmenu,fileconfigmenu*/;
-/*extern elementptr newviewperson;*/
+static Desk_sprite_area ptrsprites;
 
 static void Layout_SetPointerShape(char *name,int num)
 /* Set the pointer shape*/
@@ -1009,13 +970,23 @@ static void Windows_StartDragLink(windowdata *windowdata,elementptr person)
 	Desk_Drag_SetHandlers(Windows_LinkDragFn,Windows_LinkDragEnd,&dragdata);
 }
 
-Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
+static Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref)
+{
+	windowdata *windowdata=ref;
+	Desk_UNUSED(block);
+	if (windowdata->handle) Windows_UnselectAll(windowdata);
+	Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted);
+	return Desk_TRUE;
+}
+
+Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref)
 {
 	windowdata *windowdata=ref;
 	int mousex,mousey,i;
 	Desk_convert_block blk;
 	elementtype selected;
-	menusdeletedvalid=Desk_FALSE;
+	int layoutptr=0;
+	
 	if (!block->data.mouse.button.data.menu) Desk_Icon_SetCaret(block->data.mouse.window,-1);
 	Desk_Window_GetCoords(windowdata->handle,&blk);
 	mousex=((block->data.mouse.pos.x-(blk.screenrect.min.x-blk.scroll.x))*100)/windowdata->scale;
@@ -1030,7 +1001,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
 			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+Graphics_PersonHeight()) {
 				mousedata.type=element_PERSON;
-				mousedata.layoutptr=i;
+				layoutptr=i;
 				mousedata.element=windowdata->layout->person[i].element;
 				break;
 			}
@@ -1042,7 +1013,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		if (mousex>=windowdata->layout->marriage[i].x && mousex<=windowdata->layout->marriage[i].x+Graphics_MarriageWidth()) {
 			if (mousey>=windowdata->layout->marriage[i].y && mousey<=windowdata->layout->marriage[i].y+Graphics_PersonHeight()) {
 				mousedata.type=element_MARRIAGE;
-				mousedata.layoutptr=i;
+				layoutptr=i;
 				mousedata.element=windowdata->layout->marriage[i].element;
 				break;
 			}
@@ -1077,17 +1048,15 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 						switch (mousedata.type) {
 							case element_PERSON:
 								Layout_Select(mousedata.element);
-								Layout_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+								Layout_RedrawPerson(windowdata,windowdata->layout->person+layoutptr);
 								selected=element_PERSON;
 								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
-								menusdeletedvalid=Desk_TRUE;
 								break;
 							case element_MARRIAGE:
 								Layout_Select(mousedata.element);
-								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+layoutptr);
 								selected=element_MARRIAGE;
 								Desk_EventMsg_Claim(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted,windowdata);
-								menusdeletedvalid=Desk_TRUE;
 								break;
 							default:
 								break;
@@ -1098,17 +1067,17 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 				case Desk_button_CLICKSELECT:
 					switch (mousedata.type) {
 						case element_PERSON:
-							if (!Layout_GetSelect(windowdata->layout->person[mousedata.layoutptr].element)) {
+							if (!Layout_GetSelect(windowdata->layout->person[layoutptr].element)) {
 								Windows_UnselectAll(windowdata);
-								Layout_Select(windowdata->layout->person[mousedata.layoutptr].element);
-								Layout_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+								Layout_Select(windowdata->layout->person[layoutptr].element);
+								Layout_RedrawPerson(windowdata,windowdata->layout->person+layoutptr);
 							}
 							break;
 						case element_MARRIAGE:
-							if (!Layout_GetSelect(windowdata->layout->marriage[mousedata.layoutptr].element)) {
+							if (!Layout_GetSelect(windowdata->layout->marriage[layoutptr].element)) {
 								Windows_UnselectAll(windowdata);
-								Layout_Select(windowdata->layout->marriage[mousedata.layoutptr].element);
-								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+								Layout_Select(windowdata->layout->marriage[layoutptr].element);
+								Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+layoutptr);
 							}
 							break;
 						default:
@@ -1118,20 +1087,20 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 				case Desk_button_CLICKADJUST:
 					switch (mousedata.type) {
 						case element_PERSON:
-							if (Layout_GetSelect(windowdata->layout->person[mousedata.layoutptr].element)) {
-								Layout_DeSelect(windowdata->layout->person[mousedata.layoutptr].element);
+							if (Layout_GetSelect(windowdata->layout->person[layoutptr].element)) {
+								Layout_DeSelect(windowdata->layout->person[layoutptr].element);
 							} else {
-								Layout_Select(windowdata->layout->person[mousedata.layoutptr].element);
+								Layout_Select(windowdata->layout->person[layoutptr].element);
 							}
-							Layout_RedrawPerson(windowdata,windowdata->layout->person+mousedata.layoutptr);
+							Layout_RedrawPerson(windowdata,windowdata->layout->person+layoutptr);
 							break;
 						case element_MARRIAGE:
-							if (Layout_GetSelect(windowdata->layout->marriage[mousedata.layoutptr].element)) {
-								Layout_DeSelect(windowdata->layout->marriage[mousedata.layoutptr].element);
+							if (Layout_GetSelect(windowdata->layout->marriage[layoutptr].element)) {
+								Layout_DeSelect(windowdata->layout->marriage[layoutptr].element);
 							} else {
-								Layout_Select(windowdata->layout->marriage[mousedata.layoutptr].element);
+								Layout_Select(windowdata->layout->marriage[layoutptr].element);
 							}
-							Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+mousedata.layoutptr);
+							Layout_RedrawMarriage(windowdata,windowdata->layout->marriage+layoutptr);
 							break;
 						default:
 							break;
@@ -1143,11 +1112,11 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 							if (Desk_Kbd_KeyDown(Desk_inkey_SHIFT)) {
 								Windows_StartDragLink(windowdata,mousedata.element);
 							} else {
-								Windows_StartDragNormal(windowdata->layout->person[mousedata.layoutptr].element,windowdata->layout->person[mousedata.layoutptr].x,windowdata,Desk_FALSE);
+								Windows_StartDragNormal(windowdata->layout->person[layoutptr].element,windowdata->layout->person[layoutptr].x,windowdata,Desk_FALSE);
 							}
 							break;
 						case element_MARRIAGE:
-							Windows_StartDragNormal(windowdata->layout->marriage[mousedata.layoutptr].element,windowdata->layout->marriage[mousedata.layoutptr].x,windowdata,Desk_TRUE);
+							Windows_StartDragNormal(windowdata->layout->marriage[layoutptr].element,windowdata->layout->marriage[layoutptr].x,windowdata,Desk_TRUE);
 							break;
 						default:
 							Windows_UnselectAll(windowdata);
@@ -1168,3 +1137,9 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	}
 	return Desk_TRUE;
 }
+
+void Layout_Init(void)
+{
+	ptrsprites=Desk_Sprite_LoadFile(ROOTSDIR".Sprites");
+}
+

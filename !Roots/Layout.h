@@ -57,6 +57,16 @@ typedef struct layout {
 	int numchildren;
 } layout;
 
+typedef struct mouseclickdata {
+	struct windowdata *window;
+	elementptr element;
+	Desk_wimp_point pos;
+	elementtype type;
+/*	int layoutptr;*/
+} mouseclickdata;
+
+extern mouseclickdata mousedata;
+
 int Layout_NearestGeneration(int y);
 layout *Layout_New(void);
 void Layout_Free(layout *layout);
@@ -74,6 +84,7 @@ void Layout_DeSelect(elementptr person);
 void Layout_DeSelectAll(void);
 Desk_bool Layout_GetSelect(elementptr person);
 elementtype Layout_AnyoneSelected(void);
+void Layout_Init(void);
 
 #endif
 

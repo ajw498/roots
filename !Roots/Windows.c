@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.89 2000/10/14 15:55:31 AJW Exp $
+	$Id: Windows.c,v 1.90 2000/10/14 16:32:12 AJW Exp $
 
 */
 
@@ -149,27 +149,15 @@ typedef struct savedata {
 	Desk_convert_block coords;
 } savedata;
 
-typedef struct mouseclickdata {
-	windowdata *window;
-	elementptr element;
-	Desk_wimp_point pos;
-	elementtype type;
-	int layoutptr;
-} mouseclickdata; /*This is a duplicate and should be removed*/
-
-extern mouseclickdata mousedata;
-
-Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref);
+Desk_bool Layout_MouseClick(Desk_event_pollblock *block,void *ref);
 Desk_bool Layout_RedrawWindow(Desk_event_pollblock *block,windowdata *windowdata);
 
-/*static*/ windowdata windows[MAXWINDOWS];
-/*static*/ Desk_bool menusdeletedvalid=Desk_FALSE;
-/*static*/ int numwindows;
-/*static*/ Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin;
-/*static*/ Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu/*,selectmenu*/,fileconfigmenu=NULL;
-/*static*/ elementptr newviewperson;
-/*static*/ savedata nextloadwindowdata;
-/*static*/ Desk_sprite_area ptrsprites=NULL;
+static windowdata windows[MAXWINDOWS];
+static int numwindows;
+static Desk_window_handle newviewwin,fileinfowin,savewin,savedrawwin,savegedcomwin,scalewin,unsavedwin;
+static Desk_menu_ptr mainmenu,filemenu,exportmenu,personmenu/*,selectmenu*/,fileconfigmenu=NULL;
+static elementptr newviewperson;
+static savedata nextloadwindowdata;
 
 Desk_window_handle fieldconfigwin;
 
@@ -299,18 +287,6 @@ void Windows_SetUpMenu(windowdata *windowdata,elementtype selected,int x,int y)
 	Desk_Menu_Show(mainmenu,x,y);
 }
 
-Desk_bool Windows_MenusDeleted(Desk_event_pollblock *block,void *ref)
-{
-	windowdata *windowdata=ref;
-	Desk_UNUSED(block);
-	if (menusdeletedvalid) {
-		Windows_UnselectAll(windowdata);
-		Desk_EventMsg_Release(Desk_message_MENUSDELETED,Desk_event_ANY,Windows_MenusDeleted);
-	}
-	menusdeletedvalid=Desk_FALSE;
-	return Desk_TRUE;
-}
-
 void Windows_Relayout(void)
 {
 	volatile int i;
@@ -427,7 +403,6 @@ void Windows_CloseAllWindows(void)
 /*Tidy up quietly*/
 {
 	volatile int i;
-	menusdeletedvalid=Desk_FALSE;
 	for (i=0;i<MAXWINDOWS;i++) {
 		if (windows[i].handle) {
 			Desk_Error2_TryCatch(if (windows[i].layout) Layout_Free(windows[i].layout);,)
@@ -444,7 +419,6 @@ static Desk_bool Windows_CloseWindow(Desk_event_pollblock *block,windowdata *win
 {
 	int i,found=0;
 	Desk_UNUSED(block);
-	menusdeletedvalid=Desk_FALSE;
 	for (i=0;i<MAXWINDOWS;i++)
 		if (windows[i].handle!=0)
 			if (windows[i].type==wintype_NORMAL) found++;
@@ -574,7 +548,7 @@ void Windows_OpenWindow(wintype type,elementptr person,int generations,int scale
 			AJWLib_Assert(0);
 	}
 	if (type!=wintype_NORMAL || layoutnormal!=NULL) Windows_ResizeWindow(&windows[newwindow]);
-	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Windows_MouseClick,&windows[newwindow]);
+	Desk_Event_Claim(Desk_event_CLICK,windows[newwindow].handle,Desk_event_ANY,Layout_MouseClick,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_REDRAW,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Layout_RedrawWindow,&windows[newwindow]);
 	Desk_Event_Claim(Desk_event_CLOSE,windows[newwindow].handle,Desk_event_ANY,(Desk_event_handler)Windows_CloseWindow,&windows[newwindow]);
 	Windows_OpenWindowCentered(&windows[newwindow],coords);
@@ -915,6 +889,5 @@ void Windows_Init(void)
 	Desk_Event_Claim(Desk_event_CLICK,fieldconfigwin,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_KeyHandler(fieldconfigwin,fieldconfig_OK,Windows_FileConfigOk,fieldconfig_CANCEL,Windows_FileConfigCancel,NULL);
 	AJWLib_Window_RegisterDCS(unsavedwin,unsaved_DISCARD,unsaved_CANCEL,unsaved_SAVE,Windows_CloseAllWindows,Windows_OpenSaveWindow);
-	ptrsprites=Desk_Sprite_LoadFile(ROOTSDIR".Sprites");
 }
 
