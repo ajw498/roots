@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.46 2001/02/03 18:16:07 AJW Exp $
+	$Id: File.c,v 1.47 2001/10/20 19:41:18 AJW Exp $
 
 */
 
@@ -66,7 +66,7 @@ Desk_bool File_SaveGEDCOM(char *filename,void *ref)
 	Desk_Error2_TryCatch(file=AJWLib_File_fopen(filename,"w");,AJWLib_Error2_ReportMsgs("Error.Save:%s"); return Desk_TRUE;)
 	/*file is guaranteed to be valid if we get here*/
 	Desk_Error2_Try {
-		fprintf(file,"0 HEAD\n1 SOUR Roots\n2 VERS %s\n2 CORP Alex Waugh\n3 ADDR http://www.ecs.soton.ac.uk/~ajw498/\n",ROOTS_VERSION);
+		fprintf(file,"0 HEAD\n1 SOUR Roots\n2 VERS %s\n2 CORP Alex Waugh\n3 ADDR http://www.alexwaugh.com/\n",ROOTS_VERSION);
 		if (plain) {
 			fprintf(file,"1 CHAR ASCII\n1 GEDC\n2 VERS 5.5\n2 FORM LINEAGE-LINKED\n");
 		} else {

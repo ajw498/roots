@@ -2,7 +2,7 @@
 	Roots - Windows, menus and interface
 	© Alex Waugh 1999
 
-	$Id: Windows.c,v 1.110 2001/07/02 19:39:08 AJW Exp $
+	$Id: Windows.c,v 1.111 2001/10/20 19:41:25 AJW Exp $
 
 */
 
@@ -446,7 +446,7 @@ static void Windows_OpenSaveWindow(void)
 		AJWLib_Window_OpenTransient(savewin);
 		/*How do I close all windows once savebox has been dealt with?*/
 	} else {
-		File_SaveGEDCOM(NULL,NULL);
+		File_SaveGEDCOM(File_GetFilename(),NULL);
 		Windows_CloseAllWindows();
 	}
 }

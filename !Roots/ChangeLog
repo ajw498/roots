@@ -1,3 +1,9 @@
+v1.14 20-Oct-01
+Fixed a bug that caused a crash if you closed a window with unsaved changes,
+and then selected the save option.
+Clicking on the toggle size icon on a newly opened window should no longer
+move the window off screen
+ 
 v1.13 2-Jul-01
 Added style editor
 
