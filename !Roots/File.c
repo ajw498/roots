@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.45 2000/11/29 21:29:53 AJW Exp $
+	$Id: File.c,v 1.46 2001/02/03 18:16:07 AJW Exp $
 
 */
 
@@ -532,9 +532,11 @@ static void File_ParseLine(char *line,int *level,char **id,char **tag,char **dat
 static char *File_GEDCOMLine(FILE *file,char *line,char *existingtag,char *existingid,Desk_bool plain,Desk_bool prescan)
 /* Recursively read though the GEDCOM file building up the whole tag for each line*/
 {
-	int level,newlevel;
+	int level,newlevel,concat=0;
 	char wholetag[MAXLINELEN],idbuffer[MAXLINELEN]="";
+	char newlinebuffer[MAXLINELEN], *newline=NULL;
 	char *id,*tag,*data;
+	char *newid,*newtag,*newdata;
 	
 	do {
 		/* Unwind if error or EOF reached*/
@@ -552,13 +554,39 @@ static char *File_GEDCOMLine(FILE *file,char *line,char *existingtag,char *exist
 		if (strlen(existingtag)+strlen(tag)+2>MAXLINELEN) AJWLib_Error2_HandleMsgs("Error.TooLong:");
 		/* Create the tag including all tags from higher levels*/
 		if (existingtag) sprintf(wholetag,"%s.%s",existingtag,tag); else strcpy(wholetag,tag);
+
+		do {
+			/* Get the next line*/
+			newline=NULL;
+			concat=0;
+			if (feof(file)==0) {
+				newline=fgets(newlinebuffer,MAXLINELEN,file);
+			}
+			if (newline) {
+				int len;
+				char buffer[MAXLINELEN];
+
+				strcpy(buffer,newline);
+				File_ParseLine(buffer,&newlevel,&newid,&newtag,&newdata);
+				len=strlen(newtag);
+				if (len>=4) {
+					if (!Desk_stricmp(newtag+len-4,"CONT")) concat=1;
+					if (!Desk_stricmp(newtag+len-4,"CONC")) concat=2;
+				}
+				if (concat && data) {
+					if (strlen(data)+strlen(newdata)+2>MAXLINELEN) AJWLib_Error2_HandleMsgs("Error.TooLong:");
+					if (concat==1) strcat(data," ");
+					strcat(data,newdata);
+				}
+			}
+		} while (concat);
+
 		/* Do something if there is data associated with the line*/
 		if (data) File_HandleData(id,wholetag,data,plain,prescan);
 
-		/* Get the next line*/
-		if (feof(file)) return NULL;
-		if (fgets(line,MAXLINELEN,file)==NULL) return NULL;
-        newlevel=atoi(line);
+		if (newline==NULL) return NULL;
+
+		strcpy(line,newline);
 
 		/* Recurse if the new level is lower, return to previous recursion if level is higher*/
 		
