@@ -130,6 +130,10 @@ int Graphics_SecondMarriageGap(void);
 
 int Graphics_WindowBorder(void);
 
-void Graphics_Init2(void);
+void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *cliprect,Desk_bool plotselection,plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext);
+
+void Graphics_PlotPerson(elementptr person,int x,int y,Desk_bool child,Desk_bool selected);
+
+void Graphics_Init(void);
 
 #endif
