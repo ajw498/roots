@@ -2,7 +2,7 @@
 	FT - Print, printing code
 	© Alex Waugh 2000
 
-	$Id: Print.c,v 1.6 2000/09/11 11:08:21 AJW Exp $
+	$Id: Print.c,v 1.7 2000/10/03 13:53:24 AJW Exp $
 
 */
 
@@ -123,23 +123,23 @@ static Desk_bool Print_CalcValues(Desk_event_pollblock *block,void *ref)
 	if (data.copies<1) data.copies=1;
 	data.overlap=Graphics_ConvertToOS(Desk_Icon_GetTextPtr(printwin,print_OVERLAP));
 	Desk_Font_ConvertToOS(data.printablearea.max.x-data.printablearea.min.x,data.printablearea.max.y-data.printablearea.min.y,&data.pagesizeos.x,&data.pagesizeos.y);
-	data.pagesizeos.x-=20; /*So edges of output don't get clipped*/
-	data.pagesizeos.y-=20;
+/*	data.pagesizeos.x-=20;*/ /*So edges of output don't get clipped*/
+/*	data.pagesizeos.y-=20;*/
 	if (!data.portrait) SWAP(data.pagesizeos.x,data.pagesizeos.y);
 	data.pages.x=0;
 	total=((data.treeextent.max.x-data.treeextent.min.x)*data.scale)/100;
 	while (total>0) {
 		data.pages.x++;
-		total-=data.pagesizeos.x-data.overlap;
+		total-=(data.pagesizeos.x-data.overlap);
 	}
-	if (Desk_Icon_GetSelect(printwin,print_CENTRE)) data.offset.x=(-total)/2; else data.offset.x=0;
+	if (Desk_Icon_GetSelect(printwin,print_CENTRE)) data.offset.x=total/2; else data.offset.x=0;
 	data.pages.y=0;
 	total=((data.treeextent.max.y-data.treeextent.min.y)*data.scale)/100;
 	while (total>0) {
 		data.pages.y++;
-		total-=data.pagesizeos.y-data.overlap;
+		total-=(data.pagesizeos.y-data.overlap);
 	}
-	if (Desk_Icon_GetSelect(printwin,print_CENTRE)) data.offset.y=(-total)/2; else data.offset.y=-total;
+	if (Desk_Icon_GetSelect(printwin,print_CENTRE)) data.offset.y=total/2; else data.offset.y=total;
 	sprintf(Desk_Icon_GetTextPtr(printwin,print_NUMPAGES),"%d x %d",data.pages.x,data.pages.y);
 	Desk_Icon_ForceRedraw(printwin,print_NUMPAGES);
 	if (Desk_Icon_GetInteger(printwin,print_FROM)<1) Desk_Icon_SetInteger(printwin,print_FROM,1);
@@ -185,20 +185,28 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 		for (pagey=data.pages.y-1;pagey>=0;pagey--) {
 			for (pagex=0;pagex<data.pages.x;pagex++) {
 				if (((data.pages.y-1-pagey)*data.pages.x+pagex>=minpage) && ((data.pages.y-1-pagey)*data.pages.x+pagex<=maxpage)) {
+					Desk_wimp_rect page;
+					
+					page.min.x=(ref->offset.x*100)/ref->scale+((ref->pagesizeos.x*100)/ref->scale-ref->overlap)*pagex;
+					page.min.y=(ref->offset.y*100)/ref->scale+((ref->pagesizeos.y*100)/ref->scale-ref->overlap)*pagey;
+					page.max.x=page.min.x+(ref->pagesizeos.x*100)/ref->scale;
+					page.max.y=page.min.y+(ref->pagesizeos.y*100)/ref->scale;
 					rect.min.x=-10; /*So edges of output don't get clipped*/
 					rect.min.y=-10;
-					rect.max.x=rect.min.x+ref->pagesizeos.x+10;
-					rect.max.y=rect.min.y+ref->pagesizeos.y+10;
+					rect.max.x=ref->pagesizeos.x+10;
+					rect.max.y=ref->pagesizeos.y+10;
+					Drawfile_Create(ref->layout,&page);
 					Desk_PDriver_GiveRectangle(1,&rect,&matrix,&position,0xFFFFFF00);
 					Desk_PDriver_DrawPage(ref->copies,&cliprect,0,NULL,&more,&rectid);
 					while (more) {
 						cliprect.min.x-=100;
 						cliprect.max.x+=100;
 						cliprect.min.y-=100;
-						cliprect.max.x+=100;
-						Drawfile_Redraw(ref->scale,ref->offset.x-(ref->pagesizeos.x-ref->overlap)*pagex,ref->offset.y-(ref->pagesizeos.y-ref->overlap)*pagey,&cliprect);
+						cliprect.max.y+=100;
+						Drawfile_Redraw(ref->scale,0,0,&cliprect);
 						Desk_PDriver_GetRectangle(&cliprect,&more,&rectid);
 					}
+					Drawfile_Free();
 				}
 			}
 		}
@@ -210,7 +218,6 @@ static Desk_bool Print_StartPrinting(Desk_print_block *printblk)
 		AJWLib_Error2_ReportMsgs("Error.Print:%s");
 		Desk_Error2_ReThrow();
 	} Desk_Error2_EndCatch
-	Drawfile_Free();
 	Desk_Hourglass_Off();
 	return Desk_TRUE;
 }

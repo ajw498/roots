@@ -15,4 +15,6 @@ void Drawfile_Print(layout *layout);
 
 void Drawfile_Redraw(int scale,int originx,int originy,Desk_wimp_rect *cliprect);
 
+void Drawfile_Create(layout *layout,Desk_wimp_rect *printcliprect);
+
 #endif
