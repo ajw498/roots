@@ -3,10 +3,13 @@
 	© Alex Waugh 1999
 
 	$Log: Graphics.c,v $
+	Revision 1.13  2000/02/20 18:23:04  uid1
+	Changed plotting order so newest people are on top
+
 	Revision 1.12  2000/02/12 22:25:37  uid1
 	Renamed Graphics directory to Graphic to avoid CVS problems with Graphics.c .h
 	Altered Makefile to work with Reuben Thomas' make
-
+	
 	Revision 1.11  2000/01/14 13:50:10  AJW
 	Renamed Graphics.h to Windos.h etc
 	
@@ -591,10 +594,10 @@ void Graphics_Redraw(layout *layout,int originx,int originy,Desk_wimp_box *clipr
 	for (i=0;i<layout->numchildren;i++) {
 		Graphics_PlotChildren(originx+layout->children[i].leftx,originx+layout->children[i].rightx,originy+layout->children[i].y);
 	}
-	for (i=layout->nummarriages-1;i>=0;i--) {
+	for (i=0;i<layout->nummarriages;i++) {
 		Graphics_PlotMarriage(originx+layout->marriage[i].x,originy+layout->marriage[i].y,layout->marriage[i].marriage,layout->marriage[i].childline,plotselection ? layout->marriage[i].selected : Desk_FALSE);
 	}
-	for (i=layout->numpeople-1;i>=0;i--) {
+	for (i=0;i<layout->numpeople;i++) {
 		Graphics_PlotPerson(layout->person[i].person,originx+layout->person[i].x,originy+layout->person[i].y,layout->person[i].child,plotselection ? layout->person[i].selected : Desk_FALSE);
 	}
 }

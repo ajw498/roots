@@ -3,9 +3,12 @@
 	© Alex Waugh 1999
 
 	$Log: Windows.c,v $
+	Revision 1.37  2000/02/20 18:23:05  uid1
+	Changed plotting order so newest people are on top
+
 	Revision 1.36  2000/02/12 21:26:03  root
 	Checkin for CVS
-
+	
 	Revision 1.35  2000/01/17 16:57:58  AJW
 	Added Windows_Load
 
@@ -781,7 +784,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 	AJWLib_Menu_Shade(personmenu,personmenu_UNLINK);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_PERSON);
 	AJWLib_Menu_Shade(mainmenu,mainmenu_SELECT);
-	for (i=0;i<windowdata->layout->numpeople;i++) {
+	for (i=windowdata->layout->numpeople-1;i>=0;i--) {
 		if (mousex>=windowdata->layout->person[i].x && mousex<=windowdata->layout->person[i].x+Graphics_PersonWidth()) {
 			if (mousey>=windowdata->layout->person[i].y && mousey<=windowdata->layout->person[i].y+Graphics_PersonHeight()) {
 				if (block->data.mouse.button.data.clickselect) {
@@ -870,7 +873,7 @@ Desk_bool Windows_MouseClick(Desk_event_pollblock *block,void *ref)
 		Desk_Menu_Show(mainmenu,block->data.mouse.pos.x,block->data.mouse.pos.y);
 		return Desk_TRUE;
 	}
-	for (i=0;i<windowdata->layout->nummarriages;i++) {
+	for (i=windowdata->layout->nummarriages-1;i>=0;i--) {
 		if (mousex>=windowdata->layout->marriage[i].x && mousex<=windowdata->layout->marriage[i].x+Graphics_MarriageWidth()) {
 			if (mousey>=windowdata->layout->marriage[i].y && mousey<=windowdata->layout->marriage[i].y+Graphics_PersonHeight()) {
 				if (block->data.mouse.button.data.select) {
@@ -966,6 +969,29 @@ void Windows_Load(FILE *file)
 		Windows_OpenWindow(data.type,data.person,data.generations,layout);
 	}
 }
+
+/*
+layout *Windows_Save(FILE *file,int *index)
+{
+	int i=*index++;
+	savedata data;
+	if (i>=MAXWINDOWS) {
+		*index=-1;
+		return NULL;
+	}
+	AJWLib_Assert(i>=0);
+	if (windows[i].handle) {
+		data.tag=window;
+		data.size=sizeof(savedata);
+		data.type=windows[i].type;
+		data.person=windows[i].person;
+		data.generations=windows[i].generations;
+		AJWLib_File_fwrite(&data,sizeof(savedata),1,file);
+		return windows[i].layout;
+	}
+	return NULL;
+}
+*/
 
 void Windows_Save(FILE *file)
 {
