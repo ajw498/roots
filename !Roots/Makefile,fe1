@@ -14,12 +14,13 @@ HEADERS = \
 
 LIBS = \
 	L:Stubs.o.asstubs\
-	L:Lua.lib.luacore\
-	L:AJWLib.o.AJWLib\
+	L:Lua.lib.luacoremc\
+	L:AJWLib.mc.AJWLib\
 	MemCheck:o.MC\
 	L:Desk.o.Desk
 
-#	L:AJWLib.mc.AJWLib
+#	L:AJWLib.o.AJWLib
+#	L:Lua.lib.luacore\
 
 
 OBJECTS = \
