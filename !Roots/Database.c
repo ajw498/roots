@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Database.c,v $
+	Revision 1.10  2000/01/11 17:12:55  AJW
+	Changed Database_Save to work with File.c functions
+
 	Revision 1.9  1999/10/27 16:47:47  AJW
 	Got Database_Info partially working
 
@@ -48,8 +51,8 @@
 #include "AJWLib.Menu.h"
 #include "AJWLib.Msgs.h"
 #include "AJWLib.Menu.h"
-
 #include "AJWLib.Flex.h"
+#include "AJWLib.File.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -656,33 +659,29 @@ void Database_Modified(void)
 	modified=Desk_TRUE;
 }
 
-void Database_Save(char *filename)
+void Database_Save(FILE *file)
 {
 /*Remove free elements?*/
-	Desk_file_handle savefile;
-	savefile=Desk_File_Open(filename,Desk_file_WRITE);
-	Desk_File_WriteBytes(savefile,database,(database[0].file.numberofelements)*sizeof(element));
-	Desk_File_Close(savefile);
+/*Consistency check?*/
+	AJWLib_File_fwrite(database,sizeof(element),database[0].file.numberofelements,file);
+	modified=Desk_FALSE; /*What if an error occours later on in the save?*/
 }
 
-void Database_Load(char *filename)
+void Database_Load(FILE *file)
 {
-	Desk_file_handle loadfile;
+/*	Desk_file_handle loadfile;
 	int size;
 	size=Desk_File_Size(filename);
 	AJWLib_Flex_Extend((flex_ptr)&database,size);
 	loadfile=Desk_File_Open(filename,Desk_file_READ);
-	/*Check file has correct ID*/
 	Desk_File_ReadBytes(loadfile,database,size);
 	Desk_File_Close(loadfile);
-	Modules_ChangedStructure();
+*/	Modules_ChangedStructure();
 }
 
 void Database_New(void)
 {
 	AJWLib_Flex_Alloc((flex_ptr)&database,sizeof(element));
-	strcpy(database[0].file.fileidentifier,FILEID);
-	database[0].file.versionnumber=VERSIONNUM;
 	strcpy(database[0].file.filetitle,"<Untitled>");
 	strcpy(database[0].file.filedescription,"");
 	database[0].file.numberofelements=1;
