@@ -22,9 +22,6 @@ typedef enum wintype {
 	wintype_CLOSERELATIVES
 } wintype;
 
-typedef void (*plotfn)(const int minx,const int miny,const int maxx,const int maxy,const int linethickness,const unsigned int colour);
-typedef void (*plottextfn)(const int x,const int y,const int handle,const char *font,const int size,const unsigned int bgcolour,const unsigned int fgcolour,const char *text);
-
 void Windows_Init(void);
 
 void Windows_Edit(void);
