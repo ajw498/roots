@@ -1,5 +1,6 @@
-v1.17 ??-???-??
+v1.17 13-Mar-04
 Fixed bug that prevented scrolling the window when dragging a selection box
+Prevent slashes being entered in peoples names as this causes invalid GEDCOM
 
 v1.16 7-Dec-02
 Increased maximum line length allowed for imported GEDCOM files
