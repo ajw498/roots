@@ -2,7 +2,7 @@
 	FT - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.38 2000/09/13 21:15:42 AJW Exp $
+	$Id: Graphics.c,v 1.39 2000/09/14 11:39:07 AJW Exp $
 
 */
 
@@ -935,7 +935,7 @@ static void Graphics_LoadStyleFile(char *style,char *filename,char **anchor)
 	AJWLib_Assert(filename!=NULL);
 	AJWLib_Assert(*anchor==NULL);
 	sprintf(fullfilename,"%s.%s.%s.%s",choicesread,GRAPHICSDIR,style,filename);
-	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs3("Error.NoFile:File %s does not exist in dir %s",filename,style);
+	if (!Desk_File_Exists(fullfilename)) AJWLib_Error2_HandleMsgs("Error.NoFile:File %s does not exist in dir %s",filename,style);
 	size=Desk_File_Size(fullfilename);
 	AJWLib_Flex_Alloc((flex_ptr)anchor,size+1);
 	Desk_File_LoadTo(fullfilename,*anchor,NULL);
@@ -954,7 +954,7 @@ void Graphics_LoadStyle(char *style)
 	AJWLib_Assert(style!=NULL);
 	Desk_Error2_Try {
 		sprintf(filename,"%s.%s.%s",choicesread,GRAPHICSDIR,style);
-		if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs2("Error.NoDir:Dir %s does not exist",style);
+		if (!Desk_File_IsDirectory(filename)) AJWLib_Error2_HandleMsgs("Error.NoDir:Dir %s does not exist",style);
 		Graphics_LoadStyleFile(style,"Person",&personfile);
 		Graphics_LoadStyleFile(style,"Marriage",&marriagefile);
 		Graphics_LoadStyleFile(style,"Dimensions",&dimensionsfile);
