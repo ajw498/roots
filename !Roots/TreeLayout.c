@@ -2,7 +2,7 @@
 	Roots - Tree related layout routines
 	© Alex Waugh 1999
 
-	$Id: TreeLayout.c,v 1.46 2000/10/16 11:45:07 AJW Exp $
+	$Id: TreeLayout.c,v 1.47 2000/10/21 15:07:20 AJW Exp $
 
 */
 
@@ -31,13 +31,6 @@
 
 #define LARGENUMBERINCREMENT 10000
 
-/*typedef enum direction {
-	direction_RTOL,
-	direction_BOTH,
-	direction_LTOR,
-	direction_NONE
-} direction;*/
-
 typedef void (*callfn)(layout *layout,elementptr person,int);
 
 static struct {
@@ -46,22 +39,26 @@ static struct {
 } *spaces;
 
 static int mingeneration,maxgeneration;
-/*static int numgenerations,addamount,firstplot,largenumber;*/
-/*static Desk_bool selectmarriages;*/
-
-/*static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn);
-static void Layout_TraverseAncestorTree(layout *layout,elementptr person,int generation,callfn fn);*/
 
 
 void Layout_LayoutTitle(layout *layout)
+/*Create the title transient, should be called after all other elements and transients have been placed*/
 {
 	Desk_wimp_rect bbox;
+	Desk_wimp_point *fontbbox;
+	flags flags;
+
 	AJWLib_Assert(layout!=NULL);
+
 	if (!Config_Title()) return;
-	if (layout->title.x==INFINITY && layout->title.y==INFINITY) return;
 	bbox=Layout_FindExtent(layout,Desk_FALSE);
-	layout->title.x=(bbox.max.x+bbox.min.x)/2;
-	layout->title.y=bbox.max.y+Graphics_TitleHeight()/2;
+	fontbbox=Graphics_TitleWidthAndHeight();
+	flags.editable=1;
+	flags.moveable=0;
+	flags.linkable=0;
+	flags.snaptogrid=0;
+	flags.selectable=0;
+	Layout_AddTransient(layout,element_TITLE,(bbox.max.x+bbox.min.x-fontbbox->x)/2,bbox.max.y+Graphics_WindowBorder()+(Graphics_TitleHeight()-fontbbox->y)/2,fontbbox->x,Graphics_TitleHeight()-Graphics_WindowBorder(),0,0,flags);
 }
 
 static void Layout_ExtendGeneration(int generation)
@@ -144,45 +141,6 @@ static void Layout_PlotPerson(layout *layout,elementptr person,int generation)
 	spaces[generation-mingeneration].maxx+=Graphics_PersonWidth();
 }
 
-static void Layout_PlotBodgedMarriages(layout *layout)
-/* Plot all unplotted marriages on the correct generation, but at the far right of the tree*/
-{
-	int index=0;
-
-	AJWLib_Assert(layout!=NULL);
-
-	do {
-		elementptr marriage=Database_GetLinkedMarriages(&index);
-
-		if (marriage) {
-			if (!Database_GetFlag(marriage)) {
-				int generation=0;
-
-				generation=Layout_FindYGridCoord(layout,Database_GetPrincipalFromMarriage(marriage));
-			
-/*				Layout_AddMarriage(layout,marriage,spaces[generation-mingeneration].maxx+Graphics_SecondMarriageGap(),Layout_NearestGeneration((generation)*-(Graphics_GapHeightAbove()+Graphics_GapHeightBelow()+Graphics_PersonHeight())),Graphics_MarriageWidth(),Graphics_PersonHeight(),0,generation);*/
-				spaces[generation-mingeneration].maxx+=Graphics_MarriageWidth()+Graphics_SecondMarriageGap();
-				Database_SetFlag(marriage);
-			}
-		}
-	} while (index);
-}
-
-/*static void Layout_PlotMarriage(layout *layout,elementptr person,int x,int y)
-{
-	elementptr marriage;
-
-	AJWLib_Assert(layout!=NULL);
-	AJWLib_Assert(person!=none);
-	
-	marriage=Database_GetMarriage(person);
-	if (marriage==none || Database_GetPrincipalFromMarriage(marriage)==person) return;
-	if (Database_GetFlag(marriage)) return;
-	x-=Graphics_MarriageWidth();
-	Layout_AddMarriage(layout,marriage,x,y,Graphics_MarriageWidth(),Graphics_PersonHeight(),0,0);
-	Database_SetFlag(marriage);
-}*/
-
 static void Layout_PlotMarriage(layout *layout,elementptr marriage)
 {
 	elementptr person;
@@ -201,6 +159,7 @@ static void Layout_PlotMarriage(layout *layout,elementptr marriage)
 		leftx=rightx;
 		rightx=temp;
 	}
+	leftx+=Graphics_PersonWidth();
 	flags.editable=1;
 	flags.moveable=0;
 	flags.linkable=1;
@@ -221,48 +180,6 @@ static int Layout_FindChildCoords(layout *layout,elementptr marriage)
 	return (Layout_FindXCoord(layout,leftchild)+Layout_FindXCoord(layout,rightchild)+Graphics_PersonWidth())/2;
 }
 
-/*static void Layout_Add(layout *layout,elementptr person,int generation,Desk_bool dummy1,Desk_bool dummy2)
-{
-	int i,amount;
-	elementptr marriage;
-	AJWLib_Assert(layout!=NULL);
-	AJWLib_Assert(person!=none);
-	Desk_UNUSED(dummy1);
-	Desk_UNUSED(dummy2);
-	marriage=Database_GetMarriage(person);
-	for (i=0;i<layout->numpeople;i++) {
-		if (layout->person[i].element==person) {
-			if (addamount<0 && spaces[generation-mingeneration].maxx==layout->person[i].x+Graphics_PersonWidth()) spaces[generation-mingeneration].maxx+=addamount;
-			if (addamount>0 && spaces[generation-mingeneration].maxx==layout->person[i].x+Graphics_PersonWidth()) spaces[generation-mingeneration].maxx+=addamount;
-			if (marriage && Database_GetPrincipalFromMarriage(marriage)!=person) {
-				amount=Graphics_MarriageWidth();
-				if (!Database_IsFirstMarriage(marriage)) amount+=Graphics_SecondMarriageGap();
-			} else {
-				amount=Graphics_GapWidth();
-			}
-			if (addamount>0 && spaces[generation-mingeneration].minx==layout->person[i].x-amount) spaces[generation-mingeneration].minx+=addamount;
-			if (addamount<0 && spaces[generation-mingeneration].minx==layout->person[i].x-amount) spaces[generation-mingeneration].minx+=addamount;
-			layout->person[i].x+=addamount;
-		}
-		*optimise this loop*
-	}
-}
-
-static void Layout_Select(layout *layout,elementptr person,int dummy0,Desk_bool dummy1,Desk_bool dummy2)
-{
-	elementptr marriage;
-	AJWLib_Assert(layout!=NULL);
-	AJWLib_Assert(person!=none);
-	Desk_UNUSED(dummy0);
-	Desk_UNUSED(dummy1);
-	Desk_UNUSED(dummy2);
-	Database_Select(person);
-	marriage=Database_GetMarriage(person);
-	if (Database_GetPrincipalFromMarriage(marriage)!=person) {
-		Database_Select(marriage);
-	}
-}*/
-
 static void Layout_Plot(layout *layout,elementptr person,int generation)
 {
 	elementptr marriage;
@@ -273,16 +190,6 @@ static void Layout_Plot(layout *layout,elementptr person,int generation)
 	/* Make sure we have set up structure for this generation*/
 	Layout_ExtendGeneration(generation);
 
-/*	if (firstplot==Desk_FALSE && spaces[generation-mingeneration].minx==spaces[generation-mingeneration].maxx) {
-		if (lefttoright) {
-			spaces[generation-mingeneration].minx=-(largenumber+=LARGENUMBERINCREMENT);
-			spaces[generation-mingeneration].maxx=-largenumber;
-		} else {
-			spaces[generation-mingeneration].minx=(largenumber+=LARGENUMBERINCREMENT);
-			spaces[generation-mingeneration].maxx=largenumber;
-		}
-	}*/
-/*	if (firstplot==Desk_TRUE) firstplot=Desk_FALSE;*/
 	marriage=Database_GetMarriage(person);
 	if (marriage) {
 		if (Database_GetLeftChild(marriage)!=none) {
@@ -294,17 +201,6 @@ static void Layout_Plot(layout *layout,elementptr person,int generation)
                 if (!Database_IsFirstMarriage(marriage)) maxx+=Graphics_SecondMarriageGap();
 				if (childcoords>=maxx) {
 					spaces[generation-mingeneration].maxx+=childcoords-maxx;
-				} else {
-					int newmaxx;
-/*					addamount=maxx-childcoords;
-					Layout_TraverseNormalTree(layout,Database_GetRightChild(marriage),2,2,Desk_TRUE,Desk_FALSE,Desk_FALSE,generation+1,Layout_Add);*/
-					newmaxx=spaces[generation-mingeneration].maxx+Graphics_MarriageWidth()/2;
-					if (Database_GetPrincipalFromMarriage(marriage)==person) newmaxx+=Graphics_PersonWidth()+Graphics_GapWidth();
-					if (!Database_IsFirstMarriage(marriage)) newmaxx+=Graphics_SecondMarriageGap();
-					if (newmaxx!=maxx) {
-/*						addamount=maxx-newmaxx;
-						Layout_TraverseTree(layout,Database_GetRightChild(marriage),2,2,Desk_TRUE,Desk_FALSE,Desk_FALSE,generation+1,Layout_Add);*/
-					}
 				}
 			}
 		}
@@ -347,41 +243,6 @@ static void Layout_Plot(layout *layout,elementptr person,int generation)
 		}
 	}
 	Layout_PlotPerson(layout,person,generation,lefttoright,child);
-}*/
-
-
-/*static void Layout_TraverseTree(layout *layout,elementptr person,int domarriage,int doallsiblings,Desk_bool dochild,Desk_bool doparents,Desk_bool lefttoright,int generation,callfn fn)
-{
-	AJWLib_Assert(layout!=NULL);
-	if (person==none) return;
-	if (domarriage>=2 && lefttoright)  Layout_TraverseTree(layout,Database_GetMarriageRtoL(person),3,2,Desk_TRUE,Desk_TRUE,lefttoright,generation,fn);
-	if (domarriage>=2 && !lefttoright) Layout_TraverseTree(layout,Database_GetMarriageLtoR(person),3,2,Desk_TRUE,Desk_TRUE,lefttoright,generation,fn);
-	if (doallsiblings>=2 && lefttoright)  Layout_TraverseTree(layout,Database_GetSiblingRtoL(person),2,3,Desk_TRUE,Desk_FALSE,lefttoright,generation,fn);
-	if (doallsiblings>=2 && !lefttoright) Layout_TraverseTree(layout,Database_GetSiblingLtoR(person),2,3,Desk_TRUE,Desk_FALSE,lefttoright,generation,fn);
-	if (dochild && Database_GetMarriage(person)) {
-		if (lefttoright) {
-			if (Database_GetMarriageRtoL(person)!=Database_GetPrincipalFromMarriage(Database_GetMarriage(person))) {
-				Layout_TraverseTree(layout,Database_GetLeftChild(Database_GetMarriage(person)),2,2,Desk_TRUE,Desk_FALSE,lefttoright,generation+1,fn);
-			}
-		} else {
-			if (Database_GetPrincipalFromMarriage(Database_GetMarriage(person))!=person) {
-				Layout_TraverseTree(layout,Database_GetRightChild(Database_GetMarriage(person)),2,2,Desk_TRUE,Desk_FALSE,lefttoright,generation+1,fn);
-			}
-		}
-	}
-	fn(layout,person,generation,lefttoright,Desk_TRUE);
-	if ((domarriage==Desk_TRUE || domarriage==2) && lefttoright)  Layout_TraverseTree(layout,Database_GetMarriageLtoR(person),Desk_TRUE,2,Desk_TRUE,Desk_TRUE,lefttoright,generation,fn);
-	if ((domarriage==Desk_TRUE || domarriage==2) && !lefttoright) Layout_TraverseTree(layout,Database_GetMarriageRtoL(person),Desk_TRUE,2,Desk_TRUE,Desk_TRUE,lefttoright,generation,fn);
-	if ((doallsiblings==1 || doallsiblings==2) &&lefttoright)  Layout_TraverseTree(layout,Database_GetSiblingLtoR(person),2,1,Desk_TRUE,Desk_FALSE,lefttoright,generation,fn);
-	if ((doallsiblings==1 || doallsiblings==2) &&!lefttoright) Layout_TraverseTree(layout,Database_GetSiblingRtoL(person),2,1,Desk_TRUE,Desk_FALSE,lefttoright,generation,fn);
-	if (doparents) {
-		if (lefttoright && Database_GetMarriageRtoL(Database_GetMother(person))==Database_GetFather(person)) {
-			Layout_TraverseTree(layout,Database_GetFather(person),2,2,Desk_FALSE,Desk_TRUE,lefttoright,generation-1,fn);
-		} else {
-			Layout_TraverseTree(layout,Database_GetMother(person),2,2,Desk_FALSE,Desk_TRUE,lefttoright,generation-1,fn);
-		}
-	}
-*Traversing righttoleft is broken*
 }*/
 
 static void Layout_TraverseNormalTree(layout *layout,elementptr person,int generation,callfn fn)
@@ -429,24 +290,17 @@ static void Layout_TraverseDescendentTree(layout *layout,elementptr person,int d
 	if (generation>0) Layout_TraverseDescendentTree(layout,Database_GetSiblingRtoL(person),2,generation,fn);
 }*/
 
-void Layout_LayoutMarriages(layout *layout)
-{
-	int i;
-	AJWLib_Assert(layout!=NULL);
-/*	layout->nummarriages=0;*/
-/*	for (i=0;i<layout->numpeople;i++) Layout_PlotMarriage(layout,layout->person[i].element,layout->person[i].x,layout->person[i].y);*/
-}
-
 void Layout_LayoutLines(layout *layout)
 {
 	int i=0;
 	AJWLib_Assert(layout!=NULL);
 	Layout_RemoveTransients(layout);
 	do {
+		int FIXME; /*FIXME: assumes everyone is on the layout*/
 		elementptr marriage=Database_GetLinkedMarriages(&i);
 
 		if (marriage) Layout_PlotMarriage(layout,marriage);
-		/*FIXME: assumes everyone is on the layout*/
+		
 	} while (i);
 	for (i=0;i<layout->numpeople;i++) Layout_PlotChildLine(layout,layout->person[i].element,layout->person[i].y);
 }
@@ -503,10 +357,6 @@ layout *Layout_LayoutNormal(void)
 		spaces[0].maxx=0;
 		mingeneration=0;
 		maxgeneration=0;
-		if (Config_Title()) {
-			layout->title.x=0;
-			layout->title.y=0;
-		}
 		/* Deselect everyone*/
 		Database_UnsetAllFlags();
 		do {
@@ -518,8 +368,6 @@ layout *Layout_LayoutNormal(void)
 			Layout_TraverseNormalTree(layout,person,0,Layout_Plot);
 		} while (index);
 		/* Sort out marriages and lines*/
-		Layout_LayoutMarriages(layout);
-		Layout_PlotBodgedMarriages(layout);
 		Layout_LayoutLines(layout);
 		Layout_LayoutTitle(layout);
 		/* Deselect everyone*/

@@ -2,7 +2,7 @@
 	Roots - Graphics Configuration
 	© Alex Waugh 1999
 
-	$Id: Graphics.c,v 1.51 2000/10/16 11:45:00 AJW Exp $
+	$Id: Graphics.c,v 1.52 2000/10/21 15:07:13 AJW Exp $
 
 */
 
@@ -553,7 +553,11 @@ int Graphics_WindowBorder(void)
 int Graphics_TitleHeight(void)
 {
 	return graphicsdata.titleheight;
-	return 0;
+}
+
+Desk_wimp_point *Graphics_TitleWidthAndHeight(void)
+{
+	return AJWLib_Font_GetWidthAndHeightGiven(graphicsdata.title.fontname,16*graphicsdata.title.size,Database_GetTitle());
 }
 
 static void Graphics_ClaimFonts(void)
@@ -1012,13 +1016,13 @@ void Graphics_PlotElement(elementptr element,int scale,int originx,int originy,i
 			Graphics_PlotChildren(scale,originx,originy,x,x+width,y);
 			break;
 		case element_TITLE:
-			/*Graphics_PlotText(scale,originx,originy,x,y,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
-			*/break;
+			Graphics_PlotText(scale,originx,originy,x,y,graphicsdata.title.font->handle,graphicsdata.title.fontname,graphicsdata.title.size,graphicsdata.title.bgcolour,graphicsdata.title.colour,Database_GetTitle());
+			break;
 		case element_PERSON:
 			Graphics_PlotPerson(scale,originx,originy,element,x,y,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
 			break;
 		case element_MARRIAGE:
-			Graphics_PlotMarriage(scale,originx,originy,x+Graphics_PersonWidth()/*temp*/,y,element,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
+			Graphics_PlotMarriage(scale,originx,originy,x,y,element,plotselection ? Layout_GetSelect(element) : Desk_FALSE);
 			break;
 	}
 }

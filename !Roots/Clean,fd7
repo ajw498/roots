@@ -1,2 +1,3 @@
 Dir <Obey$Dir>
-make -s clean
+rm !RunImage
+rm *.o

@@ -3,7 +3,7 @@
 
 #include "Desk.Wimp.h"
 
-#include "Layout.h"
+#include "DatabaseStruct.h"
 
 #define Graphics_ConvertToOS(x) ((int)(strtol(x,NULL,10)*7))
 #define Graphics_ConvertFromOS(x) ((int)(x/7))
@@ -21,6 +21,7 @@ int Graphics_MarriageWidth(void);
 int Graphics_SecondMarriageGap(void);
 int Graphics_WindowBorder(void);
 int Graphics_TitleHeight(void);
+Desk_wimp_point *Graphics_TitleWidthAndHeight(void);
 void Graphics_SetFunctions(plotfn plotline,plotfn plotrect,plotfn plotrectfilled,plottextfn plottext);
 void Graphics_PlotElement(elementptr element,int scale,int originx,int originy,int x,int y,int width,int height,Desk_bool plotselection);
 void Graphics_SaveGEDCOM(FILE *file);
