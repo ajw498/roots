@@ -3,6 +3,9 @@
 	© Alex Waugh 1999
 
 	$Log: Layout.c,v $
+	Revision 1.16  1999/10/30 19:18:03  AJW
+	Added calls to Modules_LayoutChanged
+
 	Revision 1.15  1999/10/27 14:41:59  AJW
 	Fixed bug in allocating memory for a layout - changed sizeof(layout) to sizeof(struct layout)
 
@@ -59,12 +62,14 @@
 #include "Desk.DeskMem.h"
 
 #include "AJWLib.Flex.h"
+#include "AJWLib.Assert.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "Database.h"
 #include "Graphics.h"
+#include "Modules.h"
 #include "GConfig.h"
 #include "Layout.h"
 
@@ -136,6 +141,7 @@ void Layout_AddPerson(layout *layout,elementptr person,int x,int y)
 		layout->person[layout->numpeople].child=(Database_GetMother(person)==none ? Desk_FALSE : Desk_TRUE);
 		layout->person[layout->numpeople].selected=Desk_FALSE;
 		layout->numpeople++;
+		Modules_ChangedLayout();
 }
 
 void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
@@ -147,6 +153,7 @@ void Layout_AddMarriage(layout *layout,elementptr marriage,int x,int y)
 		layout->marriage[layout->nummarriages].childline=(Database_GetLeftChild(marriage)==none ? Desk_FALSE : Desk_TRUE);
 		layout->marriage[layout->nummarriages].selected=Desk_FALSE;
 		layout->nummarriages++;
+		Modules_ChangedLayout();
 }
 
 Desk_bool Layout_Selected(layout *layout,elementptr person)
@@ -411,6 +418,7 @@ void Layout_RemovePerson(layout *layout,elementptr person)
 		if (layout->person[i].person==person) {
 			AJWLib_Flex_MidExtend((flex_ptr)&(layout->person),sizeof(personlayout)*(i+1),-sizeof(personlayout));
 			layout->numpeople--;
+			Modules_ChangedLayout();
 			return;
 		}
 	}
@@ -423,6 +431,7 @@ void Layout_RemoveMarriage(layout *layout,elementptr marriage)
 		if (layout->marriage[i].marriage==marriage) {
 			AJWLib_Flex_MidExtend((flex_ptr)&(layout->marriage),sizeof(marriagelayout)*(i+1),-sizeof(marriagelayout));
 			layout->nummarriages--;
+			Modules_ChangedLayout();
 			return;
 		}
 	}
