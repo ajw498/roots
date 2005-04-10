@@ -6,15 +6,15 @@
 
 */
 
-#include "Desk.Core.h"
-#include "Desk.Error2.h"
-#include "Desk.Window.h"
-#include "Desk.Event.h"
-#include "Desk.DeskMem.h"
+#include "Desk/Core.h"
+#include "Desk/Error2.h"
+#include "Desk/Window.h"
+#include "Desk/Event.h"
+#include "Desk/DeskMem.h"
 
-#include "AJWLib.Flex.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Assert.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Assert.h"
 
 #include <stdlib.h>
 #include <stdio.h>

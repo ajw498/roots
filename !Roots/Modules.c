@@ -7,9 +7,9 @@
 
 */
 
-#include "Desk.Core.h"
-#include "Desk.Wimp.h"
-#include "Desk.Coord.h"
+#include "Desk/Core.h"
+#include "Desk/Wimp.h"
+#include "Desk/Coord.h"
 
 #include <stdio.h>
 

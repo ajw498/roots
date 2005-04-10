@@ -6,48 +6,50 @@
 
 */
 
-#include "Desk.Window.h"
-#include "Desk.Error.h"
-#include "Desk.Error2.h"
-#include "Desk.SWI.h"
-#include "Desk.Event.h"
-#include "Desk.EventMsg.h"
-#include "Desk.Handler.h"
-#include "Desk.Hourglass.h"
-#include "Desk.Icon.h"
-#include "Desk.Menu.h"
-#include "Desk.Msgs.h"
-#include "Desk.Drag.h"
-#include "Desk.Resource.h"
-#include "Desk.Screen.h"
-#include "Desk.Template.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Sprite.h"
-#include "Desk.Screen.h"
-#include "Desk.Keycodes.h"
-#include "Desk.GFX.h"
-#include "Desk.Save.h"
-#include "Desk.Str.h"
-#include "Desk.Font2.h"
-#include "Desk.ColourTran.h"
-#include "Desk.PDriver.h"
-#include "Desk.Print.h"
+#include "Desk/Window.h"
+#include "Desk/Error.h"
+#include "Desk/Error2.h"
+#include "Desk/SWI.h"
+#include "Desk/Event.h"
+#include "Desk/EventMsg.h"
+#include "Desk/Handler.h"
+#include "Desk/Hourglass.h"
+#include "Desk/Icon.h"
+#include "Desk/Menu.h"
+#include "Desk/Msgs.h"
+#include "Desk/Drag.h"
+#include "Desk/Resource.h"
+#include "Desk/Screen.h"
+#include "Desk/Template.h"
+#include "Desk/File.h"
+#include "Desk/Filing.h"
+#include "Desk/Sprite.h"
+#include "Desk/Screen.h"
+#include "Desk/Keycodes.h"
+#include "Desk/GFX.h"
+#include "Desk/Save.h"
+#include "Desk/Str.h"
+#include "Desk/Font2.h"
+#include "Desk/ColourTran.h"
+#include "Desk/PDriver.h"
+#include "Desk/Print.h"
 
-#include "AJWLib.Error2.h"
-#include "AJWLib.Window.h"
-#include "AJWLib.Menu.h"
-#include "AJWLib.Assert.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Icon.h"
-#include "AJWLib.Flex.h"
-#include "AJWLib.Font.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Str.h"
-#include "AJWLib.Draw.h"
-#include "AJWLib.DrawFile.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Menu.h"
+#include "AJWLib/Assert.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Icon.h"
+#include "AJWLib/Flex.h"
+#include "AJWLib/Font.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Str.h"
+#include "AJWLib/Draw.h"
+#include "AJWLib/DrawFile.h"
 
+#ifdef MemCheck_MEMCHECK
 #include "MemCheck:MemCheck.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -246,7 +248,9 @@ void Print_OpenWindow(layout *layout)
 		data.layout=layout;
 		driver=Desk_PDriver_PrinterName();
 		if (driver) {
+#ifdef MemCheck_MEMCHECK
 			MemCheck_RegisterMiscBlock_String(driver);
+#endif
 		} else {
 			driver=name;
 		}
