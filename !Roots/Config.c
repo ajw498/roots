@@ -6,25 +6,25 @@
 
 */
 
-#include "Desk.Core.h"
-#include "Desk.Window.h"
-#include "Desk.Icon.h"
-#include "Desk.Error.h"
-#include "Desk.Error2.h"
-#include "Desk.File.h"
-#include "Desk.Filing.h"
-#include "Desk.Msgs.h"
-#include "Desk.Menu.h"
-#include "Desk.Event.h"
-#include "Desk.Template.h"
+#include "Desk/Core.h"
+#include "Desk/Window.h"
+#include "Desk/Icon.h"
+#include "Desk/Error.h"
+#include "Desk/Error2.h"
+#include "Desk/File.h"
+#include "Desk/Filing.h"
+#include "Desk/Msgs.h"
+#include "Desk/Menu.h"
+#include "Desk/Event.h"
+#include "Desk/Template.h"
 
-#include "AJWLib.Assert.h"
-#include "AJWLib.Error2.h"
-#include "AJWLib.File.h"
-#include "AJWLib.Str.h"
-#include "AJWLib.Window.h"
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Menu.h"
+#include "AJWLib/Assert.h"
+#include "AJWLib/Error2.h"
+#include "AJWLib/File.h"
+#include "AJWLib/Str.h"
+#include "AJWLib/Window.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Menu.h"
 
 #include <stdlib.h>
 #include <string.h>

@@ -9,12 +9,12 @@
 
 #ifndef SHAREWARE_STANDALONE
 
-#include "Desk.Window.h"
-#include "Desk.Error2.h"
-#include "Desk.Msgs.h"
+#include "Desk/Window.h"
+#include "Desk/Error2.h"
+#include "Desk/Msgs.h"
 
-#include "AJWLib.Msgs.h"
-#include "AJWLib.Error2.h"
+#include "AJWLib/Msgs.h"
+#include "AJWLib/Error2.h"
 
 #include "Main.h"
 #include "Config.h"

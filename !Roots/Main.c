@@ -7,7 +7,9 @@
 	
 */
 
+#ifdef MemCheck_MEMCHECK
 #include "MemCheck:MemCheck.h"
+#endif
 
 #include "Desk/Window.h"
 #include "Desk/Error2.h"
@@ -27,6 +29,7 @@
 #include "Desk/Sprite.h"
 #include "Desk/GFX.h"
 #include "Desk/Hourglass.h"
+#include "Desk/SWI.h"
 
 #include "AJWLib/Window.h"
 #include "AJWLib/Menu.h"
@@ -134,18 +137,24 @@ static void IconBarMenuClick(int entry, void *ref)
 int main(int argc,char *argv[])
 {
 	Desk_Hourglass_On();
+#ifdef MemCheck_MEMCHECK
 	MemCheck_Init();
 	MemCheck_RegisterArgs(argc,argv);
 	MemCheck_InterceptSCLStringFunctions();
 	MemCheck_SetStoreMallocFunctions(1);
 	MemCheck_SetAutoOutputBlocksInfo(0);
 /*	MemCheck_SetQuitting(1,1);*/
+#endif
 	Desk_Error2_Init_JumpSig();
 	signal(SIGABRT,SIG_DFL);
 	Desk_Error2_Try {
+#ifdef MemCheck_MEMCHECK
 		MemCheck_SetChecking(0,0);
+#endif
 		Desk_Resource_Initialise(DIRPREFIX);
+#ifdef MemCheck_MEMCHECK
 		MemCheck_SetChecking(1,1);
+#endif
 		Desk_Msgs_LoadFile("Messages");
 		Desk_Event_Initialise(taskname=AJWLib_Msgs_Lookup("Task.Name:"));
 		errbad=AJWLib_Msgs_Lookup("Error.Bad:%s Click Ok to continue, Cancel to quit.");
