@@ -1,3 +1,6 @@
+v1.18 28-Apr-04
+Fixed bug causing an incorrect warning when loading files
+ 
 v1.17 13-Mar-04
 Fixed bug that prevented scrolling the window when dragging a selection box
 Prevent slashes being entered in peoples names as this causes invalid GEDCOM

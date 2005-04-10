@@ -2,7 +2,7 @@
 	Roots - File loading and saving
 	© Alex Waugh 1999
 
-	$Id: File.c,v 1.50 2002/12/07 16:18:18 ajw Exp $
+	$Id: File.c,v 1.51 2004/04/28 21:21:04 ajw Exp $
 
 */
 
@@ -148,7 +148,7 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 		if (strcmp(data,"Roots") && !plain) AJWLib_Error2_HandleMsgs("Error.NotRoot:");
 
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.VERS")) {
-		if (!plain && atof(data)>ROOTS_VERSION_NUMBER) Desk_Msgs_Report(1,"Error.TooNew:");
+		if (!plain && atof(data)>atof(ROOTS_VERSION_NUMBER)) Desk_Msgs_Report(1,"Error.TooNew:");
 		
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.CORP")) {
 	} else if (!Desk_stricmp(tag,"HEAD.SOUR.CORP.ADDR")) {
