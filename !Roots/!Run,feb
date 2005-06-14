@@ -19,5 +19,5 @@ RMEnsure SharedCLibrary 5.34 Error This application requires SharedCLibrary 5.34
 RMEnsure DrawFile RMLoad System:Modules.DrawFile
 RMEnsure DrawFile Error Roots needs the DrawFile module
 
-WimpSlot -Min 308k -Max 308k
+WimpSlot -Min 400k -Max 400k
 Run <Roots$Dir>.!RunImage %*0
