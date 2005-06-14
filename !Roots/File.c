@@ -257,23 +257,8 @@ static void File_HandleData(char *id,char *tag,char *data,Desk_bool plain,Desk_b
 			if (*ptr!='\0') *ptr++='\0';
 			while (isspace(*ptr)) ptr++;
 			Database_SetForename(person,data);
-			if (ptr > data) Database_SetSurname(person,ptr);
-			if (*ptr!='\0') {
-				data=ptr;
-				ptr=data+strlen(data);
-				/* Remove trailing whitespace*/
-				while (ptr>data && isspace(*(ptr-1))) ptr--;
-				*ptr='\0';
-				/* Find the beggining of the surname*/
-				while (ptr>data && !isspace(*(ptr-1))) ptr--;
-				Database_SetSurname(person,ptr);
-				*ptr='\0';
-				/* Anything remaining must be the middlenames*/
-				/* Remove trailing whitespace*/
-				while (ptr>data && isspace(*(ptr-1))) ptr--;
-				*ptr='\0';
-				Database_SetMiddleNames(person,data);
-			}
+			Database_SetMiddleNames(person,ptr);
+			Database_SetSurname(person,"");
 		}
 
 	} else if (!Desk_stricmp(tag,"INDI.SEX")) {
